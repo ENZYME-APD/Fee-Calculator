@@ -9,6 +9,8 @@ export interface TeamMember {
   roundedFeeHour: number;
   currency: string;
   category?: string;
+  avatarUrl?: string;
+  role?: string;
 }
 
 export interface Project {
