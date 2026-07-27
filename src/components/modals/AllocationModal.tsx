@@ -12,7 +12,7 @@ interface AllocationModalProps {
 }
 
 export function AllocationModal({ isOpen, member, phase, initialData, onClose, onSave }: AllocationModalProps) {
-  const [allocationType, setAllocationType] = useState<'hours' | 'weeks' | 'percent'>('hours');
+  const [allocationType, setAllocationType] = useState<'hours' | 'weeks' | 'percentage'>('hours');
   const [allocationValue, setAllocationValue] = useState<string>('');
 
   React.useEffect(() => {
@@ -39,7 +39,7 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
     finalHours = val;
   } else if (allocationType === 'weeks') {
     finalHours = val * 40; // 40h standard week
-  } else if (allocationType === 'percent') {
+  } else if (allocationType === 'percentage') {
     finalHours = (val / 100) * phase.durationWeeks * 40;
   }
 
@@ -100,7 +100,7 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
               <button onClick={() => setAllocationType('weeks')} className={`flex-1 py-2 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${allocationType === 'weeks' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                 <CalendarDays size={16} /> Weeks
               </button>
-              <button onClick={() => setAllocationType('percent')} className={`flex-1 py-2 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${allocationType === 'percent' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+              <button onClick={() => setAllocationType('percentage')} className={`flex-1 py-2 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${allocationType === 'percentage' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                 <Percent size={16} /> % Load
               </button>
             </div>
@@ -112,7 +112,7 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
               value={allocationValue}
               onChange={(e) => setAllocationValue(e.target.value)}
               className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-bold text-lg shadow-sm"
-              placeholder={allocationType === 'percent' ? 'e.g. 50 (for 50%)' : `e.g. ${allocationType === 'weeks' ? '2' : '40'}`}
+              placeholder={allocationType === 'percentage' ? 'e.g. 50 (for 50%)' : `e.g. ${allocationType === 'weeks' ? '2' : '40'}`}
               autoFocus
             />
           </div>

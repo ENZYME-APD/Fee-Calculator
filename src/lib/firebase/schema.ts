@@ -34,7 +34,7 @@ export interface Allocation {
   id?: string;
   phaseId: string;
   memberId: string;
-  allocationType: 'hours' | 'percentage';
+  allocationType: 'hours' | 'percentage' | 'weeks';
   allocationValue: number;
   hours: number;
 }
