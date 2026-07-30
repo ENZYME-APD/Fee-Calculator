@@ -11,7 +11,7 @@ import { DroppablePhaseLane } from '../dnd/DroppablePhaseLane';
 import { AllocationModal } from '../modals/AllocationModal';
 import { CostModal } from '../modals/CostModal';
 import { PanelLeftClose, PanelLeftOpen, Users, ChevronDown, ChevronRight, PlusCircle, Menu } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getCategoryOrder } from '@/lib/utils';
 
 interface AppLayoutProps {
   members: TeamMember[];
@@ -194,7 +194,9 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-white dark:bg-slate-900 transition-colors">
             {members.length === 0 && <div className="text-center text-sm text-slate-400 dark:text-slate-500 p-4 font-medium border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">No team members available. Go to Team Resources to add some.</div>}
             
-            {Object.entries(membersByCategory).map(([category, catMembers]) => (
+            {Object.entries(membersByCategory)
+              .sort(([catA], [catB]) => getCategoryOrder(catA) - getCategoryOrder(catB))
+              .map(([category, catMembers]) => (
               <div key={category} className="flex flex-col gap-1.5">
                 <button 
                   onClick={() => toggleCategory(category)}

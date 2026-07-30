@@ -4,7 +4,7 @@ import { Phase, Allocation, TeamMember, ProjectCost } from '@/lib/firebase/schem
 import { deleteProjectCost, updateProjectCost } from '@/lib/firebase/db';
 import { CostModal } from '../modals/CostModal';
 import { Palette, Plane, Briefcase, Pencil, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getCategoryOrder } from '@/lib/utils';
 
 interface DroppablePhaseLaneProps {
   phase: Phase;
@@ -93,7 +93,10 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
       </div>
       
       <div className="flex flex-col gap-3 flex-1 overflow-y-auto min-h-[300px]">
-        {allocations.map(allocation => (
+        {allocations
+          .slice()
+          .sort((a, b) => getCategoryOrder(a.member.category) - getCategoryOrder(b.member.category))
+          .map(allocation => (
           <div key={allocation.id} className="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center group hover:shadow-md transition-shadow">
             <div className="flex flex-col">
               <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{allocation.member.name}</span>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TeamMember } from '@/lib/firebase/schema';
 import { Pencil, Trash2, ChevronDown, ChevronRight, Folder } from 'lucide-react';
+import { getCategoryOrder } from '@/lib/utils';
 
 interface TeamTableProps {
   members: TeamMember[];
@@ -117,7 +118,9 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete }: TeamTable
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {Object.entries(membersByCategory).map(([category, catMembers]) => {
+            {Object.entries(membersByCategory)
+              .sort(([catA], [catB]) => getCategoryOrder(catA) - getCategoryOrder(catB))
+              .map(([category, catMembers]) => {
               const allSelected = catMembers.every(m => selectedIds.has(m.id!));
               const someSelected = catMembers.some(m => selectedIds.has(m.id!)) && !allSelected;
               
