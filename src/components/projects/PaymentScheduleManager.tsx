@@ -9,6 +9,43 @@ interface PaymentScheduleManagerProps {
   phases: Phase[];
 }
 
+const InlinePercentInput = ({ value, onChange }: { value: number, onChange: (val: number) => void }) => {
+  const [val, setVal] = useState(value.toString());
+  
+  useEffect(() => {
+    setVal(value.toString());
+  }, [value]);
+
+  const handleBlur = () => {
+    const num = parseFloat(val);
+    if (!isNaN(num) && num !== value) {
+      onChange(num);
+    } else {
+      setVal(value.toString());
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
+  return (
+    <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 overflow-hidden focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-colors">
+      <input 
+        type="number"
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className="w-12 text-right bg-transparent text-sm font-bold text-slate-700 dark:text-slate-300 px-1 py-1 focus:outline-none"
+      />
+      <span className="text-slate-500 text-sm font-bold pr-2">%</span>
+    </div>
+  );
+};
+
 export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleManagerProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -243,23 +280,25 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
       </div>
       
       <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 transition-colors">
-        <form onSubmit={handleCreate} className="flex gap-3 items-end">
-          <div className="flex-1">
+        <form onSubmit={handleCreate} className="flex flex-col gap-3">
+          <div className="w-full">
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Payment Name</label>
             <input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Phase 1 Completion" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors" />
           </div>
-          <div className="w-24">
-            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">% Value</label>
-            <input type="number" required min="0" step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="10" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors" />
+          <div className="flex gap-3 items-end">
+            <div className="w-24">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">% Value</label>
+              <input type="number" required min="0" step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="10" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Link to Phase</label>
+              <select value={newPhaseId} onChange={e => setNewPhaseId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors">
+                <option value="">(None)</option>
+                {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <button type="submit" className="h-[38px] px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-semibold flex items-center justify-center gap-2"><Plus size={16} /> Add</button>
           </div>
-          <div className="w-40">
-            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Link to Phase</label>
-            <select value={newPhaseId} onChange={e => setNewPhaseId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors">
-              <option value="">(None)</option>
-              {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-          <button type="submit" className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"><Plus size={16} /></button>
         </form>
       </div>
 
@@ -283,15 +322,24 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
             if (editingId === payment.id) {
               return (
                 <div key={payment.id} className="p-3 border border-blue-300 dark:border-blue-700 rounded-xl bg-white dark:bg-slate-900 shadow-sm flex items-center gap-2">
-                  <form onSubmit={handleEditSave} className="flex-1 flex gap-2 items-center">
-                    <input type="text" autoFocus required value={editName} onChange={e => setEditName(e.target.value)} className="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20" />
-                    <input type="number" required min="0" step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className="w-20 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 text-center" />
-                    <select value={editPhaseId} onChange={e => setEditPhaseId(e.target.value)} className="w-32 px-2 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20">
-                      <option value="">(None)</option>
-                      {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                    <button type="button" onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={16} /></button>
-                    <button type="submit" className="text-emerald-600 hover:text-emerald-700 p-1"><Check size={16} /></button>
+                  <form onSubmit={handleEditSave} className="flex-1 flex flex-col gap-2">
+                    <input type="text" autoFocus required value={editName} onChange={e => setEditName(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20" />
+                    <div className="flex gap-2 items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500">%:</span>
+                        <input type="number" required min="0" step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className="w-20 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 text-center" />
+                      </div>
+                      <div className="flex-1">
+                        <select value={editPhaseId} onChange={e => setEditPhaseId(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20">
+                          <option value="">(None)</option>
+                          {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex gap-1">
+                        <button type="button" onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={16} /></button>
+                        <button type="submit" className="text-emerald-600 hover:text-emerald-700 p-1"><Check size={16} /></button>
+                      </div>
+                    </div>
                   </form>
                 </div>
               );
@@ -311,9 +359,15 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
                   )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0 relative">
-                  <span className="font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-md text-sm border border-slate-100 dark:border-slate-700">
-                    {payment.percentage}%
-                  </span>
+                  <InlinePercentInput 
+                    value={payment.percentage} 
+                    onChange={async (newVal) => {
+                      if (payment.id) {
+                        await updatePayment(payment.id, { percentage: newVal });
+                        loadPayments();
+                      }
+                    }} 
+                  />
                   
                   <button 
                     onClick={() => setMenuOpenId(menuOpenId === payment.id ? null : payment.id!)}
@@ -326,17 +380,17 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)} />
                       <div className="absolute right-0 top-10 mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-20">
-                        <button onClick={() => handleEditStart(payment)} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                        <button onClick={() => handleEditStart(payment)} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
                           <Pencil size={14} /> Edit Payment
                         </button>
-                        <button onClick={() => handleAddBeforeAfter(payment, 'before')} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                        <button onClick={() => handleAddBeforeAfter(payment, 'before')} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
                           <Plus size={14} /> Add Payment Before
                         </button>
-                        <button onClick={() => handleAddBeforeAfter(payment, 'after')} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                        <button onClick={() => handleAddBeforeAfter(payment, 'after')} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
                           <Plus size={14} /> Add Payment After
                         </button>
                         <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
-                        <button onClick={() => handleDelete(payment.id!)} className="w-full text-left px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2">
+                        <button onClick={() => handleDelete(payment.id!)} className="w-full text-left px-4 py-2 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 flex items-center gap-2">
                           <Trash2 size={14} /> Delete Payment
                         </button>
                       </div>

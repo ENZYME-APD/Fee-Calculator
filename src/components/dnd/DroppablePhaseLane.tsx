@@ -27,13 +27,30 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
   });
 
   const baseCost = allocations.reduce((sum, a) => sum + (a.hours * a.member.costPerHour), 0);
-  
   const addedCost = projectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
-  
   const totalCost = baseCost + addedCost;
 
   const baseCostPercent = totalCost > 0 ? (baseCost / totalCost) * 100 : 0;
   const addedCostPercent = totalCost > 0 ? (addedCost / totalCost) * 100 : 0;
+
+  let costMgmt = 0;
+  let costGlobal = 0;
+  let costJakarta = 0;
+  let costConsult = 0;
+
+  allocations.forEach(a => {
+    const cost = a.hours * a.member.costPerHour;
+    const cat = (a.member.category || '').toUpperCase();
+    if (cat.includes('MANAGEMENT')) costMgmt += cost;
+    else if (cat.includes('GLOBAL')) costGlobal += cost;
+    else if (cat.includes('JAKARTA')) costJakarta += cost;
+    else if (cat.includes('CONSULTANT')) costConsult += cost;
+  });
+
+  const pMgmt = totalCost > 0 ? (costMgmt / totalCost) * 100 : 0;
+  const pGlobal = totalCost > 0 ? (costGlobal / totalCost) * 100 : 0;
+  const pJakarta = totalCost > 0 ? (costJakarta / totalCost) * 100 : 0;
+  const pConsult = totalCost > 0 ? (costConsult / totalCost) * 100 : 0;
 
   const handleDeleteCost = async (id: string) => {
     if (confirm('Delete this cost?')) {
@@ -77,14 +94,11 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
           <span className="text-orange-500 dark:text-orange-400">Other: ${addedCost.toLocaleString()}</span>
         </div>
         <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
-          <div 
-            className="h-full bg-blue-500 dark:bg-blue-600 transition-all duration-500" 
-            style={{ width: `${baseCostPercent}%` }}
-          />
-          <div 
-            className="h-full bg-orange-400 dark:bg-orange-500 transition-all duration-500" 
-            style={{ width: `${addedCostPercent}%` }}
-          />
+          {pMgmt > 0 && <div style={{width: `${pMgmt}%`}} className="bg-blue-600 transition-all hover:opacity-90" title={`Management: ${pMgmt.toFixed(1)}%`} />}
+          {pGlobal > 0 && <div style={{width: `${pGlobal}%`}} className="bg-blue-500 transition-all hover:opacity-90" title={`Team Global: ${pGlobal.toFixed(1)}%`} />}
+          {pJakarta > 0 && <div style={{width: `${pJakarta}%`}} className="bg-blue-400 transition-all hover:opacity-90" title={`Team Jakarta: ${pJakarta.toFixed(1)}%`} />}
+          {pConsult > 0 && <div style={{width: `${pConsult}%`}} className="bg-yellow-600 transition-all hover:opacity-90" title={`Consultants: ${pConsult.toFixed(1)}%`} />}
+          {addedCostPercent > 0 && <div style={{width: `${addedCostPercent}%`}} className="bg-orange-400 dark:bg-orange-500 transition-all hover:opacity-90" title={`Project Costs: ${addedCostPercent.toFixed(1)}%`} />}
         </div>
         <div className="flex justify-between text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1">
           <span>{baseCostPercent.toFixed(1)}%</span>

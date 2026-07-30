@@ -32,6 +32,18 @@ export default function Home() {
     
     // Maintain active project if it exists in new data
     if (projs.length > 0) {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const projectIdParam = params.get('project');
+        if (projectIdParam) {
+          const found = projs.find(p => p.id === projectIdParam);
+          if (found) {
+            setActiveProject(found);
+            setLoading(false);
+            return;
+          }
+        }
+      }
       setActiveProject(prev => prev ? (projs.find(p => p.id === prev.id) || projs[0]) : projs[0]);
     }
     setLoading(false);

@@ -9,9 +9,9 @@ export function Navigation() {
   const pathname = usePathname();
   
   const navItems = [
-    { name: 'Fee Calculator', href: '/', icon: Calculator },
-    { name: 'Team Resources', href: '/team', icon: Users },
     { name: 'Projects & Phases', href: '/projects', icon: FolderKanban },
+    { name: 'Fee Proposal', href: '/', icon: Calculator },
+    { name: 'Team Resources', href: '/team', icon: Users },
   ];
 
   const { theme, setTheme } = useTheme();

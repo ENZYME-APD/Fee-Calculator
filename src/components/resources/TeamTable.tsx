@@ -151,7 +151,6 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
               </th>
               <th className="px-4 py-3 font-semibold">Position</th>
               <th className="px-4 py-3 font-semibold">Category</th>
-              <th className="px-4 py-3 font-semibold">Type</th>
               <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Salary/Mo</th>
               <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Overheads/Mo</th>
               <th className="px-4 py-3 font-semibold text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">Cost/Hr</th>
@@ -199,16 +198,18 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                           className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
                       </td>
-                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-200 whitespace-nowrap pl-6">{member.name}</td>
+                      <td className="px-4 py-3 pl-6">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {member.name}
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            {member.position}
+                          </span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{member.position}</td>
                       <td className="px-4 py-3 text-slate-400 dark:text-slate-500 text-xs">-</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide ${
-                          member.type.toLowerCase() === 'employee' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
-                        }`}>
-                          {member.type}
-                        </span>
-                      </td>
                       <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">${member.salary.toLocaleString()}</td>
                       <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">${member.overheads.toLocaleString()}</td>
                       <td className="px-4 py-3 text-right font-medium text-rose-600 dark:text-rose-400">${member.costPerHour.toFixed(2)}</td>

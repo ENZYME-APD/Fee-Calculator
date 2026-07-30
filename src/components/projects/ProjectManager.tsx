@@ -1,11 +1,13 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase } from '@/lib/firebase/db';
 import { Project, Phase } from '@/lib/firebase/schema';
-import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser } from 'lucide-react';
+import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator } from 'lucide-react';
 import { PaymentScheduleManager } from './PaymentScheduleManager';
 
 export function ProjectManager() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
@@ -200,6 +202,9 @@ export function ProjectManager() {
                   <span title={p.name} className={`font-semibold text-sm truncate ${activeProjectId === p.id ? "text-blue-900 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"}`}>{p.name}</span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={(e) => { e.stopPropagation(); router.push(`/?project=${p.id}`); }} title="Open Fee Proposal" className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md transition-colors">
+                    <Calculator size={14} />
+                  </button>
                   <button onClick={(e) => p.id && handleDuplicateProject(p.id, e)} title="Duplicate Project" className="text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/50 rounded-md transition-colors">
                     <Copy size={14} />
                   </button>
@@ -226,16 +231,18 @@ export function ProjectManager() {
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage phases and durations for the selected project.</p>
             </div>
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 transition-colors">
-              <form onSubmit={handleCreatePhase} className="flex gap-4 items-end">
-                <div className="flex-1">
+              <form onSubmit={handleCreatePhase} className="flex flex-col gap-4">
+                <div className="w-full">
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Phase Name</label>
                   <input type="text" required value={newPhaseName} onChange={e => setNewPhaseName(e.target.value)} placeholder="e.g. Schematic Design" className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-colors" />
                 </div>
-                <div className="w-36">
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Duration (Wks)</label>
-                  <input type="number" required min="0.5" step="0.5" value={newPhaseDuration} onChange={e => setNewPhaseDuration(e.target.value)} placeholder="e.g. 4" className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-colors" />
+                <div className="flex gap-4 items-end">
+                  <div className="w-36">
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Duration (Wks)</label>
+                    <input type="number" required min="0.5" step="0.5" value={newPhaseDuration} onChange={e => setNewPhaseDuration(e.target.value)} placeholder="e.g. 4" className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-colors" />
+                  </div>
+                  <button type="submit" className="h-[42px] px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold whitespace-nowrap transition-colors shadow-sm">Add Phase</button>
                 </div>
-                <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-6 py-2.5 rounded-xl hover:bg-slate-900 dark:hover:bg-slate-600 font-semibold whitespace-nowrap transition-colors shadow-sm">Add Phase</button>
               </form>
             </div>
             <div className="flex-1 p-6 overflow-y-auto space-y-3 bg-slate-50/30 dark:bg-slate-900/30 transition-colors">
@@ -250,23 +257,30 @@ export function ProjectManager() {
                     return (
                       <div key={phase.id} className="p-3 border border-blue-300 dark:border-blue-700 rounded-xl bg-white dark:bg-slate-900 shadow-sm flex items-center gap-4 transition-colors">
                         <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono text-xs px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 shrink-0">#{phase.order}</div>
-                        <form onSubmit={handleEditPhaseSave} className="flex-1 flex gap-2 items-center">
+                        <form onSubmit={handleEditPhaseSave} className="flex-1 flex flex-col gap-2">
                           <input 
                             type="text" 
                             autoFocus
                             value={editingPhaseName} 
                             onChange={e => setEditingPhaseName(e.target.value)} 
-                            className="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-950 transition-colors"
+                            className="w-full px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-950 transition-colors"
                           />
-                          <input 
-                            type="number"
-                            min="0.5" step="0.5"
-                            value={editingPhaseDuration}
-                            onChange={e => setEditingPhaseDuration(e.target.value)}
-                            className="w-20 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-950 text-center transition-colors"
-                          />
-                          <button type="button" onClick={() => setEditingPhaseId(null)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1"><X size={16} /></button>
-                          <button type="submit" className="text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 p-1"><Check size={16} /></button>
+                          <div className="flex gap-2 items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-500">WKS:</span>
+                              <input 
+                                type="number"
+                                min="0.5" step="0.5"
+                                value={editingPhaseDuration}
+                                onChange={e => setEditingPhaseDuration(e.target.value)}
+                                className="w-20 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-950 text-center transition-colors"
+                              />
+                            </div>
+                            <div className="flex gap-1">
+                              <button type="button" onClick={() => setEditingPhaseId(null)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1"><X size={16} /></button>
+                              <button type="submit" className="text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 p-1"><Check size={16} /></button>
+                            </div>
+                          </div>
                         </form>
                       </div>
                     );

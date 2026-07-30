@@ -16,6 +16,15 @@ export const addTeamMember = async (member: Omit<TeamMember, 'id'>) => {
   return docRef.id;
 };
 
+export const batchAddTeamMembers = async (members: Omit<TeamMember, 'id'>[]) => {
+  const batch = writeBatch(db);
+  for (const member of members) {
+    const docRef = doc(collection(db, 'teamMembers'));
+    batch.set(docRef, member as DocumentData);
+  }
+  await batch.commit();
+};
+
 export const updateTeamMember = async (id: string, updates: Partial<TeamMember>) => {
   await updateDoc(doc(db, 'teamMembers', id), updates);
 };

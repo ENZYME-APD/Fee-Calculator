@@ -93,7 +93,7 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
               <input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
             </div>
             
-            <div className="col-span-2">
+            <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
               <input 
                 type="text" 
@@ -109,14 +109,6 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
                 <option value="TEAM JAKARTA" />
                 <option value="CONSULTANTS" />
               </datalist>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Type</label>
-              <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                <option value="Employee">Employee</option>
-                <option value="Consultant">Consultant</option>
-              </select>
             </div>
 
             <div>

@@ -5,7 +5,7 @@ import { getTeamMembers, deleteTeamMember, batchUpdateTeamMembers } from '@/lib/
 import { TeamMember } from '@/lib/firebase/schema';
 import { TeamTable } from '@/components/resources/TeamTable';
 import { TeamMemberForm } from '@/components/resources/TeamMemberForm';
-import { SeedButton } from '@/components/resources/SeedButton';
+import { CsvManager } from '@/components/resources/CsvManager';
 import { Plus } from 'lucide-react';
 
 export default function TeamPage() {
@@ -83,14 +83,14 @@ export default function TeamPage() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto flex flex-col h-full">
+    <div className="p-8 max-w-6xl w-full mx-auto flex flex-col h-full">
       <div className="flex justify-between items-center mb-8 shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Team Resources</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">Manage team members, salaries, and rates.</p>
         </div>
         <div className="flex items-center gap-3">
-          <SeedButton onComplete={loadMembers} />
+          <CsvManager onComplete={loadMembers} />
           <button 
             onClick={handleAddNew}
             className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2"
