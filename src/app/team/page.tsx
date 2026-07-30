@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 import React, { useEffect, useState } from 'react';
-import { getTeamMembers, deleteTeamMember } from '@/lib/firebase/db';
+import { getTeamMembers, deleteTeamMember, batchUpdateTeamMembers } from '@/lib/firebase/db';
 import { TeamMember } from '@/lib/firebase/schema';
 import { TeamTable } from '@/components/resources/TeamTable';
 import { TeamMemberForm } from '@/components/resources/TeamMemberForm';
@@ -44,6 +44,34 @@ export default function TeamPage() {
     }
   };
 
+  const handleBulkEdit = async (ids: string[], updates: Partial<TeamMember>) => {
+    setLoading(true);
+    const fullUpdates = ids.map(id => {
+      const member = members.find(m => m.id === id);
+      if (!member) return { id, data: updates };
+      
+      const newSalary = updates.salary !== undefined ? updates.salary : member.salary;
+      const newOverheads = updates.overheads !== undefined ? updates.overheads : member.overheads;
+      
+      let derived = {};
+      if (updates.salary !== undefined || updates.overheads !== undefined) {
+        const baseCost = (newSalary + newOverheads) / 160;
+        derived = {
+          costPerHour: parseFloat(baseCost.toFixed(2)),
+          roundedFeeHour: parseFloat((baseCost * 2.5).toFixed(2))
+        };
+      }
+      
+      return {
+        id,
+        data: { ...updates, ...derived }
+      };
+    });
+
+    await batchUpdateTeamMembers(fullUpdates);
+    loadMembers();
+  };
+
   const handleEdit = (member: TeamMember) => {
     setEditingMember(member);
     setIsFormOpen(true);
@@ -77,7 +105,7 @@ export default function TeamPage() {
         {loading ? (
           <div className="flex-1 flex items-center justify-center text-slate-500">Loading resources...</div>
         ) : (
-          <TeamTable members={members} onEdit={handleEdit} onDelete={handleDelete} onBulkDelete={handleBulkDelete} />
+          <TeamTable members={members} onEdit={handleEdit} onDelete={handleDelete} onBulkDelete={handleBulkDelete} onBulkEdit={handleBulkEdit} />
         )}
       </div>
 

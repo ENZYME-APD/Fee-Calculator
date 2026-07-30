@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProjectSummary } from '@/components/calculator/ProjectSummary';
-import { getProjects, getPhases, getTeamMembers, getAllocations, importProjectData, getProjectCosts } from '@/lib/firebase/db';
-import { Project, Phase, TeamMember, Allocation, ProjectCost } from '@/lib/firebase/schema';
-import { Folder, Download, Upload } from 'lucide-react';
+import { PaymentScheduleModal } from '@/components/calculator/PaymentScheduleModal';
+import { getProjects, getPhases, getTeamMembers, getAllocations, importProjectData, getProjectCosts, getPayments } from '@/lib/firebase/db';
+import { Project, Phase, TeamMember, Allocation, ProjectCost, Payment } from '@/lib/firebase/schema';
+import { Folder, Download, Upload, FileSpreadsheet } from 'lucide-react';
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -14,8 +15,10 @@ export default function Home() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [projectCosts, setProjectCosts] = useState<ProjectCost[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
@@ -42,9 +45,11 @@ export default function Home() {
     if (activeProject) {
       getPhases(activeProject.id!).then(data => setPhases(data.sort((a,b) => a.order - b.order)));
       getProjectCosts(activeProject.id!).then(data => setProjectCosts(data));
+      getPayments(activeProject.id!).then(data => setPayments(data));
     } else {
       setPhases([]);
       setProjectCosts([]);
+      setPayments([]);
     }
   }, [activeProject]);
 
@@ -160,6 +165,14 @@ export default function Home() {
               <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
 
               <button 
+                onClick={() => setIsScheduleOpen(true)}
+                className="flex items-center gap-2 bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600/20 transition-colors shadow-sm"
+              >
+                <FileSpreadsheet size={18} />
+                <span>Payment Schedule</span>
+              </button>
+
+              <button 
                 onClick={() => setIsSummaryOpen(true)}
                 className="flex items-center gap-2 bg-slate-800 dark:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-slate-700 dark:hover:bg-blue-700 transition-colors shadow-sm"
               >
@@ -188,6 +201,17 @@ export default function Home() {
             projectCosts={projectCosts}
             onProjectUpdated={loadData}
             onClose={() => setIsSummaryOpen(false)}
+          />
+        )}
+        {activeProject && isScheduleOpen && (
+          <PaymentScheduleModal 
+            project={activeProject} 
+            phases={phases} 
+            allocations={allocations} 
+            members={members} 
+            projectCosts={projectCosts}
+            payments={payments}
+            onClose={() => setIsScheduleOpen(false)}
           />
         )}
       </div>

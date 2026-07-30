@@ -1,6 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch } from 'firebase/firestore';
 import { db } from './config';
-import { TeamMember, Project, Phase, Allocation, ProjectCost } from './schema';
+import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment } from './schema';
 
 const extractData = (docSnap: DocumentData) => ({ id: docSnap.id, ...docSnap.data() });
 
@@ -18,6 +18,15 @@ export const addTeamMember = async (member: Omit<TeamMember, 'id'>) => {
 
 export const updateTeamMember = async (id: string, updates: Partial<TeamMember>) => {
   await updateDoc(doc(db, 'teamMembers', id), updates);
+};
+
+export const batchUpdateTeamMembers = async (updates: {id: string, data: Partial<TeamMember>}[]) => {
+  const batch = writeBatch(db);
+  for (const update of updates) {
+    const docRef = doc(db, 'teamMembers', update.id);
+    batch.update(docRef, update.data as DocumentData);
+  }
+  await batch.commit();
 };
 
 export const deleteTeamMember = async (id: string) => {
@@ -54,6 +63,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
   // 2. Fetch all nested data
   const phases = await getPhases(id);
   const projectCosts = await getProjectCosts(id);
+  const payments = await getPayments(id);
   
   const allocationsSnap = await getDocs(query(collection(db, 'allocations')));
   const allAllocations = allocationsSnap.docs.map(extractData) as Allocation[];
@@ -108,6 +118,17 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
     }
   }
 
+  // 7. Duplicate payments
+  for (const payment of payments) {
+    const newPaymentRef = doc(collection(db, 'payments'));
+    const { id: _ignore, projectId: _ignore2, phaseId, ...paymentData } = payment;
+    let newPhaseId = phaseId;
+    if (phaseId && phaseIdMap.has(phaseId)) {
+      newPhaseId = phaseIdMap.get(phaseId);
+    }
+    batch.set(newPaymentRef, { ...paymentData, projectId: newProjectId, phaseId: newPhaseId });
+  }
+
   await batch.commit();
   return newProjectId;
 };
@@ -151,6 +172,12 @@ export const clearPhase = async (phaseId: string) => {
     batch.delete(doc.ref);
   });
   
+  // Delete all payments for this phase
+  const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('phaseId', '==', phaseId)));
+  paymentsSnap.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+  
   await batch.commit();
 };
 
@@ -175,7 +202,7 @@ export const deleteProjectCost = async (id: string) => {
 };
 
 export const importProjectData = async (data: any) => {
-  const { project, phases, allocations, projectCosts } = data;
+  const { project, phases, allocations, projectCosts, payments } = data;
   const batch = writeBatch(db);
   
   // 1. Create new project
@@ -227,6 +254,19 @@ export const importProjectData = async (data: any) => {
     }
   }
 
+  // 5. Create Payments
+  if (payments && Array.isArray(payments)) {
+    for (const payment of payments) {
+      const { id, projectId: oldPid, phaseId, ...paymentData } = payment;
+      let newPhaseId = phaseId;
+      if (phaseId && phaseIdMap.has(phaseId)) {
+        newPhaseId = phaseIdMap.get(phaseId);
+      }
+      const newPaymentRef = doc(collection(db, 'payments'));
+      batch.set(newPaymentRef, { ...paymentData, projectId: newProjectId, phaseId: newPhaseId });
+    }
+  }
+
   await batch.commit();
   
   return newProjectId;
@@ -250,4 +290,51 @@ export const updateAllocation = async (id: string, updates: Partial<Allocation>)
 
 export const deleteAllocation = async (id: string) => {
   await deleteDoc(doc(db, 'allocations', id));
+};
+
+// --- Payments ---
+export const getPayments = async (projectId: string): Promise<Payment[]> => {
+  const q = query(collection(db, 'payments'), where('projectId', '==', projectId));
+  const snap = await getDocs(q);
+  return snap.docs.map(extractData) as Payment[];
+};
+
+export const addPayment = async (payment: Omit<Payment, 'id'>) => {
+  const docRef = await addDoc(collection(db, 'payments'), payment);
+  return docRef.id;
+};
+
+export const updatePayment = async (id: string, updates: Partial<Payment>) => {
+  await updateDoc(doc(db, 'payments', id), updates);
+};
+
+export const deletePayment = async (id: string) => {
+  await deleteDoc(doc(db, 'payments', id));
+};
+
+export const batchAddPayments = async (payments: Omit<Payment, 'id'>[]) => {
+  const batch = writeBatch(db);
+  for (const payment of payments) {
+    const newRef = doc(collection(db, 'payments'));
+    batch.set(newRef, payment);
+  }
+  await batch.commit();
+};
+
+export const batchUpdatePayments = async (updates: {id: string, data: Partial<Payment>}[]) => {
+  const batch = writeBatch(db);
+  for (const update of updates) {
+    const docRef = doc(db, 'payments', update.id);
+    batch.update(docRef, update.data);
+  }
+  await batch.commit();
+};
+
+export const clearPayments = async (projectId: string) => {
+  const batch = writeBatch(db);
+  const paymentsSnap = await getDocs(query(collection(db, 'payments'), where('projectId', '==', projectId)));
+  paymentsSnap.forEach(doc => {
+    batch.delete(doc.ref);
+  });
+  await batch.commit();
 };

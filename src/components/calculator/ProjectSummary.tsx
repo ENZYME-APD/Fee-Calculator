@@ -24,22 +24,45 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
     let totalHours = 0;
     let totalCost = 0;
 
+    const breakdown = {
+      management: 0,
+      global: 0,
+      jakarta: 0,
+      consultants: 0,
+      other: 0
+    };
+
     phaseAllocations.forEach(alloc => {
       const member = members.find(m => m.id === alloc.memberId);
       if (member) {
         totalHours += alloc.hours;
-        totalCost += (alloc.hours * member.costPerHour);
+        const cost = alloc.hours * member.costPerHour;
+        totalCost += cost;
+
+        const cat = member.category?.toUpperCase() || '';
+        if (cat === 'MANAGEMENT') breakdown.management += cost;
+        else if (cat === 'TEAM GLOBAL') breakdown.global += cost;
+        else if (cat === 'TEAM JAKARTA') breakdown.jakarta += cost;
+        else if (cat === 'CONSULTANTS' || member.type === 'Consultant') breakdown.consultants += cost;
+        else breakdown.other += cost;
       }
     });
 
     const phaseCosts = projectCosts.filter(c => c.phaseId === phase.id);
     const addedCost = phaseCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
     totalCost += addedCost;
+    
+    phaseCosts.forEach(c => {
+      const cost = c.quantity * c.unitCost;
+      if (c.type === 'consultant') breakdown.consultants += cost;
+      else breakdown.other += cost;
+    });
 
     return {
       phase,
       totalHours,
       totalCost,
+      breakdown,
     };
   });
 
@@ -226,7 +249,19 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
         {/* Fee Structure Table */}
         <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col rounded-xl">
           <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
-            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">FEE STRUCTURE</h4>
+            <div className="flex items-center gap-4">
+              <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">FEE STRUCTURE</h4>
+              
+              {/* Legend */}
+              <div className="hidden sm:flex items-center gap-3 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-600"></div>Management</div>
+                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-500"></div>Global</div>
+                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400"></div>Jakarta</div>
+                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-blue-300"></div>Other Team</div>
+                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-yellow-600"></div>Consultants</div>
+                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-slate-300"></div>Project Costs</div>
+              </div>
+            </div>
             <span className="font-bold text-blue-700 dark:text-blue-900 bg-yellow-300 px-2 py-0.5 rounded shadow-sm text-sm border border-yellow-400">
               ${projectTotalFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -241,6 +276,14 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                   const feeAmount = stat.totalCost * multiplier;
                   const percent = projectTotalFee > 0 ? (feeAmount / projectTotalFee) * 100 : 0;
                   
+                  // Compute breakdown percentages (relative to phase total cost)
+                  const total = stat.totalCost || 1;
+                  const pMgmt = (stat.breakdown.management / total) * 100;
+                  const pGlobal = (stat.breakdown.global / total) * 100;
+                  const pJakarta = (stat.breakdown.jakarta / total) * 100;
+                  const pConsult = (stat.breakdown.consultants / total) * 100;
+                  const pOther = (stat.breakdown.other / total) * 100;
+
                   // Generate alternating pastel colors like the image
                   const colors = ['bg-green-200 border-green-300', 'bg-blue-200 border-blue-300', 'bg-pink-200 border-pink-300', 'bg-purple-200 border-purple-300', 'bg-yellow-200 border-yellow-300'];
                   const colorClass = colors[i % colors.length];
@@ -249,15 +292,26 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                   const darkColorClass = darkColors[i % darkColors.length];
 
                   return (
-                    <div key={stat.phase.id} className="flex text-sm">
-                      <div className="flex-1 px-3 py-2 font-semibold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 border-r-0 rounded-l">
-                        {stat.phase.name}
+                    <div key={stat.phase.id} className="flex flex-col text-sm border border-slate-200 dark:border-slate-700 rounded overflow-hidden">
+                      <div className="flex">
+                        <div className="flex-1 px-3 py-2 font-semibold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-950">
+                          {stat.phase.name}
+                        </div>
+                        <div className={`w-24 px-3 py-2 text-right font-medium text-slate-800 dark:text-slate-200 border-l ${colorClass} ${darkColorClass}`}>
+                          {percent.toFixed(2)}%
+                        </div>
+                        <div className={`w-36 px-3 py-2 text-right font-bold text-slate-900 dark:text-white border-l ${colorClass} ${darkColorClass}`}>
+                          ${feeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
                       </div>
-                      <div className={`w-24 px-3 py-2 text-right font-medium text-slate-800 dark:text-slate-200 border ${colorClass} ${darkColorClass} border-r-0`}>
-                        {percent.toFixed(2)}%
-                      </div>
-                      <div className={`w-36 px-3 py-2 text-right font-bold text-slate-900 dark:text-white border ${colorClass} ${darkColorClass} rounded-r`}>
-                        ${feeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      
+                      {/* Breakdown Bar */}
+                      <div className="h-4 w-full flex bg-slate-100 dark:bg-slate-800">
+                        {pMgmt > 0 && <div style={{width: `${pMgmt}%`}} className="bg-blue-600 transition-all hover:opacity-90" title={`Management: ${pMgmt.toFixed(1)}%`} />}
+                        {pGlobal > 0 && <div style={{width: `${pGlobal}%`}} className="bg-blue-500 transition-all hover:opacity-90" title={`Team Global: ${pGlobal.toFixed(1)}%`} />}
+                        {pJakarta > 0 && <div style={{width: `${pJakarta}%`}} className="bg-blue-400 transition-all hover:opacity-90" title={`Team Jakarta: ${pJakarta.toFixed(1)}%`} />}
+                        {pOther > 0 && <div style={{width: `${pOther}%`}} className="bg-blue-300 transition-all hover:opacity-90" title={`Other / Project Costs: ${pOther.toFixed(1)}%`} />}
+                        {pConsult > 0 && <div style={{width: `${pConsult}%`}} className="bg-yellow-600 transition-all hover:opacity-90" title={`Consultants: ${pConsult.toFixed(1)}%`} />}
                       </div>
                     </div>
                   );

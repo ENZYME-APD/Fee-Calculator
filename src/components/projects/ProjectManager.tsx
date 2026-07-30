@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase } from '@/lib/firebase/db';
 import { Project, Phase } from '@/lib/firebase/schema';
 import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser } from 'lucide-react';
+import { PaymentScheduleManager } from './PaymentScheduleManager';
 
 export function ProjectManager() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -150,9 +151,9 @@ export function ProjectManager() {
   if (loading) return <div className="p-8 text-slate-500">Loading projects...</div>;
 
   return (
-    <div className="flex h-full gap-6 max-w-7xl mx-auto w-full p-8">
+    <div className="flex h-full gap-6 mx-auto w-full p-8" style={{ maxWidth: '1600px' }}>
       {/* Projects List */}
-      <div className="w-1/3 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors">
+      <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors">
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
           <h2 className="font-bold text-xl text-slate-800 dark:text-slate-100">Projects</h2>
         </div>
@@ -196,7 +197,7 @@ export function ProjectManager() {
               >
                 <div className="flex items-center gap-3 overflow-hidden pr-2">
                   <Folder size={20} className={`shrink-0 ${activeProjectId === p.id ? "text-blue-600 dark:text-blue-400 fill-blue-100 dark:fill-blue-900" : "text-slate-400 dark:text-slate-500"}`} />
-                  <span className={`font-semibold truncate ${activeProjectId === p.id ? "text-blue-900 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"}`}>{p.name}</span>
+                  <span title={p.name} className={`font-semibold text-sm truncate ${activeProjectId === p.id ? "text-blue-900 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"}`}>{p.name}</span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={(e) => p.id && handleDuplicateProject(p.id, e)} title="Duplicate Project" className="text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/50 rounded-md transition-colors">
@@ -272,14 +273,14 @@ export function ProjectManager() {
                   }
 
                   return (
-                    <div key={phase.id} className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl flex justify-between items-center bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all group">
-                      <div className="flex items-center gap-4 overflow-hidden pr-2">
-                        <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono text-xs px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 shrink-0 transition-colors">#{phase.order}</div>
-                        <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{phase.name}</span>
+                    <div key={phase.id} className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col gap-3 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all group">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 shrink-0 transition-colors mt-0.5">#{phase.order}</div>
+                        <span title={phase.name} className="font-bold text-sm text-slate-800 dark:text-slate-200 leading-snug">{phase.name}</span>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-sm font-semibold bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 mr-2 transition-colors">
-                          <Clock size={16} />
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs font-semibold bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded border border-slate-100 dark:border-slate-700 transition-colors">
+                          <Clock size={14} />
                           {phase.durationWeeks} {phase.durationWeeks === 1 ? 'week' : 'weeks'}
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -307,6 +308,16 @@ export function ProjectManager() {
           </div>
         )}
       </div>
+
+      {/* Payment Schedule Manager */}
+      {activeProjectId ? (
+        <PaymentScheduleManager projectId={activeProjectId} phases={phases} />
+      ) : (
+        <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors items-center justify-center text-slate-400">
+           <Folder size={48} className="text-slate-200 dark:text-slate-800 mb-4" />
+           <p>Select a project to manage its payment schedule.</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,18 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { TeamMember } from '@/lib/firebase/schema';
-import { Pencil, Trash2, ChevronDown, ChevronRight, Folder } from 'lucide-react';
+import { Pencil, Trash2, ChevronDown, ChevronRight, Folder, Edit3 } from 'lucide-react';
 import { getCategoryOrder } from '@/lib/utils';
+import { BulkEditTeamModal } from './BulkEditTeamModal';
 
 interface TeamTableProps {
   members: TeamMember[];
   onEdit: (member: TeamMember) => void;
   onDelete: (id: string) => void;
   onBulkDelete?: (ids: string[]) => void;
+  onBulkEdit?: (ids: string[], updates: Partial<TeamMember>) => void;
 }
 
-export function TeamTable({ members, onEdit, onDelete, onBulkDelete }: TeamTableProps) {
+export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit }: TeamTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
 
   const membersByCategory = useMemo(() => {
     const groups: Record<string, TeamMember[]> = {};
@@ -32,6 +35,17 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete }: TeamTable
   };
 
   const isExpanded = (cat: string) => expandedCategories[cat] !== false;
+
+  const toggleAllFolders = () => {
+    const categories = Object.keys(membersByCategory);
+    const allCurrentlyExpanded = categories.every(cat => isExpanded(cat));
+    
+    const newState: Record<string, boolean> = {};
+    categories.forEach(cat => {
+      newState[cat] = !allCurrentlyExpanded;
+    });
+    setExpandedCategories(newState);
+  };
 
   const toggleSelectGroup = (cat: string) => {
     const catMembers = membersByCategory[cat] || [];
@@ -79,18 +93,34 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete }: TeamTable
     }
   };
 
+  const handleBulkEditSave = (updates: Partial<TeamMember>) => {
+    if (onBulkEdit && selectedIds.size > 0 && Object.keys(updates).length > 0) {
+      onBulkEdit(Array.from(selectedIds), updates);
+    }
+    setIsBulkEditOpen(false);
+    setSelectedIds(new Set());
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
         <div className="bg-blue-50 dark:bg-blue-900/30 px-6 py-3 flex items-center justify-between border-b border-blue-100 dark:border-blue-900/50 shrink-0">
           <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">{selectedIds.size} member{selectedIds.size > 1 ? 's' : ''} selected</span>
-          <button 
-            onClick={handleBulkDelete}
-            className="text-sm font-medium bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-900/30 px-4 py-1.5 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
-          >
-            <Trash2 size={16} /> Delete Selected
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsBulkEditOpen(true)}
+              className="text-sm font-medium bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/30 px-4 py-1.5 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
+            >
+              <Edit3 size={16} /> Edit Selected
+            </button>
+            <button 
+              onClick={handleBulkDelete}
+              className="text-sm font-medium bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-900/30 px-4 py-1.5 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
+            >
+              <Trash2 size={16} /> Delete Selected
+            </button>
+          </div>
         </div>
       )}
       
@@ -104,9 +134,21 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete }: TeamTable
                   checked={selectedIds.size === members.length && members.length > 0}
                   onChange={toggleSelectAll}
                   className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  title="Select All"
                 />
               </th>
-              <th className="px-4 py-3 font-semibold whitespace-nowrap">Name</th>
+              <th className="px-4 py-3 font-semibold whitespace-nowrap">
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={toggleAllFolders} 
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    title="Toggle All Folders"
+                  >
+                    <Folder size={14} />
+                  </button>
+                  Name
+                </div>
+              </th>
               <th className="px-4 py-3 font-semibold">Position</th>
               <th className="px-4 py-3 font-semibold">Category</th>
               <th className="px-4 py-3 font-semibold">Type</th>
@@ -195,6 +237,13 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete }: TeamTable
           </tbody>
         </table>
       </div>
+
+      <BulkEditTeamModal 
+        isOpen={isBulkEditOpen}
+        onClose={() => setIsBulkEditOpen(false)}
+        onSave={handleBulkEditSave}
+        selectedCount={selectedIds.size}
+      />
     </div>
   );
 }

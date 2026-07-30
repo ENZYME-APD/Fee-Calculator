@@ -48,3 +48,12 @@ export interface ProjectCost {
   quantity: number;
   unitCost: number;
 }
+
+export interface Payment {
+  id?: string;
+  projectId: string;
+  phaseId?: string;
+  name: string;
+  percentage: number;
+  order: number;
+}
