@@ -64,6 +64,8 @@ export const deleteProject = async (id: string) => {
 };
 
 export const duplicateProject = async (id: string, includeAllocations: boolean = true): Promise<string> => {
+  const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
+
   // 1. Fetch source project
   const projectSnap = await getDocs(query(collection(db, 'projects')));
   const project = projectSnap.docs.map(extractData).find((p: any) => p.id === id) as Project;
@@ -86,12 +88,12 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
   const newProjectRef = doc(collection(db, 'projects'));
   const newProjectId = newProjectRef.id;
   
-  batch.set(newProjectRef, {
+  batch.set(newProjectRef, sanitize({
     name: `${project.name} (Copy)`,
     description: project.description || '',
     profitMargin: project.profitMargin || 30,
     createdAt: Date.now()
-  });
+  }));
 
   const phaseIdMap = new Map<string, string>();
   
@@ -102,7 +104,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
     phaseIdMap.set(oldPhaseId, newPhaseRef.id);
     
     const { id: _ignore, projectId: _ignore2, ...phaseData } = phase;
-    batch.set(newPhaseRef, { ...phaseData, projectId: newProjectId });
+    batch.set(newPhaseRef, sanitize({ ...phaseData, projectId: newProjectId }));
   }
 
   // 5. Duplicate allocations (Optional)
@@ -112,7 +114,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
       if (newPhaseId) {
         const newAllocRef = doc(collection(db, 'allocations'));
         const { id: _ignore, phaseId: _ignore2, ...allocData } = alloc;
-        batch.set(newAllocRef, { ...allocData, phaseId: newPhaseId });
+        batch.set(newAllocRef, sanitize({ ...allocData, phaseId: newPhaseId }));
       }
     }
 
@@ -122,7 +124,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
       if (newPhaseId) {
         const newCostRef = doc(collection(db, 'projectCosts'));
         const { id: _ignore, projectId: _ignore2, phaseId: _ignore3, ...costData } = cost;
-        batch.set(newCostRef, { ...costData, projectId: newProjectId, phaseId: newPhaseId });
+        batch.set(newCostRef, sanitize({ ...costData, projectId: newProjectId, phaseId: newPhaseId }));
       }
     }
   }
@@ -135,7 +137,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
     if (phaseId && phaseIdMap.has(phaseId)) {
       newPhaseId = phaseIdMap.get(phaseId);
     }
-    batch.set(newPaymentRef, { ...paymentData, projectId: newProjectId, phaseId: newPhaseId });
+    batch.set(newPaymentRef, sanitize({ ...paymentData, projectId: newProjectId, phaseId: newPhaseId }));
   }
 
   await batch.commit();
