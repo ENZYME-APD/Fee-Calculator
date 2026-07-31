@@ -85,7 +85,7 @@ export function BillingTab({ company }: { company: Company }) {
           <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-6 hover:border-blue-500 transition-colors">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Monthly Plan</h3>
             <div className="my-4 flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold text-slate-900 dark:text-white">$10</span>
+              <span className="text-4xl font-extrabold text-slate-900 dark:text-white">$9.99</span>
               <span className="text-slate-500 font-medium">/month</span>
             </div>
             <ul className="space-y-3 mb-8 text-sm text-slate-600 dark:text-slate-300">
@@ -100,12 +100,15 @@ export function BillingTab({ company }: { company: Company }) {
             >
               {loading === process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY ? 'Loading...' : 'Subscribe Monthly'}
             </button>
+            <p className="text-center text-xs text-slate-500 mt-4 font-medium">
+              Use code <span className="font-bold text-slate-700 dark:text-slate-300">FIRST50</span> for 50% off!
+            </p>
           </div>
 
           {/* Yearly */}
           <div className="border-2 border-blue-600 rounded-2xl p-6 relative bg-blue-50/50 dark:bg-blue-900/10">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-1 text-xs font-bold rounded-full">
-              SAVE 50%
+              SAVE 58%
             </div>
             <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">Yearly Plan</h3>
             <div className="my-4 flex items-baseline gap-1">
@@ -115,7 +118,7 @@ export function BillingTab({ company }: { company: Company }) {
             <ul className="space-y-3 mb-8 text-sm text-slate-600 dark:text-slate-300">
               <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-emerald-500"/> All Monthly Features</li>
               <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-emerald-500"/> Priority Support</li>
-              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-emerald-500"/> 2 Months Free equivalent</li>
+              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-emerald-500"/> 7 Months Free equivalent</li>
             </ul>
             <button
               onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY!)}
@@ -124,6 +127,9 @@ export function BillingTab({ company }: { company: Company }) {
             >
               {loading === process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY ? 'Loading...' : 'Subscribe Yearly'}
             </button>
+            <p className="text-center text-xs text-blue-600 dark:text-blue-400 mt-4 font-medium">
+              Use code <span className="font-bold bg-blue-100 dark:bg-blue-900/50 px-1.5 py-0.5 rounded text-blue-800 dark:text-blue-200">FIRST50</span> at checkout to get 50% off!
+            </p>
           </div>
         </div>
       )}

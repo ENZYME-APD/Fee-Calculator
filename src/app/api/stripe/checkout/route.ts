@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       metadata: {
         companyId, // We pass this so the webhook knows which company paid
       },
+      allow_promotion_codes: true,
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings?canceled=true`,
     });

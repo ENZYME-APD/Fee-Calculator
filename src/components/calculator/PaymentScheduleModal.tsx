@@ -92,24 +92,51 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
     document.body.removeChild(link);
   };
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = () => {
     const element = document.getElementById('payment-schedule-content');
     if (!element) return;
     
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      const opt: any = {
-        margin:       0.5,
-        filename:     `${project.name.replace(/\s+/g, '_')}_Payment_Schedule.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, windowWidth: 1200 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
 
-      html2pdf().set(opt).from(element).save();
-    } catch (err) {
-      console.error("PDF Export failed", err);
-    }
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    const headHtml = document.head.innerHTML;
+    
+    doc.write(`
+      <html>
+        <head>
+          ${headHtml}
+          <style>
+            @media print {
+              @page { margin: 0.5in; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
+            }
+          </style>
+        </head>
+        <body class="p-8 bg-white text-slate-900">
+          <div style="max-width: 1200px; margin: 0 auto;">
+            ${element.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }, 500);
   };
 
   return (
@@ -141,8 +168,8 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/50" id="payment-schedule-content">
-          <div className="max-w-5xl mx-auto p-8">
+        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/50">
+          <div className="max-w-5xl mx-auto p-8" id="payment-schedule-content">
           
           {/* TIMELINE DIAGRAM */}
           <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm flex flex-col rounded-xl overflow-hidden mb-6">

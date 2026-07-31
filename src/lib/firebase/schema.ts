@@ -77,7 +77,7 @@ export interface ProjectCost {
   companyId: string;
   projectId: string;
   phaseId: string;
-  type: 'rendering' | 'trip' | 'consultant';
+  type: 'rendering' | 'trip' | 'consultant' | 'other';
   name: string;
   quantity: number;
   unitCost: number;

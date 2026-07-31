@@ -1,14 +1,14 @@
 "use client";
-import React, { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase/config';
-import { doc, setDoc } from 'firebase/firestore';
+import React, { useState, Suspense } from 'react';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
+import { auth, db, googleProvider } from '@/lib/firebase/config';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getInviteByToken, deleteInvite } from '@/lib/firebase/db';
 import { Invite } from '@/lib/firebase/schema';
 import { Building2, Users } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginContent() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -126,8 +126,62 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        if (inviteData) {
+          await setDoc(userDocRef, {
+            email: user.email,
+            companyId: inviteData.companyId,
+            role: inviteData.role
+          }, { merge: true });
+          if (inviteData.id) await deleteInvite(inviteData.id);
+        }
+        router.push('/');
+      } else {
+        if (inviteData) {
+          await setDoc(userDocRef, {
+            email: user.email,
+            companyId: inviteData.companyId,
+            role: inviteData.role
+          });
+          if (inviteData.id) await deleteInvite(inviteData.id);
+        } else {
+          const cName = companyName.trim() || `${user.displayName || 'My'} Workspace`;
+          const companyId = crypto.randomUUID();
+          const isEnzymeEmail = user.email?.toLowerCase().endsWith('@weareenzyme.com');
+          
+          await setDoc(doc(db, 'companies', companyId), {
+            name: cName,
+            subscriptionStatus: isEnzymeEmail ? 'lifetime' : 'trialing',
+            trialEndsAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+            createdAt: Date.now()
+          });
+
+          await setDoc(userDocRef, {
+            email: user.email,
+            companyId,
+            role: 'admin'
+          });
+        }
+        router.push('/');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google Sign-in failed.');
+    }
+    setLoading(false);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+    <div className="min-h-screen w-full flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
       <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 p-8">
         <div className="flex justify-center mb-8">
           <div className="bg-blue-600 p-3 rounded-2xl">
@@ -208,6 +262,25 @@ export default function LoginPage() {
           >
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : (inviteData ? 'Accept Invite & Join' : 'Start Free Trial'))}
           </button>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white dark:bg-slate-900 text-slate-500">Or continue with</span>
+            </div>
+          </div>
+
+          <button 
+            type="button" 
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-bold py-3 px-4 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors disabled:opacity-50"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)"><path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/><path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/><path fill="#FBBC05" d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.724 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z"/><path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"/></g></svg>
+            Google
+          </button>
         </form>
 
         {!inviteData && !isResetting && (
@@ -256,5 +329,13 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-500">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

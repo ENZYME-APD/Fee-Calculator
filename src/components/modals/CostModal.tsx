@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Phase, ProjectCost } from '@/lib/firebase/schema';
-import { X, Palette, Plane, Briefcase } from 'lucide-react';
+import { X, Palette, Plane, Briefcase, Receipt } from 'lucide-react';
 
 interface CostModalProps {
   isOpen: boolean;
-  type: 'rendering' | 'trip' | 'consultant' | null;
+  type: 'rendering' | 'trip' | 'consultant' | 'other' | null;
   phase: Phase | null;
   initialData?: ProjectCost | null;
   onClose: () => void;
@@ -32,6 +32,9 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
       } else if (type === 'consultant') {
         setName('Landscape Consultant');
         setUnitCost(0);
+      } else if (type === 'other') {
+        setName('Software / Miscellaneous');
+        setUnitCost(0);
       }
       
       setQuantity(1);
@@ -53,18 +56,20 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
     onClose();
   };
 
-  const isLumpSum = type === 'consultant';
+  const isLumpSum = type === 'consultant' || type === 'other';
 
   const icons = {
     rendering: <Palette className="text-pink-500" size={24} />,
     trip: <Plane className="text-sky-500" size={24} />,
-    consultant: <Briefcase className="text-purple-500" size={24} />
+    consultant: <Briefcase className="text-purple-500" size={24} />,
+    other: <Receipt className="text-emerald-500" size={24} />
   };
 
   const titles = {
     rendering: 'Add Rendering Cost',
     trip: 'Add Trip Cost',
-    consultant: 'Add Consultant'
+    consultant: 'Add Consultant',
+    other: 'Add Other Cost'
   };
 
   return (
@@ -88,7 +93,7 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
         <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-slate-50/50 dark:bg-slate-950/50">
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              {type === 'consultant' ? 'Consultant Name / Service' : 'Description'}
+              {type === 'consultant' ? 'Consultant Name / Service' : type === 'other' ? 'Expense Description' : 'Description'}
             </label>
             <input 
               required 

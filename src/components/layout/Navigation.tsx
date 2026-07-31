@@ -3,21 +3,33 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Calculator, Users, FolderKanban, Moon, Sun, LogOut, Settings } from 'lucide-react';
+import { Calculator, Users, FolderKanban, Moon, Sun, LogOut, Settings, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { auth } from '@/lib/firebase/config';
+import { auth, db } from '@/lib/firebase/config';
 import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 export function Navigation() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { user, dbUser } = useAuth();
   const [mounted, setMounted] = React.useState(false);
+  const [isLifetime, setIsLifetime] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  React.useEffect(() => {
+    if (dbUser?.companyId) {
+      getDoc(doc(db, 'companies', dbUser.companyId)).then(snap => {
+        if (snap.exists() && snap.data().subscriptionStatus === 'lifetime') {
+          setIsLifetime(true);
+        }
+      });
+    }
+  }, [dbUser?.companyId]);
   
   if (pathname === '/login') return null;
 
@@ -25,6 +37,7 @@ export function Navigation() {
     { name: 'Projects & Phases', href: '/projects', icon: FolderKanban },
     { name: 'Fee Proposal', href: '/dashboard', icon: Calculator },
     { name: 'Team Resources', href: '/team', icon: Users },
+    { name: 'Documentation', href: '/wiki', icon: BookOpen },
     { name: 'Settings & Billing', href: '/settings', icon: Settings },
   ];
   
@@ -59,7 +72,10 @@ export function Navigation() {
         {user && (
           <div className="px-4 py-2 mb-2">
             <p className="text-xs text-slate-400 truncate">{user.email}</p>
-            {dbUser && <p className="text-[10px] font-bold text-blue-400 mt-0.5 uppercase tracking-wider">{dbUser.role}</p>}
+            <div className="flex items-center gap-2 mt-0.5">
+              {dbUser && <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{dbUser.role}</p>}
+              {isLifetime && <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-400/30 tracking-widest shadow-sm">UNLIMITED</span>}
+            </div>
           </div>
         )}
         

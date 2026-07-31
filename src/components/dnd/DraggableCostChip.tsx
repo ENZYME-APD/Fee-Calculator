@@ -1,10 +1,10 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Palette, Plane, Briefcase, GripVertical } from 'lucide-react';
+import { Palette, Plane, Briefcase, GripVertical, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DraggableCostChipProps {
-  type: 'rendering' | 'trip' | 'consultant';
+  type: 'rendering' | 'trip' | 'consultant' | 'other';
 }
 
 export function DraggableCostChip({ type }: DraggableCostChipProps) {
@@ -21,7 +21,8 @@ export function DraggableCostChip({ type }: DraggableCostChipProps) {
   const config = {
     rendering: { label: 'Rendering', icon: Palette, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-50', border: 'border-pink-100 dark:border-pink-900/30', iconBg: 'bg-pink-100 dark:bg-pink-500/10' },
     trip: { label: 'Trip', icon: Plane, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50', border: 'border-sky-100 dark:border-sky-900/30', iconBg: 'bg-sky-100 dark:bg-sky-500/10' },
-    consultant: { label: 'Consultant', icon: Briefcase, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50', border: 'border-purple-100 dark:border-purple-900/30', iconBg: 'bg-purple-100 dark:bg-purple-500/10' }
+    consultant: { label: 'Consultant', icon: Briefcase, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50', border: 'border-purple-100 dark:border-purple-900/30', iconBg: 'bg-purple-100 dark:bg-purple-500/10' },
+    other: { label: 'Other Expense', icon: Receipt, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50', border: 'border-emerald-100 dark:border-emerald-900/30', iconBg: 'bg-emerald-100 dark:bg-emerald-500/10' }
   };
 
   const style = config[type];

@@ -132,24 +132,51 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
     document.body.removeChild(link);
   };
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = () => {
     const element = document.getElementById('project-summary-content');
     if (!element) return;
     
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      const opt: any = {
-        margin:       0.5,
-        filename:     `${project.name.replace(/\s+/g, '_')}_Fee_Proposal.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, windowWidth: 1200 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
 
-      html2pdf().set(opt).from(element).save();
-    } catch (err) {
-      console.error("PDF Export failed", err);
-    }
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    const headHtml = document.head.innerHTML;
+    
+    doc.write(`
+      <html>
+        <head>
+          ${headHtml}
+          <style>
+            @media print {
+              @page { margin: 0.5in; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
+            }
+          </style>
+        </head>
+        <body class="p-8 bg-white text-slate-900">
+          <div style="max-width: 1200px; margin: 0 auto;">
+            ${element.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }, 500);
   };
 
   return (
@@ -180,11 +207,11 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto flex gap-6 flex-col lg:flex-row bg-slate-50 dark:bg-slate-950" id="project-summary-content">
+        {/* Scrollable Content */}
+        <div className="p-6 overflow-y-auto flex gap-6 flex-col lg:flex-row bg-slate-50 dark:bg-slate-950">
         
         {/* Cost Summary Table */}
-        <div className="flex-[1.2] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col rounded-xl">
+        <div className="flex-[1.2] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col rounded-xl" id="project-summary-content">
           <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
             <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">COST SUMMARY</h4>
             <div className="flex items-center gap-2">

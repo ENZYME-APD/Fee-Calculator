@@ -93,7 +93,7 @@ export default function LandingPage() {
             
             {/* Early Adopter Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-sm font-bold shadow-sm">
-              ✨ 50% Off for 1 Year for the First 50 Subscribers! ✨
+              ✨ Use code <span className="bg-amber-200 dark:bg-amber-800 px-1.5 py-0.5 rounded text-amber-900 dark:text-amber-200">FIRST50</span> for 50% Off! (First 50 users) ✨
             </div>
           </div>
           
@@ -109,7 +109,7 @@ export default function LandingPage() {
                   <span className="text-5xl font-extrabold text-slate-900 dark:text-white">$9.99</span>
                   <span className="text-slate-500 font-medium pb-1">/month</span>
                 </div>
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-bold">Only $4.99/mo for the first 50 users!</p>
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-bold">Only $4.99/mo with code FIRST50</p>
               </div>
               
               <ul className="space-y-4 mb-8 flex-1">
@@ -146,8 +146,8 @@ export default function LandingPage() {
                   <span className="text-5xl font-extrabold text-white">$49.90</span>
                   <span className="text-slate-400 font-medium pb-1">/year</span>
                 </div>
-                <p className="text-sm text-emerald-400 font-bold">Only $24.95/yr for the first 50 users!</p>
-                <p className="text-xs text-slate-400 mt-1">That's just $4.15 per month!</p>
+                <p className="text-sm text-emerald-400 font-bold">Only $24.95/yr with code FIRST50</p>
+                <p className="text-xs text-slate-400 mt-1">That's just $2.08 per month!</p>
               </div>
               
               <ul className="space-y-4 mb-8 flex-1">
