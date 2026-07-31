@@ -134,98 +134,98 @@ export default function Home() {
   return (
     <div className="h-full flex flex-col relative bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       {/* Project Selector Bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center gap-4 z-30 shrink-0 shadow-sm transition-colors duration-300">
-        <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Project</span>
-        <select 
-          className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors"
-          value={activeProject?.id || ''}
-          onChange={(e) => setActiveProject(projects.find(p => p.id === e.target.value) || null)}
-        >
-          {projects.map(p => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
-        
-        <div className="flex items-center gap-3">
-          {activeProject && (
-            <>
-              <button 
-                onClick={handleExportJSON}
-                className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm"
-                title="Export to JSON"
-              >
-                <Download size={16} />
-                <span className="text-sm">Save</span>
-              </button>
-              
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm"
-                title="Import from JSON"
-              >
-                <Upload size={16} />
-                <span className="text-sm">Load</span>
-              </button>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleImportJSON} 
-                accept=".json" 
-                className="hidden" 
-              />
+        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center gap-4 z-30 shrink-0 shadow-sm transition-colors duration-300">
+          <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Project</span>
+          <select 
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors"
+            value={activeProject?.id || ''}
+            onChange={(e) => setActiveProject(projects.find(p => p.id === e.target.value) || null)}
+          >
+            {projects.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          
+          <div className="flex items-center gap-3">
+            {activeProject && (
+              <>
+                <button 
+                  onClick={handleExportJSON}
+                  className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                  title="Export to JSON"
+                >
+                  <Download size={16} />
+                  <span className="text-sm">Save</span>
+                </button>
+                
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                  title="Import from JSON"
+                >
+                  <Upload size={16} />
+                  <span className="text-sm">Load</span>
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImportJSON} 
+                  accept=".json" 
+                  className="hidden" 
+                />
 
-              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
 
-              <button 
-                onClick={() => setIsScheduleOpen(true)}
-                className="flex items-center gap-2 bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600/20 transition-colors shadow-sm"
-              >
-                <FileSpreadsheet size={18} />
-                <span>Payment Schedule</span>
-              </button>
+                <button 
+                  onClick={() => setIsScheduleOpen(true)}
+                  className="flex items-center gap-2 bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-lg font-semibold hover:bg-emerald-600/20 transition-colors shadow-sm"
+                >
+                  <FileSpreadsheet size={18} />
+                  <span>Payment Schedule</span>
+                </button>
 
-              <button 
-                onClick={() => setIsSummaryOpen(true)}
-                className="flex items-center gap-2 bg-slate-800 dark:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-slate-700 dark:hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                <Folder size={18} className="text-blue-400 dark:text-blue-100" />
-                <span>Financial Summary</span>
-              </button>
-            </>
-          )}
+                <button 
+                  onClick={() => setIsSummaryOpen(true)}
+                  className="flex items-center gap-2 bg-slate-800 dark:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-slate-700 dark:hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  <Folder size={18} className="text-blue-400 dark:text-blue-100" />
+                  <span>Financial Summary</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-      
-      <div className="flex-1 overflow-hidden relative">
-        <AppLayout 
-          members={members} 
-          phases={phases} 
-          allocations={allocations} 
-          projectCosts={projectCosts}
-          onAllocationAdded={handleAllocationAdded}
-        />
-        {activeProject && isSummaryOpen && (
-          <ProjectSummary 
-            project={activeProject} 
+        
+        <div className="flex-1 overflow-hidden relative">
+          <AppLayout 
+            members={members} 
             phases={phases} 
             allocations={allocations} 
-            members={members} 
             projectCosts={projectCosts}
-            onProjectUpdated={loadData}
-            onClose={() => setIsSummaryOpen(false)}
+            onAllocationAdded={handleAllocationAdded}
           />
-        )}
-        {activeProject && isScheduleOpen && (
-          <PaymentScheduleModal 
-            project={activeProject} 
-            phases={phases} 
-            allocations={allocations} 
-            members={members} 
-            projectCosts={projectCosts}
-            payments={payments}
-            onClose={() => setIsScheduleOpen(false)}
-          />
-        )}
+          {activeProject && isSummaryOpen && (
+            <ProjectSummary 
+              project={activeProject} 
+              phases={phases} 
+              allocations={allocations} 
+              members={members} 
+              projectCosts={projectCosts}
+              onProjectUpdated={loadData}
+              onClose={() => setIsSummaryOpen(false)}
+            />
+          )}
+          {activeProject && isScheduleOpen && (
+            <PaymentScheduleModal 
+              project={activeProject} 
+              phases={phases} 
+              allocations={allocations} 
+              members={members} 
+              projectCosts={projectCosts}
+              payments={payments}
+              onClose={() => setIsScheduleOpen(false)}
+            />
+          )}
       </div>
     </div>
   );

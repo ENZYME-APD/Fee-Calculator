@@ -1,28 +1,76 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc } from 'firebase/firestore';
 import { db } from './config';
-import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment } from './schema';
+import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite } from './schema';
 
 const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
 const extractData = (docSnap: DocumentData) => ({ id: docSnap.id, ...docSnap.data() });
 
+let currentCompanyId: string | null = null;
+export const setDbCompanyId = (id: string | null) => {
+  currentCompanyId = id;
+};
+
+const requireCompanyId = () => {
+  if (!currentCompanyId) throw new Error("No companyId set. User must be authenticated.");
+  return currentCompanyId;
+};
+
+// --- Companies ---
+export const getCompany = async (id: string): Promise<any> => {
+  const docRef = doc(db, 'companies', id);
+  const snap = await getDoc(docRef);
+  if (!snap.exists()) return null;
+  return extractData(snap);
+};
+
+export const updateCompany = async (id: string, updates: any) => {
+  const docRef = doc(db, 'companies', id);
+  await updateDoc(docRef, sanitize(updates));
+};
+
+// --- Invites ---
+export const createInvite = async (invite: Omit<Invite, 'id'>) => {
+  const docRef = await addDoc(collection(db, 'invites'), sanitize(invite));
+  return docRef.id;
+};
+
+export const getInviteByToken = async (token: string): Promise<Invite | null> => {
+  const q = query(collection(db, 'invites'), where('token', '==', token));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return extractData(snap.docs[0]) as Invite;
+};
+
+export const deleteInvite = async (id: string) => {
+  await deleteDoc(doc(db, 'invites', id));
+};
+
+export const getInvitesByCompany = async (): Promise<Invite[]> => {
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'invites'), where('companyId', '==', companyId));
+  const snap = await getDocs(q);
+  return snap.docs.map(extractData) as Invite[];
+};
+
 // --- Team Members ---
 export const getTeamMembers = async (): Promise<TeamMember[]> => {
-  const q = query(collection(db, 'teamMembers'));
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'teamMembers'), where('companyId', '==', companyId));
   const snap = await getDocs(q);
   return snap.docs.map(extractData) as TeamMember[];
 };
 
 export const addTeamMember = async (member: Omit<TeamMember, 'id'>) => {
-  const docRef = await addDoc(collection(db, 'teamMembers'), member);
+  const docRef = await addDoc(collection(db, 'teamMembers'), sanitize({ ...member, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
 export const batchAddTeamMembers = async (members: Omit<TeamMember, 'id'>[]) => {
   const batch = writeBatch(db);
   for (const member of members) {
-    const docRef = doc(collection(db, 'teamMembers'));
-    batch.set(docRef, member as DocumentData);
+    const newRef = doc(collection(db, 'teamMembers'));
+    batch.set(newRef, sanitize({ ...member, companyId: requireCompanyId() }));
   }
   await batch.commit();
 };
@@ -46,13 +94,14 @@ export const deleteTeamMember = async (id: string) => {
 
 // --- Projects ---
 export const getProjects = async (): Promise<Project[]> => {
-  const q = query(collection(db, 'projects'));
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'projects'), where('companyId', '==', companyId));
   const snap = await getDocs(q);
   return snap.docs.map(extractData) as Project[];
 };
 
 export const addProject = async (project: Omit<Project, 'id'>) => {
-  const docRef = await addDoc(collection(db, 'projects'), project);
+  const docRef = await addDoc(collection(db, 'projects'), sanitize({ ...project, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
@@ -67,7 +116,8 @@ export const deleteProject = async (id: string) => {
 
 export const duplicateProject = async (id: string, includeAllocations: boolean = true): Promise<string> => {
   // 1. Fetch source project
-  const projectSnap = await getDocs(query(collection(db, 'projects')));
+  const companyId = requireCompanyId();
+  const projectSnap = await getDocs(query(collection(db, 'projects'), where('companyId', '==', companyId)));
   const project = projectSnap.docs.map(extractData).find((p: any) => p.id === id) as Project;
   if (!project) throw new Error("Project not found");
 
@@ -76,7 +126,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
   const projectCosts = await getProjectCosts(id);
   const payments = await getPayments(id);
   
-  const allocationsSnap = await getDocs(query(collection(db, 'allocations')));
+  const allocationsSnap = await getDocs(query(collection(db, 'allocations'), where('companyId', '==', companyId)));
   const allAllocations = allocationsSnap.docs.map(extractData) as Allocation[];
   
   const phaseIds = phases.map(p => p.id!);
@@ -92,6 +142,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
     name: `${project.name} (Copy)`,
     description: project.description || '',
     profitMargin: project.profitMargin || 30,
+    companyId: requireCompanyId(),
     createdAt: Date.now()
   }));
 
@@ -104,7 +155,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
     phaseIdMap.set(oldPhaseId, newPhaseRef.id);
     
     const { id: _ignore, projectId: _ignore2, ...phaseData } = phase;
-    batch.set(newPhaseRef, sanitize({ ...phaseData, projectId: newProjectId }));
+    batch.set(newPhaseRef, sanitize({ ...phaseData, projectId: newProjectId, companyId: companyId }));
   }
 
   // 5. Duplicate allocations (Optional)
@@ -114,7 +165,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
       if (newPhaseId) {
         const newAllocRef = doc(collection(db, 'allocations'));
         const { id: _ignore, phaseId: _ignore2, ...allocData } = alloc;
-        batch.set(newAllocRef, sanitize({ ...allocData, phaseId: newPhaseId }));
+        batch.set(newAllocRef, sanitize({ ...allocData, phaseId: newPhaseId, companyId: companyId }));
       }
     }
 
@@ -124,7 +175,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
       if (newPhaseId) {
         const newCostRef = doc(collection(db, 'projectCosts'));
         const { id: _ignore, projectId: _ignore2, phaseId: _ignore3, ...costData } = cost;
-        batch.set(newCostRef, sanitize({ ...costData, projectId: newProjectId, phaseId: newPhaseId }));
+        batch.set(newCostRef, sanitize({ ...costData, projectId: newProjectId, phaseId: newPhaseId, companyId: companyId }));
       }
     }
   }
@@ -137,7 +188,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
     if (phaseId && phaseIdMap.has(phaseId)) {
       newPhaseId = phaseIdMap.get(phaseId);
     }
-    batch.set(newPaymentRef, sanitize({ ...paymentData, projectId: newProjectId, phaseId: newPhaseId }));
+    batch.set(newPaymentRef, sanitize({ ...paymentData, projectId: newProjectId, phaseId: newPhaseId, companyId: companyId }));
   }
 
   await batch.commit();
@@ -146,15 +197,16 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
 
 // --- Phases ---
 export const getPhases = async (projectId?: string): Promise<Phase[]> => {
+  const companyId = requireCompanyId();
   const q = projectId 
-    ? query(collection(db, 'phases'), where('projectId', '==', projectId))
-    : query(collection(db, 'phases'));
+    ? query(collection(db, 'phases'), where('projectId', '==', projectId), where('companyId', '==', companyId))
+    : query(collection(db, 'phases'), where('companyId', '==', companyId));
   const snap = await getDocs(q);
   return snap.docs.map(extractData) as Phase[];
 };
 
 export const addPhase = async (phase: Omit<Phase, 'id'>) => {
-  const docRef = await addDoc(collection(db, 'phases'), phase);
+  const docRef = await addDoc(collection(db, 'phases'), sanitize({ ...phase, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
@@ -194,13 +246,14 @@ export const clearPhase = async (phaseId: string) => {
 
 // Project Costs
 export const getProjectCosts = async (projectId: string) => {
-  const q = query(collection(db, 'projectCosts'), where('projectId', '==', projectId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProjectCost));
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'projectCosts'), where('projectId', '==', projectId), where('companyId', '==', companyId));
+  const snap = await getDocs(q);
+  return snap.docs.map(extractData) as ProjectCost[];
 };
 
 export const addProjectCost = async (cost: Omit<ProjectCost, 'id'>) => {
-  const docRef = await addDoc(collection(db, 'projectCosts'), cost);
+  const docRef = await addDoc(collection(db, 'projectCosts'), sanitize({ ...cost, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
@@ -215,16 +268,18 @@ export const deleteProjectCost = async (id: string) => {
 export const importProjectData = async (data: any) => {
   const { project, phases, allocations, projectCosts, payments } = data;
   const batch = writeBatch(db);
+  const companyId = requireCompanyId();
   
   // 1. Create new project
   const newProjectRef = doc(collection(db, 'projects'));
   const newProjectId = newProjectRef.id;
-  batch.set(newProjectRef, {
+  batch.set(newProjectRef, sanitize({
     name: `${project.name} (Imported)`,
     description: project.description || '',
     createdAt: Date.now(),
-    profitMargin: project.profitMargin || 30
-  });
+    profitMargin: project.profitMargin || 30,
+    companyId
+  }));
 
   // 2. Create phases and map old IDs to new IDs
   const phaseIdMap = new Map<string, string>();
@@ -232,24 +287,24 @@ export const importProjectData = async (data: any) => {
     const oldId = phase.id;
     const newPhaseRef = doc(collection(db, 'phases'));
     phaseIdMap.set(oldId, newPhaseRef.id);
-    batch.set(newPhaseRef, {
+    batch.set(newPhaseRef, sanitize({
       projectId: newProjectId,
       name: phase.name,
       description: phase.description || '',
       durationWeeks: phase.durationWeeks || 1,
-      order: phase.order || 1
-    });
+      order: phase.order || 1,
+      companyId
+    }));
   }
 
   // 3. Create allocations
   for (const alloc of allocations) {
-    const oldId = alloc.id;
     const { id, phaseId, ...allocData } = alloc;
     const newPhaseId = phaseIdMap.get(phaseId);
     
     if (newPhaseId) {
       const newAllocRef = doc(collection(db, 'allocations'));
-      batch.set(newAllocRef, { ...allocData, phaseId: newPhaseId });
+      batch.set(newAllocRef, sanitize({ ...allocData, phaseId: newPhaseId, companyId }));
     }
   }
   
@@ -260,7 +315,7 @@ export const importProjectData = async (data: any) => {
       const newPhaseId = phaseIdMap.get(phaseId);
       if (newPhaseId) {
         const newCostRef = doc(collection(db, 'projectCosts'));
-        batch.set(newCostRef, { ...costData, projectId: newProjectId, phaseId: newPhaseId });
+        batch.set(newCostRef, sanitize({ ...costData, projectId: newProjectId, phaseId: newPhaseId, companyId }));
       }
     }
   }
@@ -285,13 +340,14 @@ export const importProjectData = async (data: any) => {
 
 // --- Allocations ---
 export const getAllocations = async (): Promise<Allocation[]> => {
-  const q = query(collection(db, 'allocations'));
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'allocations'), where('companyId', '==', companyId));
   const snap = await getDocs(q);
   return snap.docs.map(extractData) as Allocation[];
 };
 
 export const addAllocation = async (allocation: Omit<Allocation, 'id'>) => {
-  const docRef = await addDoc(collection(db, 'allocations'), allocation);
+  const docRef = await addDoc(collection(db, 'allocations'), sanitize({ ...allocation, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
@@ -305,13 +361,14 @@ export const deleteAllocation = async (id: string) => {
 
 // --- Payments ---
 export const getPayments = async (projectId: string): Promise<Payment[]> => {
-  const q = query(collection(db, 'payments'), where('projectId', '==', projectId));
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'payments'), where('projectId', '==', projectId), where('companyId', '==', companyId));
   const snap = await getDocs(q);
   return snap.docs.map(extractData) as Payment[];
 };
 
 export const addPayment = async (payment: Omit<Payment, 'id'>) => {
-  const docRef = await addDoc(collection(db, 'payments'), sanitize(payment));
+  const docRef = await addDoc(collection(db, 'payments'), sanitize({ ...payment, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
@@ -327,7 +384,7 @@ export const batchAddPayments = async (payments: Omit<Payment, 'id'>[]) => {
   const batch = writeBatch(db);
   for (const payment of payments) {
     const newRef = doc(collection(db, 'payments'));
-    batch.set(newRef, sanitize(payment));
+    batch.set(newRef, sanitize({ ...payment, companyId: requireCompanyId() }));
   }
   await batch.commit();
 };

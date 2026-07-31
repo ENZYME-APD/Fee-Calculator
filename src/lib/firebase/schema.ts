@@ -1,5 +1,34 @@
+export interface Company {
+  id?: string;
+  name: string;
+  logoUrl?: string;
+  subscriptionStatus: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'lifetime';
+  trialEndsAt?: number;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  createdAt: number;
+}
+
+export interface User {
+  uid: string;
+  email: string;
+  companyId: string;
+  role: 'admin' | 'member' | 'viewer';
+  displayName?: string;
+}
+
+export interface Invite {
+  id?: string;
+  email: string;
+  companyId: string;
+  role: 'admin' | 'member' | 'viewer';
+  token: string;
+  createdAt: number;
+}
+
 export interface TeamMember {
   id?: string;
+  companyId: string;
   name: string;
   position: string;
   type: string; // 'Employee' | 'Consultant'
@@ -15,6 +44,7 @@ export interface TeamMember {
 
 export interface Project {
   id?: string;
+  companyId: string;
   name: string;
   description: string;
   createdAt: number;
@@ -23,6 +53,7 @@ export interface Project {
 
 export interface Phase {
   id?: string;
+  companyId: string;
   projectId: string;
   name: string;
   description: string;
@@ -32,6 +63,8 @@ export interface Phase {
 
 export interface Allocation {
   id?: string;
+  companyId: string;
+  projectId: string;
   phaseId: string;
   memberId: string;
   allocationType: 'hours' | 'percentage' | 'weeks';
@@ -41,6 +74,7 @@ export interface Allocation {
 
 export interface ProjectCost {
   id?: string;
+  companyId: string;
   projectId: string;
   phaseId: string;
   type: 'rendering' | 'trip' | 'consultant';
@@ -51,6 +85,7 @@ export interface ProjectCost {
 
 export interface Payment {
   id?: string;
+  companyId: string;
   projectId: string;
   phaseId?: string;
   name: string;

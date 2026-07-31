@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/layout/Navigation";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/lib/auth/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,10 +34,14 @@ export default function RootLayout({
     >
       <body className="h-screen flex bg-slate-50 dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-100 transition-colors duration-300">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <Navigation />
-          <main className="flex-1 overflow-hidden h-full relative flex flex-col">
-            {children}
-          </main>
+          <AuthProvider>
+            <Navigation />
+            <main className="flex-1 overflow-hidden h-full relative flex flex-col">
+              <ProtectedRoute>
+                {children}
+              </ProtectedRoute>
+            </main>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
