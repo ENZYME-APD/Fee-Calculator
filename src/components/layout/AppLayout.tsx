@@ -106,12 +106,13 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
     }
   };
 
-  const handleSaveAllocation = async (allocationData: Omit<Allocation, 'id' | 'phaseId' | 'memberId'>) => {
+  const handleSaveAllocation = async (allocationData: Omit<Allocation, 'id' | 'phaseId' | 'memberId' | 'companyId' | 'projectId'>) => {
     if (pendingAllocation && pendingAllocation.phase.id && pendingAllocation.member.id) {
       if (pendingAllocation.existing && pendingAllocation.existing.id) {
         await updateAllocation(pendingAllocation.existing.id, allocationData);
       } else {
         await addAllocation({
+          projectId: pendingAllocation.phase.projectId,
           phaseId: pendingAllocation.phase.id,
           memberId: pendingAllocation.member.id,
           ...allocationData
@@ -133,7 +134,7 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
     }
   };
 
-  const handleSaveCost = async (costData: Omit<ProjectCost, 'id' | 'phaseId' | 'projectId'>) => {
+  const handleSaveCost = async (costData: Omit<ProjectCost, 'id' | 'phaseId' | 'projectId' | 'companyId'>) => {
     if (pendingCost && pendingCost.phase.id && pendingCost.phase.projectId) {
       await addProjectCost({
         projectId: pendingCost.phase.projectId,

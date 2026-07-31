@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import * as admin from 'firebase-admin';
+import { getApps, initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin (safe to call multiple times in dev)
-if (!admin.apps.length) {
+if (!getApps().length) {
   try {
     const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (serviceAccountStr) {
-      admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(serviceAccountStr)),
+      initializeApp({
+        credential: cert(JSON.parse(serviceAccountStr)),
       });
     } else {
       console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is missing. Webhooks won't be able to update DB.");
@@ -18,10 +19,10 @@ if (!admin.apps.length) {
   }
 }
 
-const db = admin.apps.length ? admin.firestore() : null;
+const db = getApps().length ? getFirestore() : null;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2024-06-20' as any,
 });
 
 export async function POST(req: Request) {

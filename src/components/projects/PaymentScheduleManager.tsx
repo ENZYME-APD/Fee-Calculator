@@ -148,7 +148,7 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
     
     await clearPayments(projectId);
     
-    const newPayments: Omit<Payment, 'id'>[] = [];
+    const newPayments: Omit<Payment, 'id' | 'companyId'>[] = [];
     let order = 1;
     
     // 1. Mobilisation
@@ -201,7 +201,7 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
     
     await clearPayments(projectId);
     
-    const newPayments: Omit<Payment, 'id'>[] = [];
+    const newPayments: Omit<Payment, 'id' | 'companyId'>[] = [];
     let order = 1;
     
     newPayments.push({

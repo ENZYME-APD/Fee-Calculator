@@ -61,12 +61,12 @@ export const getTeamMembers = async (): Promise<TeamMember[]> => {
   return snap.docs.map(extractData) as TeamMember[];
 };
 
-export const addTeamMember = async (member: Omit<TeamMember, 'id'>) => {
+export const addTeamMember = async (member: Omit<TeamMember, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'teamMembers'), sanitize({ ...member, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
-export const batchAddTeamMembers = async (members: Omit<TeamMember, 'id'>[]) => {
+export const batchAddTeamMembers = async (members: Omit<TeamMember, 'id' | 'companyId'>[]) => {
   const batch = writeBatch(db);
   for (const member of members) {
     const newRef = doc(collection(db, 'teamMembers'));
@@ -75,8 +75,8 @@ export const batchAddTeamMembers = async (members: Omit<TeamMember, 'id'>[]) => 
   await batch.commit();
 };
 
-export const updateTeamMember = async (id: string, updates: Partial<TeamMember>) => {
-  await updateDoc(doc(db, 'teamMembers', id), updates);
+export const updateTeamMember = async (id: string, updates: Partial<Omit<TeamMember, 'id' | 'companyId'>>) => {
+  await updateDoc(doc(db, 'teamMembers', id), sanitize(updates) as any);
 };
 
 export const batchUpdateTeamMembers = async (updates: {id: string, data: Partial<TeamMember>}[]) => {
@@ -100,14 +100,14 @@ export const getProjects = async (): Promise<Project[]> => {
   return snap.docs.map(extractData) as Project[];
 };
 
-export const addProject = async (project: Omit<Project, 'id'>) => {
+export const addProject = async (project: Omit<Project, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'projects'), sanitize({ ...project, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
-export const updateProject = async (id: string, project: Partial<Project>) => {
+export const updateProject = async (id: string, project: Partial<Omit<Project, 'id' | 'companyId'>>) => {
   const docRef = doc(db, 'projects', id);
-  await updateDoc(docRef, project as DocumentData);
+  await updateDoc(docRef, sanitize(project) as any);
 };
 
 export const deleteProject = async (id: string) => {
@@ -205,14 +205,14 @@ export const getPhases = async (projectId?: string): Promise<Phase[]> => {
   return snap.docs.map(extractData) as Phase[];
 };
 
-export const addPhase = async (phase: Omit<Phase, 'id'>) => {
+export const addPhase = async (phase: Omit<Phase, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'phases'), sanitize({ ...phase, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
-export const updatePhase = async (id: string, phase: Partial<Phase>) => {
+export const updatePhase = async (id: string, phase: Partial<Omit<Phase, 'id' | 'companyId'>>) => {
   const docRef = doc(db, 'phases', id);
-  await updateDoc(docRef, phase as DocumentData);
+  await updateDoc(docRef, sanitize(phase) as any);
 };
 
 export const deletePhase = async (id: string) => {
@@ -252,13 +252,13 @@ export const getProjectCosts = async (projectId: string) => {
   return snap.docs.map(extractData) as ProjectCost[];
 };
 
-export const addProjectCost = async (cost: Omit<ProjectCost, 'id'>) => {
+export const addProjectCost = async (cost: Omit<ProjectCost, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'projectCosts'), sanitize({ ...cost, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
-export const updateProjectCost = async (id: string, updates: Partial<ProjectCost>) => {
-  await updateDoc(doc(db, 'projectCosts', id), updates);
+export const updateProjectCost = async (id: string, cost: Partial<Omit<ProjectCost, 'id' | 'companyId'>>) => {
+  await updateDoc(doc(db, 'projectCosts', id), sanitize(cost) as any);
 };
 
 export const deleteProjectCost = async (id: string) => {
@@ -329,7 +329,7 @@ export const importProjectData = async (data: any) => {
         newPhaseId = phaseIdMap.get(phaseId);
       }
       const newPaymentRef = doc(collection(db, 'payments'));
-      batch.set(newPaymentRef, { ...paymentData, projectId: newProjectId, phaseId: newPhaseId });
+      batch.set(newPaymentRef, sanitize({ ...paymentData, projectId: newProjectId, phaseId: newPhaseId, companyId }));
     }
   }
 
@@ -346,13 +346,13 @@ export const getAllocations = async (): Promise<Allocation[]> => {
   return snap.docs.map(extractData) as Allocation[];
 };
 
-export const addAllocation = async (allocation: Omit<Allocation, 'id'>) => {
+export const addAllocation = async (allocation: Omit<Allocation, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'allocations'), sanitize({ ...allocation, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
-export const updateAllocation = async (id: string, updates: Partial<Allocation>) => {
-  await updateDoc(doc(db, 'allocations', id), updates);
+export const updateAllocation = async (id: string, allocation: Partial<Omit<Allocation, 'id' | 'companyId'>>) => {
+  await updateDoc(doc(db, 'allocations', id), sanitize(allocation) as any);
 };
 
 export const deleteAllocation = async (id: string) => {
@@ -367,20 +367,20 @@ export const getPayments = async (projectId: string): Promise<Payment[]> => {
   return snap.docs.map(extractData) as Payment[];
 };
 
-export const addPayment = async (payment: Omit<Payment, 'id'>) => {
+export const addPayment = async (payment: Omit<Payment, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'payments'), sanitize({ ...payment, companyId: requireCompanyId() }));
   return docRef.id;
 };
 
-export const updatePayment = async (id: string, updates: Partial<Payment>) => {
-  await updateDoc(doc(db, 'payments', id), sanitize(updates) as any);
+export const updatePayment = async (id: string, payment: Partial<Omit<Payment, 'id' | 'companyId'>>) => {
+  await updateDoc(doc(db, 'payments', id), sanitize(payment) as any);
 };
 
 export const deletePayment = async (id: string) => {
   await deleteDoc(doc(db, 'payments', id));
 };
 
-export const batchAddPayments = async (payments: Omit<Payment, 'id'>[]) => {
+export const batchAddPayments = async (payments: Omit<Payment, 'id' | 'companyId'>[]) => {
   const batch = writeBatch(db);
   for (const payment of payments) {
     const newRef = doc(collection(db, 'payments'));

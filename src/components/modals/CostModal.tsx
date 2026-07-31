@@ -8,7 +8,7 @@ interface CostModalProps {
   phase: Phase | null;
   initialData?: ProjectCost | null;
   onClose: () => void;
-  onSave: (costData: Omit<ProjectCost, 'id' | 'phaseId' | 'projectId'>) => Promise<void>;
+  onSave: (data: Omit<ProjectCost, 'id' | 'projectId' | 'phaseId' | 'companyId'>) => Promise<void>;
 }
 
 export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }: CostModalProps) {

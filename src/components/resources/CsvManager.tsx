@@ -52,7 +52,7 @@ export function CsvManager({ onComplete }: CsvManagerProps) {
         }
 
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        const newMembers: Omit<TeamMember, 'id'>[] = [];
+        const newMembers: Omit<TeamMember, 'id' | 'companyId'>[] = [];
 
         for (let i = 1; i < lines.length; i++) {
           // Simple CSV parse handling comma separation

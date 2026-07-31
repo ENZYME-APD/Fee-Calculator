@@ -8,7 +8,7 @@ interface AllocationModalProps {
   phase: Phase | null;
   initialData?: Allocation | null;
   onClose: () => void;
-  onSave: (allocation: Omit<Allocation, 'id' | 'phaseId' | 'memberId'>) => void;
+  onSave: (data: Omit<Allocation, 'id' | 'phaseId' | 'memberId' | 'companyId' | 'projectId'>) => void;
 }
 
 export function AllocationModal({ isOpen, member, phase, initialData, onClose, onSave }: AllocationModalProps) {
