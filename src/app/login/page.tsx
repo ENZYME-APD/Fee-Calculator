@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
 import { doc, setDoc } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [companyName, setCompanyName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite');
@@ -46,25 +48,43 @@ export default function LoginPage() {
       } else {
         // Sign up
         if (!inviteData && !companyName.trim()) throw new Error("Company name is required");
-        
-        // 1. Create user in Firebase Auth
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        
+        // 1. Check if we have invite data
         if (inviteData) {
-          // Join existing company
-          await setDoc(doc(db, 'users', userCred.user.uid), {
-            email,
-            companyId: inviteData.companyId,
-            role: inviteData.role
-          });
+          try {
+            // Try to create the user first
+            const userCred = await createUserWithEmailAndPassword(auth, email, password);
+            await setDoc(doc(db, 'users', userCred.user.uid), {
+              email,
+              companyId: inviteData.companyId,
+              role: inviteData.role
+            });
+          } catch (err: any) {
+            if (err.code === 'auth/email-already-in-use') {
+              // User exists, try signing them in
+              const userCred = await signInWithEmailAndPassword(auth, email, password);
+              // Update their user doc to join the new company
+              await setDoc(doc(db, 'users', userCred.user.uid), {
+                email,
+                companyId: inviteData.companyId,
+                role: inviteData.role
+              });
+            } else {
+              throw err;
+            }
+          }
+          
+          // Delete invite regardless
           if (inviteData.id) {
             await deleteInvite(inviteData.id);
           }
         } else {
-          // 2. Create the company in Firestore
-          const companyRef = doc(db, 'companies', userCred.user.uid);
-          const companyId = crypto.randomUUID();
+          // Normal Sign up (No invite)
+          if (!companyName.trim()) throw new Error("Company name is required");
           
+          const userCred = await createUserWithEmailAndPassword(auth, email, password);
+          
+          // 2. Create the company in Firestore
+          const companyId = crypto.randomUUID();
           const isEnzymeEmail = email.toLowerCase().endsWith('@weareenzyme.com');
           
           await setDoc(doc(db, 'companies', companyId), {
@@ -81,11 +101,27 @@ export default function LoginPage() {
             role: 'admin'
           });
         }
-
         router.push('/');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
+    }
+    setLoading(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetSent(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email.');
     }
     setLoading(false);
   };
@@ -100,10 +136,10 @@ export default function LoginPage() {
         </div>
         
         <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-2">
-          {isLogin ? 'Welcome back' : (inviteData ? 'Accept your invite' : 'Create your workspace')}
+          {isResetting ? 'Reset Password' : isLogin ? 'Welcome back' : (inviteData ? 'Accept your invite' : 'Create your workspace')}
         </h2>
         <p className="text-center text-slate-500 dark:text-slate-400 mb-8">
-          {isLogin ? 'Sign in to access your fee proposals.' : (inviteData ? `Create a password for ${email}` : 'Start your 7-day free trial today.')}
+          {isResetting ? 'Enter your email to receive a reset link.' : isLogin ? 'Sign in to access your fee proposals.' : (inviteData ? `Create a password for ${email}` : 'Start your 7-day free trial today.')}
         </p>
 
         {error && (
@@ -112,7 +148,15 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {resetSent && (
+          <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-3 rounded-xl text-sm font-medium mb-6 text-center">
+            Password reset email sent! Check your inbox.
+          </div>
+        )}
+
+        {!isResetting ? (
+          <>
+            <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && !inviteData && (
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Company Name</label>
@@ -139,7 +183,14 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+              {isLogin && (
+                <button type="button" onClick={() => { setIsResetting(true); setError(''); setResetSent(false); }} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                  Forgot password?
+                </button>
+              )}
+            </div>
             <input 
               type="password" 
               required 
@@ -159,7 +210,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {!inviteData && (
+        {!inviteData && !isResetting && (
           <div className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button 
@@ -170,6 +221,38 @@ export default function LoginPage() {
               {isLogin ? 'Sign up' : 'Log in'}
             </button>
           </div>
+        )}
+          </>
+        ) : (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+              <input 
+                type="email" 
+                required 
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
+                placeholder="you@company.com"
+              />
+            </div>
+            <button 
+              type="submit" 
+              disabled={loading || resetSent}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 mt-2"
+            >
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </button>
+            <div className="mt-6 text-center text-sm">
+              <button 
+                type="button" 
+                onClick={() => { setIsResetting(false); setError(''); setResetSent(false); }}
+                className="text-slate-500 dark:text-slate-400 font-medium hover:text-slate-800 dark:hover:text-slate-200"
+              >
+                ← Back to login
+              </button>
+            </div>
+          </form>
         )}
       </div>
     </div>

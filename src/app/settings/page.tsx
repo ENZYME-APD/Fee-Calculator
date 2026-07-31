@@ -5,11 +5,12 @@ import { getCompany } from '@/lib/firebase/db';
 import { Company } from '@/lib/firebase/schema';
 import { BillingTab } from '@/components/settings/BillingTab';
 import { TeamTab } from '@/components/settings/TeamTab';
+import { SecurityTab } from '@/components/settings/SecurityTab';
 
 export default function SettingsPage() {
   const { dbUser } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
-  const [activeTab, setActiveTab] = useState<'billing' | 'team' | 'general'>('billing');
+  const [activeTab, setActiveTab] = useState<'billing' | 'team' | 'security'>('billing');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,12 +56,21 @@ export default function SettingsPage() {
             >
               Team Management
             </button>
+            <button
+              onClick={() => setActiveTab('security')}
+              className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                activeTab === 'security' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              Security
+            </button>
           </nav>
         </div>
 
         <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
           {activeTab === 'billing' && company && <BillingTab company={company} />}
           {activeTab === 'team' && company && <TeamTab company={company} />}
+          {activeTab === 'security' && <SecurityTab />}
         </div>
       </div>
     </div>
