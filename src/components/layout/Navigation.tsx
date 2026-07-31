@@ -23,7 +23,7 @@ export function Navigation() {
 
   const navItems = [
     { name: 'Projects & Phases', href: '/projects', icon: FolderKanban },
-    { name: 'Fee Proposal', href: '/', icon: Calculator },
+    { name: 'Fee Proposal', href: '/dashboard', icon: Calculator },
     { name: 'Team Resources', href: '/team', icon: Users },
     { name: 'Settings & Billing', href: '/settings', icon: Settings },
   ];
@@ -31,8 +31,8 @@ export function Navigation() {
   return (
     <div className="w-64 bg-slate-900 dark:bg-slate-950 text-slate-300 flex flex-col h-screen shrink-0 border-r border-slate-800 z-50 transition-colors duration-300">
       <div className="p-6 pb-2">
-        <h1 className="text-xl font-bold text-white tracking-tight">Enzyme APD</h1>
-        <p className="text-xs text-slate-400 mt-1">Fee Calculator v2</p>
+        <img src="/logo-light.png" alt="Enzyme APD" className="h-8 w-auto mb-3" />
+        <p className="text-xs text-slate-400">Fee Calculator v2</p>
       </div>
       <nav className="flex-1 px-4 space-y-2 mt-6">
         {navItems.map((item) => {

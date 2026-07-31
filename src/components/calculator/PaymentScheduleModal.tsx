@@ -92,6 +92,26 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
     document.body.removeChild(link);
   };
 
+  const handleExportPDF = async () => {
+    const element = document.getElementById('payment-schedule-content');
+    if (!element) return;
+    
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const opt: any = {
+        margin:       0.5,
+        filename:     `${project.name.replace(/\s+/g, '_')}_Payment_Schedule.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, windowWidth: 1200 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF Export failed", err);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:p-12 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-slate-50 dark:bg-slate-950 w-full max-w-6xl max-h-full rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -110,17 +130,22 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
               <Download size={16} />
               <span>Export CSV</span>
             </button>
+            <button onClick={handleExportPDF} className="flex items-center gap-2 bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
+              <Download size={16} />
+              <span>Export PDF</span>
+            </button>
             <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-slate-700 transition-colors ml-2">
               <X size={24} />
             </button>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 bg-slate-50 dark:bg-slate-950 flex flex-col gap-6">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/50" id="payment-schedule-content">
+          <div className="max-w-5xl mx-auto p-8">
           
           {/* TIMELINE DIAGRAM */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm flex flex-col rounded-xl overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm flex flex-col rounded-xl overflow-hidden mb-6">
             <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
               <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">SCHEDULE TIMELINE</h4>
             </div>
@@ -263,6 +288,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>

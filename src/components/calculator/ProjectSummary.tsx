@@ -132,6 +132,26 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
     document.body.removeChild(link);
   };
 
+  const handleExportPDF = async () => {
+    const element = document.getElementById('project-summary-content');
+    if (!element) return;
+    
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const opt: any = {
+        margin:       0.5,
+        filename:     `${project.name.replace(/\s+/g, '_')}_Fee_Proposal.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, windowWidth: 1200 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF Export failed", err);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:p-12 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-slate-50 dark:bg-slate-950 w-full max-w-7xl max-h-full rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -150,6 +170,10 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
               <Download size={16} />
               <span>Export CSV</span>
             </button>
+            <button onClick={handleExportPDF} className="flex items-center gap-2 bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
+              <Download size={16} />
+              <span>Export PDF</span>
+            </button>
             <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-slate-700 transition-colors ml-2">
               <X size={24} />
             </button>
@@ -157,7 +181,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex gap-6 flex-col lg:flex-row bg-slate-50 dark:bg-slate-950">
+        <div className="p-6 overflow-y-auto flex gap-6 flex-col lg:flex-row bg-slate-50 dark:bg-slate-950" id="project-summary-content">
         
         {/* Cost Summary Table */}
         <div className="flex-[1.2] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col rounded-xl">

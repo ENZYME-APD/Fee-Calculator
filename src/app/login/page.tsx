@@ -101,7 +101,7 @@ export default function LoginPage() {
             role: 'admin'
           });
         }
-        router.push('/');
+        router.push('/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
