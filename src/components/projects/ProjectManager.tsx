@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase } from '@/lib/firebase/db';
 import { Project, Phase } from '@/lib/firebase/schema';
-import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator } from 'lucide-react';
+import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown } from 'lucide-react';
 import { PaymentScheduleManager } from './PaymentScheduleManager';
 
 export function ProjectManager() {
@@ -150,6 +150,30 @@ export function ProjectManager() {
     }
   };
 
+  const handleMovePhase = async (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === phases.length - 1) return;
+
+    const newPhases = [...phases];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    // Swap
+    const temp = newPhases[index];
+    newPhases[index] = newPhases[targetIndex];
+    newPhases[targetIndex] = temp;
+    
+    // Update orders
+    newPhases[index].order = index + 1;
+    newPhases[targetIndex].order = targetIndex + 1;
+
+    // Optimistic update
+    setPhases([...newPhases]);
+
+    // DB update
+    if (newPhases[index].id) await updatePhase(newPhases[index].id!, { order: newPhases[index].order });
+    if (newPhases[targetIndex].id) await updatePhase(newPhases[targetIndex].id!, { order: newPhases[targetIndex].order });
+  };
+
   if (loading) return <div className="p-8 text-slate-500">Loading projects...</div>;
 
   return (
@@ -252,7 +276,7 @@ export function ProjectManager() {
                   <p>No phases added yet.</p>
                 </div>
               ) : (
-                phases.map(phase => {
+                phases.map((phase, index) => {
                   if (editingPhaseId === phase.id) {
                     return (
                       <div key={phase.id} className="p-3 border border-blue-300 dark:border-blue-700 rounded-xl bg-white dark:bg-slate-900 shadow-sm flex items-center gap-4 transition-colors">
@@ -298,6 +322,14 @@ export function ProjectManager() {
                           {phase.durationWeeks} {phase.durationWeeks === 1 ? 'week' : 'weeks'}
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex flex-col mr-1 border-r border-slate-200 dark:border-slate-700 pr-1">
+                            <button onClick={() => handleMovePhase(index, 'up')} disabled={index === 0} title="Move Up" className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:hover:text-slate-400 p-0.5 transition-colors">
+                              <ChevronUp size={14} />
+                            </button>
+                            <button onClick={() => handleMovePhase(index, 'down')} disabled={index === phases.length - 1} title="Move Down" className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-30 disabled:hover:text-slate-400 p-0.5 transition-colors">
+                              <ChevronDown size={14} />
+                            </button>
+                          </div>
                           <button onClick={() => phase.id && handleClearPhase(phase.id)} title="Clear all costs and resources" className="text-slate-400 dark:text-slate-500 hover:text-orange-600 dark:hover:text-orange-400 p-1.5 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors">
                             <Eraser size={16} />
                           </button>

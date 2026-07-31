@@ -1,6 +1,8 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot } from 'firebase/firestore';
 import { db } from './config';
 import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment } from './schema';
+
+const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
 const extractData = (docSnap: DocumentData) => ({ id: docSnap.id, ...docSnap.data() });
 
@@ -64,8 +66,6 @@ export const deleteProject = async (id: string) => {
 };
 
 export const duplicateProject = async (id: string, includeAllocations: boolean = true): Promise<string> => {
-  const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
-
   // 1. Fetch source project
   const projectSnap = await getDocs(query(collection(db, 'projects')));
   const project = projectSnap.docs.map(extractData).find((p: any) => p.id === id) as Project;
@@ -311,12 +311,12 @@ export const getPayments = async (projectId: string): Promise<Payment[]> => {
 };
 
 export const addPayment = async (payment: Omit<Payment, 'id'>) => {
-  const docRef = await addDoc(collection(db, 'payments'), payment);
+  const docRef = await addDoc(collection(db, 'payments'), sanitize(payment));
   return docRef.id;
 };
 
 export const updatePayment = async (id: string, updates: Partial<Payment>) => {
-  await updateDoc(doc(db, 'payments', id), updates);
+  await updateDoc(doc(db, 'payments', id), sanitize(updates) as any);
 };
 
 export const deletePayment = async (id: string) => {
@@ -327,7 +327,7 @@ export const batchAddPayments = async (payments: Omit<Payment, 'id'>[]) => {
   const batch = writeBatch(db);
   for (const payment of payments) {
     const newRef = doc(collection(db, 'payments'));
-    batch.set(newRef, payment);
+    batch.set(newRef, sanitize(payment));
   }
   await batch.commit();
 };
@@ -336,7 +336,7 @@ export const batchUpdatePayments = async (updates: {id: string, data: Partial<Pa
   const batch = writeBatch(db);
   for (const update of updates) {
     const docRef = doc(db, 'payments', update.id);
-    batch.update(docRef, update.data);
+    batch.update(docRef, sanitize(update.data) as any);
   }
   await batch.commit();
 };
