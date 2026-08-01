@@ -3,12 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase } from '@/lib/firebase/db';
 import { Project, Phase } from '@/lib/firebase/schema';
-import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown } from 'lucide-react';
+import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save } from 'lucide-react';
 import { PaymentScheduleManager } from './PaymentScheduleManager';
+import { useAuth } from '@/lib/auth/AuthContext';
 
-export function ProjectManager() {
+export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: boolean }) {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [templates, setTemplates] = useState<Project[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +22,8 @@ export function ProjectManager() {
   // Edit Project
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
+  const [editingProjectStatus, setEditingProjectStatus] = useState('Draft');
+  const [editingProjectStartDate, setEditingProjectStartDate] = useState(Date.now());
   
   // New Phase Form
   const [newPhaseName, setNewPhaseName] = useState('');
@@ -29,11 +34,18 @@ export function ProjectManager() {
   const [editingPhaseName, setEditingPhaseName] = useState('');
   const [editingPhaseDuration, setEditingPhaseDuration] = useState('');
 
+  const { dbUser } = useAuth();
+
   const loadProjects = async () => {
-    const data = await getProjects();
+    const ownerId = dbUser?.role !== 'admin' ? dbUser?.uid : undefined;
+    const data = await getProjects(isTemplateMode, ownerId);
     setProjects(data);
     if (data.length > 0 && !activeProjectId) {
       setActiveProjectId(data[0].id!);
+    }
+    if (!isTemplateMode) {
+      const templateData = await getProjects(true);
+      setTemplates(templateData);
     }
     setLoading(false);
   };
@@ -58,10 +70,19 @@ export function ProjectManager() {
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjectName.trim()) return;
-    const id = await addProject({ name: newProjectName, description: '', createdAt: Date.now() });
-    setNewProjectName('');
-    await loadProjects();
-    setActiveProjectId(id);
+    
+    if (!isTemplateMode && selectedTemplateId) {
+      const id = await duplicateProject(selectedTemplateId, true, newProjectName, false);
+      setNewProjectName('');
+      setSelectedTemplateId('');
+      await loadProjects();
+      setActiveProjectId(id);
+    } else {
+      const id = await addProject({ name: newProjectName, description: '', createdAt: Date.now(), isTemplate: isTemplateMode });
+      setNewProjectName('');
+      await loadProjects();
+      setActiveProjectId(id);
+    }
   };
 
   const handleDeleteProject = async (id: string, e: React.MouseEvent) => {
@@ -88,16 +109,37 @@ export function ProjectManager() {
     }
   };
 
+  const handleSaveAsTemplate = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const p = projects.find(proj => proj.id === id);
+    if (!p) return;
+    const name = window.prompt("Enter a name for this template:", `${p.name} Template`);
+    if (name) {
+      try {
+        await duplicateProject(id, true, name, true);
+        alert("Saved as template successfully! You can find it in Team Resources > Templates.");
+      } catch(err) {
+        alert("Failed to save template.");
+      }
+    }
+  };
+
   const handleEditProjectStart = (p: Project, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingProjectId(p.id!);
     setEditingProjectName(p.name);
+    setEditingProjectStatus(p.status || 'Draft');
+    setEditingProjectStartDate(p.startDate || Date.now());
   };
 
   const handleEditProjectSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingProjectId && editingProjectName.trim()) {
-      await updateProject(editingProjectId, { name: editingProjectName.trim() });
+      await updateProject(editingProjectId, { 
+        name: editingProjectName.trim(),
+        status: editingProjectStatus,
+        startDate: editingProjectStartDate
+      });
       await loadProjects();
     }
     setEditingProjectId(null);
@@ -181,18 +223,34 @@ export function ProjectManager() {
       {/* Projects List */}
       <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors">
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-          <h2 className="font-bold text-xl text-slate-800 dark:text-slate-100">Projects</h2>
+          <h2 className="font-bold text-xl text-slate-800 dark:text-slate-100">{isTemplateMode ? 'Project Templates' : 'Projects'}</h2>
         </div>
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 transition-colors">
-          <form onSubmit={handleCreateProject} className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="New project name..." 
-              value={newProjectName}
-              onChange={e => setNewProjectName(e.target.value)}
-              className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-            />
-            <button type="submit" disabled={!newProjectName} className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"><Plus size={18} /></button>
+          <form onSubmit={handleCreateProject} className="flex flex-col gap-3">
+            {!isTemplateMode && templates.length > 0 && (
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              >
+                <option value="">Blank Project</option>
+                <optgroup label="Templates">
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </optgroup>
+              </select>
+            )}
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                placeholder={isTemplateMode ? "New template name..." : "New project name..."}
+                value={newProjectName}
+                onChange={e => setNewProjectName(e.target.value)}
+                className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              />
+              <button type="submit" disabled={!newProjectName} className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"><Plus size={18} /></button>
+            </div>
           </form>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-1 bg-slate-50/30 dark:bg-slate-900/30 transition-colors">
@@ -200,16 +258,39 @@ export function ProjectManager() {
             if (editingProjectId === p.id) {
               return (
                 <div key={p.id} className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 shadow-sm transition-colors">
-                  <form onSubmit={handleEditProjectSave} className="flex items-center gap-2">
-                    <input 
-                      type="text" 
-                      autoFocus
-                      value={editingProjectName} 
-                      onChange={e => setEditingProjectName(e.target.value)} 
-                      className="flex-1 px-2 py-1 text-sm border-b border-blue-400 dark:border-blue-600 focus:outline-none font-semibold text-blue-900 dark:text-blue-300 bg-transparent"
-                    />
-                    <button type="button" onClick={() => setEditingProjectId(null)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><X size={16} /></button>
-                    <button type="submit" className="text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400"><Check size={16} /></button>
+                  <form onSubmit={handleEditProjectSave} className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="text" 
+                        autoFocus
+                        value={editingProjectName} 
+                        onChange={e => setEditingProjectName(e.target.value)} 
+                        className="flex-1 px-2 py-1 text-sm border-b border-blue-400 dark:border-blue-600 focus:outline-none font-semibold text-blue-900 dark:text-blue-300 bg-transparent"
+                      />
+                      <button type="button" onClick={() => setEditingProjectId(null)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><X size={16} /></button>
+                      <button type="submit" className="text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400"><Check size={16} /></button>
+                    </div>
+                    {!isTemplateMode && (
+                      <div className="flex gap-2 items-center text-xs">
+                        <select 
+                          value={editingProjectStatus} 
+                          onChange={e => setEditingProjectStatus(e.target.value)}
+                          className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        >
+                          <option value="Draft">Draft</option>
+                          <option value="Proposed">Proposed</option>
+                          <option value="Active">Active</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Lost">Lost</option>
+                        </select>
+                        <input 
+                          type="date" 
+                          value={new Date(editingProjectStartDate).toISOString().split('T')[0]}
+                          onChange={e => setEditingProjectStartDate(new Date(e.target.value).getTime())}
+                          className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        />
+                      </div>
+                    )}
                   </form>
                 </div>
               );
@@ -226,16 +307,23 @@ export function ProjectManager() {
                   <span title={p.name} className={`font-semibold text-sm truncate ${activeProjectId === p.id ? "text-blue-900 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"}`}>{p.name}</span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={(e) => { e.stopPropagation(); router.push(`/?project=${p.id}`); }} title="Open Fee Proposal" className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md transition-colors">
-                    <Calculator size={14} />
-                  </button>
-                  <button onClick={(e) => p.id && handleDuplicateProject(p.id, e)} title="Duplicate Project" className="text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/50 rounded-md transition-colors">
+                  {!isTemplateMode && (
+                    <button onClick={(e) => { e.stopPropagation(); router.push(`/?project=${p.id}`); }} title="Open Fee Proposal" className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md transition-colors">
+                      <Calculator size={14} />
+                    </button>
+                  )}
+                  <button onClick={(e) => p.id && handleDuplicateProject(p.id, e)} title={isTemplateMode ? "Duplicate Template" : "Duplicate Project"} className="text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/50 rounded-md transition-colors">
                     <Copy size={14} />
                   </button>
+                  {!isTemplateMode && (
+                    <button onClick={(e) => p.id && handleSaveAsTemplate(p.id, e)} title="Save as Template" className="text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 p-1.5 hover:bg-amber-50 dark:hover:bg-amber-900/50 rounded-md transition-colors">
+                      <Save size={14} />
+                    </button>
+                  )}
                   <button onClick={(e) => handleEditProjectStart(p, e)} title="Edit Name" className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md transition-colors">
                     <Pencil size={14} />
                   </button>
-                  <button onClick={(e) => p.id && handleDeleteProject(p.id, e)} title="Delete Project" className="text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/50 rounded-md transition-colors">
+                  <button onClick={(e) => p.id && handleDeleteProject(p.id, e)} title="Delete" className="text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/50 rounded-md transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>

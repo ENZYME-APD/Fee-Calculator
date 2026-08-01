@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import { Project, Phase, Allocation, TeamMember, ProjectCost, Payment } from '@/lib/firebase/schema';
+import { useAppSettings } from '@/lib/auth/AuthContext';
 import { FileSpreadsheet, X, Download } from 'lucide-react';
 
 interface PaymentScheduleModalProps {
@@ -14,6 +15,7 @@ interface PaymentScheduleModalProps {
 }
 
 export function PaymentScheduleModal({ project, phases, allocations, members, projectCosts = [], payments, onClose }: PaymentScheduleModalProps) {
+  const { formatCurrency } = useAppSettings();
   // Compute Total Fee
   const phaseStats = phases.map(phase => {
     const phaseAllocations = allocations.filter(a => a.phaseId === phase.id);
@@ -61,7 +63,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
   const handleExportCSV = () => {
     const rows = [
       ['PAYMENT SCHEDULE', project.name.toUpperCase()],
-      ['Total Project Fee', `$${projectTotalFee.toFixed(2)}`],
+      ['Total Project Fee', formatCurrency(projectTotalFee)],
       [],
       ['Order', 'Payment Stage', 'Phase Link', '% Value', 'Fee Amount']
     ];
@@ -74,12 +76,12 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
         payment.name,
         linkedPhase ? linkedPhase.name : '-',
         `${payment.percentage}%`,
-        `$${feeAmount.toFixed(2)}`
+        formatCurrency(feeAmount)
       ]);
     });
 
     rows.push([]);
-    rows.push(['Total', '', '', `${totalPercentage}%`, `$${((totalPercentage / 100) * projectTotalFee).toFixed(2)}`]);
+    rows.push(['Total', '', '', `${totalPercentage}%`, formatCurrency((totalPercentage / 100) * projectTotalFee)]);
 
     const csvContent = rows.map(e => e.map(cell => `"${cell}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -149,7 +151,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
             <FileSpreadsheet size={20} className="text-emerald-400" />
             <h3 className="font-bold tracking-wider text-lg">PAYMENT SCHEDULE</h3>
             <span className="text-sm font-bold bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full border border-blue-500/30 ml-4 hidden sm:inline-block">
-              Total Fee: ${projectTotalFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              Total Fee: {formatCurrency(projectTotalFee)}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -219,7 +221,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                               <span className="text-[8px] font-medium opacity-50 mb-1">W{weekNum}</span>
                               <div className="mt-auto flex flex-col justify-end gap-0.5 w-full">
                                 {paymentsThisWeek.map(p => (
-                                  <div key={p.id} className={`w-full border rounded py-0.5 px-0.5 flex flex-col items-center shadow-sm cursor-help transition-transform hover:scale-110 ${phaseColors.bright}`} title={`${p.name} - $${((p.percentage / 100) * projectTotalFee).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}>
+                                  <div key={p.id} className={`w-full border rounded py-0.5 px-0.5 flex flex-col items-center shadow-sm cursor-help transition-transform hover:scale-110 ${phaseColors.bright}`} title={`${p.name} - ${formatCurrency((p.percentage / 100) * projectTotalFee, 0)}`}>
                                     <span className="text-[9px] font-extrabold leading-none">{p.percentage}%</span>
                                   </div>
                                 ))}
@@ -291,7 +293,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                              </span>
                           </td>
                           <td className="px-4 py-3 text-right font-bold text-slate-800 dark:text-slate-200 text-base">
-                            ${feeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {formatCurrency(feeAmount)}
                           </td>
                         </tr>
                       );
@@ -310,7 +312,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                     {totalPercentage.toFixed(2)}%
                   </div>
                   <div className="text-xl text-blue-700 dark:text-blue-400">
-                    ${((totalPercentage / 100) * projectTotalFee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatCurrency((totalPercentage / 100) * projectTotalFee)}
                   </div>
                 </div>
               </div>

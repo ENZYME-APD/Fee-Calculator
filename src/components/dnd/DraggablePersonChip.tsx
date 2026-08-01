@@ -3,12 +3,14 @@ import { useDraggable } from '@dnd-kit/core';
 import { GripVertical } from 'lucide-react';
 import { TeamMember } from '@/lib/firebase/schema';
 import { cn, getInitials } from '@/lib/utils';
+import { useAppSettings } from '@/lib/auth/AuthContext';
 
 interface DraggablePersonChipProps {
   member: TeamMember;
 }
 
 export function DraggablePersonChip({ member }: DraggablePersonChipProps) {
+  const { formatCurrency } = useAppSettings();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `person-${member.id}`,
     data: {
@@ -44,7 +46,7 @@ export function DraggablePersonChip({ member }: DraggablePersonChipProps) {
         <div className="flex items-center gap-2">
           <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">{member.role}</p>
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
-            ${member.costPerHour.toLocaleString(undefined, { maximumFractionDigits: 0 })}/h
+            {formatCurrency(member.costPerHour, 0)}/h
           </span>
         </div>
       </div>

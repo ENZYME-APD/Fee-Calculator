@@ -1,8 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
-import { TeamMember } from '@/lib/firebase/schema';
-import { addTeamMember, updateTeamMember } from '@/lib/firebase/db';
-import { X } from 'lucide-react';
+import { TeamMember, TeamCategory } from '@/lib/firebase/schema';
+import { addTeamMember, updateTeamMember, getCategories } from '@/lib/firebase/db';
+import { useAppSettings } from '@/lib/auth/AuthContext';
+import { X, Save, UserCircle2, Briefcase, Calculator, Building, Tag } from 'lucide-react';
 
 interface TeamMemberFormProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface TeamMemberFormProps {
 }
 
 export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMemberFormProps) {
+  const { currencyCode } = useAppSettings();
   const [formData, setFormData] = useState<Partial<TeamMember>>({
     name: '',
     position: '',
@@ -26,7 +28,15 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
   
   const [loading, setLoading] = useState(false);
 
+  const [categories, setCategories] = useState<TeamCategory[]>([]);
+
   useEffect(() => {
+    if (isOpen) {
+      getCategories().then(data => {
+        setCategories(data.sort((a, b) => a.order - b.order));
+      });
+    }
+    
     if (initialData) {
       setFormData(initialData);
     } else {
@@ -95,29 +105,25 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
             
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
-              <input 
-                type="text" 
-                list="member-categories" 
-                value={formData.category || ''} 
-                onChange={e => setFormData({...formData, category: e.target.value})} 
-                placeholder="e.g. MANAGEMENT"
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
-              />
-              <datalist id="member-categories">
-                <option value="MANAGEMENT" />
-                <option value="TEAM GLOBAL" />
-                <option value="TEAM JAKARTA" />
-                <option value="CONSULTANTS" />
-              </datalist>
+              <select
+                value={formData.category || ''}
+                onChange={e => setFormData({...formData, category: e.target.value})}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              >
+                <option value="">-- Select Category --</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.name}>{cat.name}</option>
+                ))}
+              </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monthly Salary</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monthly Salary ({currencyCode})</label>
               <input required type="number" min="0" value={formData.salary === 0 ? '' : formData.salary} onChange={e => handleFinancialChange('salary', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monthly Overheads</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monthly Overheads ({currencyCode})</label>
               <input required type="number" min="0" value={formData.overheads === 0 ? '' : formData.overheads} onChange={e => handleFinancialChange('overheads', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
             </div>
 

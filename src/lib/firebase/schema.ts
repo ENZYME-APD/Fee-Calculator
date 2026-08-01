@@ -6,6 +6,8 @@ export interface Company {
   trialEndsAt?: number;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
+  currency?: string;
+  areaUnit?: 'sqm' | 'sqft';
   createdAt: number;
 }
 
@@ -24,6 +26,13 @@ export interface Invite {
   role: 'admin' | 'member' | 'viewer';
   token: string;
   createdAt: number;
+}
+
+export interface TeamCategory {
+  id?: string;
+  companyId: string;
+  name: string;
+  order: number;
 }
 
 export interface TeamMember {
@@ -49,6 +58,11 @@ export interface Project {
   description: string;
   createdAt: number;
   profitMargin?: number;
+  isTemplate?: boolean;
+  area?: number;
+  startDate?: number;
+  status?: string; // 'Draft' | 'Active' | 'Completed' | 'Lost'
+  ownerId?: string;
 }
 
 export interface Phase {

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { TeamMember } from '@/lib/firebase/schema';
+import { TeamMember, TeamCategory } from '@/lib/firebase/schema';
 import { Pencil, Trash2, ChevronDown, ChevronRight, Folder, Edit3 } from 'lucide-react';
-import { getCategoryOrder } from '@/lib/utils';
+import { getCategories } from '@/lib/firebase/db';
+import { useAppSettings } from '@/lib/auth/AuthContext';
 import { BulkEditTeamModal } from './BulkEditTeamModal';
 
 interface TeamTableProps {
@@ -13,9 +14,15 @@ interface TeamTableProps {
 }
 
 export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit }: TeamTableProps) {
+  const { formatCurrency, currencyCode } = useAppSettings();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [categories, setCategories] = useState<TeamCategory[]>([]);
+
+  React.useEffect(() => {
+    getCategories().then(setCategories);
+  }, []);
 
   const membersByCategory = useMemo(() => {
     const groups: Record<string, TeamMember[]> = {};
@@ -151,16 +158,20 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
               </th>
               <th className="px-4 py-3 font-semibold">Position</th>
               <th className="px-4 py-3 font-semibold">Category</th>
-              <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Salary/Mo</th>
-              <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Overheads/Mo</th>
-              <th className="px-4 py-3 font-semibold text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">Cost/Hr</th>
-              <th className="px-4 py-3 font-semibold text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">Fee/Hr</th>
+              <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Salary/Mo ({currencyCode})</th>
+              <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Overheads/Mo ({currencyCode})</th>
+              <th className="px-4 py-3 font-semibold text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">Cost/Hr ({currencyCode})</th>
+              <th className="px-4 py-3 font-semibold text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">Fee/Hr ({currencyCode})</th>
               <th className="px-4 py-3 font-semibold text-right w-20">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {Object.entries(membersByCategory)
-              .sort(([catA], [catB]) => getCategoryOrder(catA) - getCategoryOrder(catB))
+              .sort(([catA], [catB]) => {
+                const orderA = categories.find(c => c.name === catA)?.order ?? 99;
+                const orderB = categories.find(c => c.name === catB)?.order ?? 99;
+                return orderA - orderB;
+              })
               .map(([category, catMembers]) => {
               const allSelected = catMembers.every(m => selectedIds.has(m.id!));
               const someSelected = catMembers.some(m => selectedIds.has(m.id!)) && !allSelected;
@@ -210,10 +221,10 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                       </td>
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{member.position}</td>
                       <td className="px-4 py-3 text-slate-400 dark:text-slate-500 text-xs">-</td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">${member.salary.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">${member.overheads.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right font-medium text-rose-600 dark:text-rose-400">${member.costPerHour.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">${member.roundedFeeHour.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatCurrency(member.salary)}</td>
+                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatCurrency(member.overheads)}</td>
+                      <td className="px-4 py-3 text-right font-medium text-rose-600 dark:text-rose-400">{formatCurrency(member.costPerHour)}</td>
+                      <td className="px-4 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(member.roundedFeeHour)}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover/row:opacity-100 transition-opacity">
                           <button 

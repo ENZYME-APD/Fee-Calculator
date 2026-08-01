@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Calculator, Users, FolderKanban, Moon, Sun, LogOut, Settings, BookOpen } from 'lucide-react';
+import { Calculator, Users, FolderKanban, Moon, Sun, LogOut, Settings, BookOpen, LayoutTemplate, CreditCard, PieChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { auth, db } from '@/lib/firebase/config';
@@ -16,6 +16,7 @@ export function Navigation() {
   const { user, dbUser } = useAuth();
   const [mounted, setMounted] = React.useState(false);
   const [isLifetime, setIsLifetime] = React.useState(false);
+  const [companyName, setCompanyName] = React.useState('');
 
   React.useEffect(() => {
     setMounted(true);
@@ -24,8 +25,12 @@ export function Navigation() {
   React.useEffect(() => {
     if (dbUser?.companyId) {
       getDoc(doc(db, 'companies', dbUser.companyId)).then(snap => {
-        if (snap.exists() && snap.data().subscriptionStatus === 'lifetime') {
-          setIsLifetime(true);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.subscriptionStatus === 'lifetime') {
+            setIsLifetime(true);
+          }
+          setCompanyName(data.name);
         }
       });
     }
@@ -34,18 +39,21 @@ export function Navigation() {
   if (pathname === '/login') return null;
 
   const navItems = [
+    { name: 'Overview Dashboard', href: '/overview', icon: PieChart },
     { name: 'Projects & Phases', href: '/projects', icon: FolderKanban },
     { name: 'Fee Proposal', href: '/dashboard', icon: Calculator },
     { name: 'Team Resources', href: '/team', icon: Users },
-    { name: 'Documentation', href: '/wiki', icon: BookOpen },
-    { name: 'Settings & Billing', href: '/settings', icon: Settings },
+    { name: 'Templates', href: '/templates', icon: LayoutTemplate },
+    { name: 'Documentation', href: '/docs', icon: BookOpen },
+    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Billing', href: '/billing', icon: CreditCard },
   ];
   
   return (
     <div className="w-64 bg-slate-900 dark:bg-slate-950 text-slate-300 flex flex-col h-screen shrink-0 border-r border-slate-800 z-50 transition-colors duration-300">
       <div className="p-6 pb-2">
-        <img src="/logo-light.png" alt="Enzyme APD" className="h-8 w-auto mb-3" />
-        <p className="text-xs text-slate-400">Fee Calculator v2</p>
+        <img src="/logo-light.png" alt="Enzyme APD" className="h-10 w-auto mb-1" />
+        <h1 className="text-sm font-black tracking-widest text-slate-200 uppercase bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Fee Calculator</h1>
       </div>
       <nav className="flex-1 px-4 space-y-2 mt-6">
         {navItems.map((item) => {
@@ -71,6 +79,7 @@ export function Navigation() {
       <div className="p-4 border-t border-slate-800 space-y-2">
         {user && (
           <div className="px-4 py-2 mb-2">
+            {companyName && <p className="text-sm font-bold text-slate-200 truncate mb-0.5">{companyName}</p>}
             <p className="text-xs text-slate-400 truncate">{user.email}</p>
             <div className="flex items-center gap-2 mt-0.5">
               {dbUser && <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{dbUser.role}</p>}

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Phase, Allocation, TeamMember, ProjectCost } from '@/lib/firebase/schema';
+import { Phase, Allocation, TeamMember, ProjectCost, TeamCategory } from '@/lib/firebase/schema';
 import { deleteProjectCost, updateProjectCost } from '@/lib/firebase/db';
 import { CostModal } from '../modals/CostModal';
-import { Palette, Plane, Briefcase, Pencil, Trash2 } from 'lucide-react';
-import { cn, getCategoryOrder } from '@/lib/utils';
+import { ConfirmModal } from '../modals/ConfirmModal';
+import { Palette, Plane, Briefcase, Pencil, Trash2, ArrowRight, CopyPlus } from 'lucide-react';
+import { useAppSettings } from '@/lib/auth/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface DroppablePhaseLaneProps {
   phase: Phase;
@@ -13,10 +15,18 @@ interface DroppablePhaseLaneProps {
   onUpdated?: () => void;
   onEditAllocation?: (alloc: Allocation, member: TeamMember) => void;
   onDeleteAllocation?: (id: string) => void;
+  hasNextPhase?: boolean;
+  onDuplicateAllocation?: (alloc: Allocation) => void;
+  onDuplicateCost?: (cost: ProjectCost) => void;
+  onDuplicateAllAllocation?: (alloc: Allocation) => void;
+  onDuplicateAllCost?: (cost: ProjectCost) => void;
+  categories?: TeamCategory[];
 }
 
-export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUpdated, onEditAllocation, onDeleteAllocation }: DroppablePhaseLaneProps) {
+export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUpdated, onEditAllocation, onDeleteAllocation, hasNextPhase, onDuplicateAllocation, onDuplicateCost, onDuplicateAllAllocation, onDuplicateAllCost, categories = [] }: DroppablePhaseLaneProps) {
+  const { formatCurrency } = useAppSettings();
   const [editingCost, setEditingCost] = useState<ProjectCost | null>(null);
+  const [costToDelete, setCostToDelete] = useState<string | null>(null);
 
   const { isOver, setNodeRef } = useDroppable({
     id: `phase-${phase.id}`,
@@ -52,9 +62,10 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
   const pJakarta = totalCost > 0 ? (costJakarta / totalCost) * 100 : 0;
   const pConsult = totalCost > 0 ? (costConsult / totalCost) * 100 : 0;
 
-  const handleDeleteCost = async (id: string) => {
-    if (confirm('Delete this cost?')) {
-      await deleteProjectCost(id);
+  const confirmDeleteCost = async () => {
+    if (costToDelete) {
+      await deleteProjectCost(costToDelete);
+      setCostToDelete(null);
       if (onUpdated) onUpdated();
     }
   };
@@ -81,23 +92,29 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
       )}
     >
       <div className="flex justify-between items-start mb-3 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
-        <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{phase.name}</h3>
-        <div className="flex items-center text-right bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
-          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Cost: ${totalCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+        <div className="flex-1 pr-4 min-w-0">
+          <h3 className="font-bold text-base leading-tight text-slate-800 dark:text-slate-200 break-words mb-1.5">{phase.name}</h3>
+          <span className="inline-block px-1.5 py-0.5 bg-slate-200/50 dark:bg-slate-700/50 rounded text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            {phase.durationWeeks} {phase.durationWeeks === 1 ? 'Week' : 'Weeks'}
+          </span>
+        </div>
+        <div className="text-right shrink-0">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Total Cost</div>
+          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatCurrency(totalCost)}</span>
         </div>
       </div>
       
       {/* Cost Breakdown Bar */}
       <div className="mb-5 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-        <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-1.5">
-          <span className="text-blue-600 dark:text-blue-400">Team: ${baseCost.toLocaleString()}</span>
-          <span className="text-orange-500 dark:text-orange-400">Other: ${addedCost.toLocaleString()}</span>
+        <div className="flex justify-between items-center text-[10px] font-bold px-2 py-1 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+          <span className="text-blue-600 dark:text-blue-400">Team: {formatCurrency(baseCost)}</span>
+          <span className="text-orange-500 dark:text-orange-400">Other: {formatCurrency(addedCost)}</span>
         </div>
         <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
           {pMgmt > 0 && <div style={{width: `${pMgmt}%`}} className="bg-blue-600 transition-all hover:opacity-90" title={`Management: ${pMgmt.toFixed(1)}%`} />}
           {pGlobal > 0 && <div style={{width: `${pGlobal}%`}} className="bg-blue-500 transition-all hover:opacity-90" title={`Team Global: ${pGlobal.toFixed(1)}%`} />}
           {pJakarta > 0 && <div style={{width: `${pJakarta}%`}} className="bg-blue-400 transition-all hover:opacity-90" title={`Team Jakarta: ${pJakarta.toFixed(1)}%`} />}
-          {pConsult > 0 && <div style={{width: `${pConsult}%`}} className="bg-yellow-600 transition-all hover:opacity-90" title={`Consultants: ${pConsult.toFixed(1)}%`} />}
+          {pConsult > 0 && <div style={{width: `${pConsult}%`}} className="bg-emerald-400 transition-all hover:opacity-90" title={`Consultants: ${pConsult.toFixed(1)}%`} />}
           {addedCostPercent > 0 && <div style={{width: `${addedCostPercent}%`}} className="bg-orange-400 dark:bg-orange-500 transition-all hover:opacity-90" title={`Project Costs: ${addedCostPercent.toFixed(1)}%`} />}
         </div>
         <div className="flex justify-between text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1">
@@ -109,23 +126,40 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
       <div className="flex flex-col gap-3 flex-1 overflow-y-auto min-h-[300px]">
         {allocations
           .slice()
-          .sort((a, b) => getCategoryOrder(a.member.category) - getCategoryOrder(b.member.category))
+          .sort((a, b) => {
+            const orderA = categories.find(c => c.name === a.member.category)?.order ?? 99;
+            const orderB = categories.find(c => c.name === b.member.category)?.order ?? 99;
+            return orderA - orderB;
+          })
           .map(allocation => (
           <div key={allocation.id} className="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center group hover:shadow-md transition-shadow">
             <div className="flex flex-col">
               <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{allocation.member.name}</span>
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">{allocation.hours} hrs</span>
             </div>
-            <div className="text-right flex flex-col items-end">
-              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">${(allocation.hours * allocation.member.costPerHour).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
-              <span className="text-[10px] text-slate-400 font-medium mt-0.5">@ ${allocation.member.costPerHour}/h</span>
+            <div className="flex flex-col items-end pr-2 pl-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Cost</span>
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatCurrency(allocation.hours * allocation.member.costPerHour)}</span>
+              <span className="text-[10px] text-slate-400 font-medium mt-0.5">@ {formatCurrency(allocation.member.costPerHour)}/h</span>
             </div>
             
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4 pl-3 border-l border-slate-100 dark:border-slate-700">
-              <button onClick={() => onEditAllocation && onEditAllocation(allocation, allocation.member)} className="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors">
+            <div className="grid grid-cols-2 gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 pl-2 border-l border-slate-100 dark:border-slate-700 shrink-0">
+              {onDuplicateAllAllocation ? (
+                <button onClick={() => onDuplicateAllAllocation(allocation)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center" title="Duplicate to all phases">
+                  <CopyPlus size={14} />
+                </button>
+              ) : <div />}
+              
+              {hasNextPhase && onDuplicateAllocation ? (
+                <button onClick={() => onDuplicateAllocation(allocation)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center" title="Duplicate to next phase">
+                  <ArrowRight size={14} />
+                </button>
+              ) : <div />}
+              
+              <button onClick={() => onEditAllocation && onEditAllocation(allocation, allocation.member)} className="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors flex justify-center" title="Edit">
                 <Pencil size={14} />
               </button>
-              <button onClick={() => onDeleteAllocation && allocation.id && onDeleteAllocation(allocation.id)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors">
+              <button onClick={() => onDeleteAllocation && allocation.id && onDeleteAllocation(allocation.id)} className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors flex justify-center" title="Delete">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -140,22 +174,34 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     {getCostIcon(cost.type)}
-                    <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{cost.name}</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{cost.name}</span>
                   </div>
-                  {cost.type !== 'consultant' && (
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{cost.quantity} × ${cost.unitCost.toLocaleString()}</span>
-                  )}
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{cost.quantity} × {formatCurrency(cost.unitCost)}</span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-black text-slate-800 dark:text-slate-200">${(cost.quantity * cost.unitCost).toLocaleString()}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditingCost(cost)} className="p-1 text-slate-400 hover:text-blue-600 rounded">
-                      <Pencil size={14} />
+                <div className="flex flex-col items-end pr-2 pl-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Cost</span>
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatCurrency(cost.quantity * cost.unitCost)}</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 pl-2 border-l border-slate-100 dark:border-slate-700 shrink-0">
+                  {onDuplicateAllCost ? (
+                    <button onClick={() => onDuplicateAllCost(cost)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center" title="Duplicate to all phases">
+                      <CopyPlus size={14} />
                     </button>
-                    <button onClick={() => cost.id && handleDeleteCost(cost.id)} className="p-1 text-slate-400 hover:text-rose-600 rounded">
-                      <Trash2 size={14} />
+                  ) : <div />}
+                  
+                  {hasNextPhase && onDuplicateCost ? (
+                    <button onClick={() => onDuplicateCost(cost)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center" title="Duplicate to next phase">
+                      <ArrowRight size={14} />
                     </button>
-                  </div>
+                  ) : <div />}
+                  
+                  <button onClick={() => setEditingCost(cost)} className="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors flex justify-center" title="Edit">
+                    <Pencil size={14} />
+                  </button>
+                  <button onClick={() => cost.id && setCostToDelete(cost.id)} className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors flex justify-center" title="Delete">
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -176,6 +222,15 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
         initialData={editingCost}
         onClose={() => setEditingCost(null)}
         onSave={handleUpdateCost}
+      />
+
+      <ConfirmModal
+        isOpen={!!costToDelete}
+        title="Delete Cost"
+        message="Are you sure you want to delete this expense? This action cannot be undone and will affect your final fee."
+        confirmText="Delete"
+        onConfirm={confirmDeleteCost}
+        onCancel={() => setCostToDelete(null)}
       />
     </div>
   );

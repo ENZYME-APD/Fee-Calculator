@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Project, Phase, Allocation, TeamMember, ProjectCost } from '@/lib/firebase/schema';
 import { updateProject } from '@/lib/firebase/db';
+import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Calculator, Edit3, Check, X, Download } from 'lucide-react';
 
 interface ProjectSummaryProps {
@@ -15,8 +16,11 @@ interface ProjectSummaryProps {
 }
 
 export function ProjectSummary({ project, phases, allocations, members, projectCosts = [], onProjectUpdated, onClose }: ProjectSummaryProps) {
+  const { formatCurrency, areaUnit } = useAppSettings();
   const [isEditingMargin, setIsEditingMargin] = useState(false);
   const [marginInput, setMarginInput] = useState(project.profitMargin?.toString() || '30');
+  const [isEditingArea, setIsEditingArea] = useState(false);
+  const [areaInput, setAreaInput] = useState(project.area?.toString() || '0');
 
   // Compute stats per phase
   const phaseStats = phases.map(phase => {
@@ -80,6 +84,14 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
     onProjectUpdated();
   };
 
+  const handleSaveArea = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseFloat(areaInput) || 0;
+    await updateProject(project.id!, { area: val });
+    setIsEditingArea(false);
+    onProjectUpdated();
+  };
+
   const handleExportCSV = () => {
     const rows = [
       ['PROJECT SUMMARY', project.name.toUpperCase()],
@@ -93,16 +105,19 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
       const feeProposal = stat.totalCost * multiplier;
       rows.push([
         stat.phase.name,
-        `$${stat.totalCost.toFixed(2)}`,
+        formatCurrency(stat.totalCost),
         multiplier.toFixed(2),
-        `$${feeProposal.toFixed(2)}`
+        formatCurrency(feeProposal)
       ]);
     });
 
     rows.push([]);
-    rows.push(['Total Cost', `$${projectTotalCost.toFixed(2)}`]);
+    rows.push(['Total Cost', formatCurrency(projectTotalCost)]);
     rows.push(['Total Weeks', projectTotalWeeks.toString()]);
-    rows.push(['Avg Cost / Month', `$${(projectTotalCost / (projectTotalWeeks / 4 || 1)).toFixed(2)}`]);
+    rows.push(['Avg Cost / Month', formatCurrency(projectTotalCost / (projectTotalWeeks / 4 || 1))]);
+    if (project.area && project.area > 0) {
+      rows.push([`Avg Cost / ${areaUnit}`, formatCurrency(projectTotalCost / project.area)]);
+    }
     rows.push([]);
     
     rows.push(['FEE STRUCTURE']);
@@ -114,12 +129,12 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
       rows.push([
         stat.phase.name,
         `${percent.toFixed(2)}%`,
-        `$${feeAmount.toFixed(2)}`
+        formatCurrency(feeAmount)
       ]);
     });
 
     rows.push([]);
-    rows.push(['FINAL FEE', '', `$${projectTotalFee.toFixed(2)}`]);
+    rows.push(['FINAL FEE', '', formatCurrency(projectTotalFee)]);
 
     const csvContent = rows.map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -189,7 +204,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
             <Calculator size={20} className="text-blue-400" />
             <h3 className="font-bold tracking-wider text-lg">PROJECT SUMMARY & FEE STRUCTURE</h3>
             <span className="text-sm font-bold bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30 ml-4 hidden sm:inline-block">
-              Total Fee: ${projectTotalFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              Total Fee: {formatCurrency(projectTotalFee)}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -214,8 +229,32 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
         <div className="flex-[1.2] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col rounded-xl" id="project-summary-content">
           <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
             <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">COST SUMMARY</h4>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Profit Margin</span>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Project Area ({areaUnit})</span>
+                {isEditingArea ? (
+                  <form onSubmit={handleSaveArea} className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                    <input 
+                      type="number" 
+                      value={areaInput} 
+                      onChange={e => setAreaInput(e.target.value)}
+                      className="w-20 px-2 py-0.5 text-sm border border-slate-300 dark:border-slate-600 rounded text-right font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500"
+                      autoFocus
+                    />
+                    <button type="submit" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 p-1"><Check size={16} /></button>
+                  </form>
+                ) : (
+                  <div 
+                    className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-600 hover:border-blue-400 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); setIsEditingArea(true); setAreaInput(project.area?.toString() || '0'); }}
+                  >
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{project.area || 0}</span>
+                    <Edit3 size={12} className="text-slate-400 dark:text-slate-500" />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Profit Margin</span>
               {isEditingMargin ? (
                 <form onSubmit={handleSaveMargin} className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                   <input 
@@ -238,6 +277,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                   <Edit3 size={12} className="text-slate-400 dark:text-slate-500" />
                 </div>
               )}
+              </div>
             </div>
           </div>
           
@@ -260,9 +300,9 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                     return (
                       <tr key={stat.phase.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-4 py-2 font-semibold text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700">{stat.phase.name}</td>
-                        <td className="px-4 py-2 text-right font-medium text-slate-600 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700">${stat.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="px-4 py-2 text-right font-medium text-slate-600 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700">{formatCurrency(stat.totalCost)}</td>
                         <td className="px-4 py-2 text-center text-slate-500 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700">{multiplier.toFixed(2)}</td>
-                        <td className="px-4 py-2 text-right font-bold text-slate-800 dark:text-slate-200">${feeProposal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="px-4 py-2 text-right font-bold text-slate-800 dark:text-slate-200">{formatCurrency(feeProposal)}</td>
                       </tr>
                     );
                   })
@@ -276,7 +316,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
             <div>
               <div className="flex justify-between py-1">
                 <span>Total Cost</span>
-                <span>${projectTotalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span>{formatCurrency(projectTotalCost)}</span>
               </div>
               <div className="flex justify-between py-1 border-t border-emerald-400">
                 <span>Total Weeks</span>
@@ -284,13 +324,24 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
               </div>
               <div className="flex justify-between py-1 border-t border-emerald-400">
                 <span>Avg Cost / Month</span>
-                <span>${(projectTotalCost / (projectTotalWeeks / 4 || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span>{formatCurrency(projectTotalCost / (projectTotalWeeks / 4 || 1))}</span>
               </div>
+              {(project.area || 0) > 0 && (
+                <div className="flex justify-between py-1 border-t border-emerald-400">
+                  <span>Avg Cost / {areaUnit}</span>
+                  <span>{formatCurrency(projectTotalCost / project.area!)}</span>
+                </div>
+              )}
             </div>
             <div className="flex flex-col items-end justify-between">
               <div className="text-right">
                 <div className="text-emerald-100 text-xs">FINAL FEE</div>
-                <div className="text-2xl">${projectTotalFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div className="text-2xl">{formatCurrency(projectTotalFee)}</div>
+                {(project.area || 0) > 0 && (
+                  <div className="text-emerald-100 text-xs mt-1 border-t border-emerald-400/50 pt-1">
+                    {formatCurrency(projectTotalFee / project.area!)} / {areaUnit}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -301,7 +352,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
           <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
             <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">FEE STRUCTURE</h4>
             <span className="font-bold text-blue-700 dark:text-blue-900 bg-yellow-300 px-2 py-0.5 rounded shadow-sm text-sm border border-yellow-400">
-              ${projectTotalFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatCurrency(projectTotalFee)}
             </span>
           </div>
           
@@ -339,7 +390,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                           {percent.toFixed(2)}%
                         </div>
                         <div className={`w-36 px-3 py-2 text-right font-bold text-slate-900 dark:text-white border-l ${colorClass} ${darkColorClass}`}>
-                          ${feeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatCurrency(feeAmount)}
                         </div>
                       </div>
                       
@@ -348,7 +399,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                         {pMgmt > 0 && <div style={{width: `${pMgmt}%`}} className="bg-blue-600 transition-all hover:opacity-90" title={`Management: ${pMgmt.toFixed(1)}%`} />}
                         {pGlobal > 0 && <div style={{width: `${pGlobal}%`}} className="bg-blue-500 transition-all hover:opacity-90" title={`Team Global: ${pGlobal.toFixed(1)}%`} />}
                         {pJakarta > 0 && <div style={{width: `${pJakarta}%`}} className="bg-blue-400 transition-all hover:opacity-90" title={`Team Jakarta: ${pJakarta.toFixed(1)}%`} />}
-                        {pConsult > 0 && <div style={{width: `${pConsult}%`}} className="bg-yellow-600 transition-all hover:opacity-90" title={`Consultants: ${pConsult.toFixed(1)}%`} />}
+                        {pConsult > 0 && <div style={{width: `${pConsult}%`}} className="bg-emerald-400 transition-all hover:opacity-90" title={`Consultants: ${pConsult.toFixed(1)}%`} />}
                         {pProjectCosts > 0 && <div style={{width: `${pProjectCosts}%`}} className="bg-orange-400 transition-all hover:opacity-90" title={`Project Costs: ${pProjectCosts.toFixed(1)}%`} />}
                       </div>
                     </div>
@@ -364,7 +415,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
               <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-blue-600"></div>Management</div>
               <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-blue-500"></div>Global</div>
               <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400"></div>Jakarta</div>
-              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-yellow-600"></div>Consultants</div>
+              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-emerald-400"></div>Consultants</div>
               <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-orange-400"></div>Project Costs</div>
             </div>
           </div>

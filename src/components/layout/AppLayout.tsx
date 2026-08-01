@@ -10,9 +10,11 @@ import { DraggableCostChip } from '../dnd/DraggableCostChip';
 import { DroppablePhaseLane } from '../dnd/DroppablePhaseLane';
 import { AllocationModal } from '../modals/AllocationModal';
 import { CostModal } from '../modals/CostModal';
+import { ConfirmModal } from '../modals/ConfirmModal';
 import { PanelLeftClose, PanelLeftOpen, Users, ChevronDown, ChevronRight, PlusCircle, Menu } from 'lucide-react';
-import { cn, getCategoryOrder } from '@/lib/utils';
-
+import { cn } from '@/lib/utils';
+import { getCategories } from '@/lib/firebase/db';
+import { TeamCategory } from '@/lib/firebase/schema';
 interface AppLayoutProps {
   members: TeamMember[];
   phases: Phase[];
@@ -32,11 +34,20 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingAllocation, setPendingAllocation] = useState<{ member: TeamMember, phase: Phase, existing?: Allocation } | null>(null);
+  const [allocationToDelete, setAllocationToDelete] = useState<string | null>(null);
   
   // Cost Modal State
   const [isCostModalOpen, setIsCostModalOpen] = useState(false);
-  const [pendingCost, setPendingCost] = useState<{ type: 'rendering' | 'trip' | 'consultant', phase: Phase } | null>(null);
+  const [pendingCost, setPendingCost] = useState<{ type: 'rendering' | 'trip' | 'consultant' | 'other', phase: Phase } | null>(null);
   const [activeCostTemplate, setActiveCostTemplate] = useState<'rendering' | 'trip' | 'consultant' | null>(null);
+
+  const [categories, setCategories] = useState<TeamCategory[]>([]);
+
+  React.useEffect(() => {
+    getCategories().then(data => {
+      setCategories(data);
+    });
+  }, []);
 
   // Group members by category
   const membersByCategory = React.useMemo(() => {
@@ -99,7 +110,7 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
         setPendingAllocation({ member, phase });
         setIsModalOpen(true);
       } else if (active.data.current?.type === 'CostTemplate') {
-        const type = active.data.current.costType as 'rendering' | 'trip' | 'consultant';
+        const type = active.data.current.costType as 'rendering' | 'trip' | 'consultant' | 'other';
         setPendingCost({ type, phase });
         setIsCostModalOpen(true);
       }
@@ -128,8 +139,13 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
   };
 
   const handleDeleteAllocation = async (id: string) => {
-    if (confirm('Remove this team member from the phase?')) {
-      await deleteAllocation(id);
+    setAllocationToDelete(id);
+  };
+
+  const confirmDeleteAllocation = async () => {
+    if (allocationToDelete) {
+      await deleteAllocation(allocationToDelete);
+      setAllocationToDelete(null);
       onAllocationAdded();
     }
   };
@@ -143,6 +159,46 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
       });
       onAllocationAdded(); // trigger data reload
     }
+  };
+
+  const handleDuplicateAllocation = async (allocation: Allocation, currentIndex: number) => {
+    if (currentIndex + 1 < phases.length) {
+      const nextPhase = phases[currentIndex + 1];
+      const { id, ...allocData } = allocation;
+      await addAllocation({ ...allocData, phaseId: nextPhase.id! });
+      onAllocationAdded();
+    }
+  };
+
+  const handleDuplicateCost = async (cost: ProjectCost, currentIndex: number) => {
+    if (currentIndex + 1 < phases.length) {
+      const nextPhase = phases[currentIndex + 1];
+      const { id, ...costData } = cost;
+      await addProjectCost({ ...costData, phaseId: nextPhase.id! });
+      onAllocationAdded();
+    }
+  };
+
+  const handleDuplicateAllAllocation = async (allocation: Allocation, currentIndex: number) => {
+    const { id, ...allocData } = allocation;
+    const promises = phases.map((phase, idx) => {
+      if (idx !== currentIndex) {
+        return addAllocation({ ...allocData, phaseId: phase.id! });
+      }
+    });
+    await Promise.all(promises);
+    onAllocationAdded();
+  };
+
+  const handleDuplicateAllCost = async (cost: ProjectCost, currentIndex: number) => {
+    const { id, ...costData } = cost;
+    const promises = phases.map((phase, idx) => {
+      if (idx !== currentIndex) {
+        return addProjectCost({ ...costData, phaseId: phase.id! });
+      }
+    });
+    await Promise.all(promises);
+    onAllocationAdded();
   };
 
   return (
@@ -197,7 +253,11 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
             {members.length === 0 && <div className="text-center text-sm text-slate-400 dark:text-slate-500 p-4 font-medium border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">No team members available. Go to Team Resources to add some.</div>}
             
             {Object.entries(membersByCategory)
-              .sort(([catA], [catB]) => getCategoryOrder(catA) - getCategoryOrder(catB))
+              .sort(([catA], [catB]) => {
+                const orderA = categories.find(c => c.name === catA)?.order ?? 99;
+                const orderB = categories.find(c => c.name === catB)?.order ?? 99;
+                return orderA - orderB;
+              })
               .map(([category, catMembers]) => (
               <div key={category} className="flex flex-col gap-1.5">
                 <button 
@@ -240,7 +300,7 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
                 {phases.length === 0 ? (
                   <div className="text-slate-500 dark:text-slate-400 flex items-center justify-center w-full h-full font-medium">This project has no phases yet. Add some in the Projects tab.</div>
                 ) : (
-                  phases.map(phase => {
+                  phases.map((phase, index) => {
                     const phaseAllocations = allocations
                       .filter(a => a.phaseId === phase.id)
                       .map(a => ({
@@ -253,13 +313,19 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
                       
                     return (
                       <DroppablePhaseLane 
-                        key={phase.id} 
+                        key={phase.id}
                         phase={phase} 
                         allocations={phaseAllocations}
                         projectCosts={phaseCosts}
                         onUpdated={onAllocationAdded}
-                        onEditAllocation={(alloc, member) => handleEditAllocation(alloc, member, phase)}
-                        onDeleteAllocation={handleDeleteAllocation}
+                        onEditAllocation={(alloc, member) => setPendingAllocation({ member, phase, existing: alloc })}
+                        onDeleteAllocation={setAllocationToDelete}
+                        hasNextPhase={index < phases.length - 1}
+                        onDuplicateAllocation={(alloc) => handleDuplicateAllocation(alloc, index)}
+                        onDuplicateCost={(cost) => handleDuplicateCost(cost, index)}
+                        onDuplicateAllAllocation={phases.length > 1 ? (alloc) => handleDuplicateAllAllocation(alloc, index) : undefined}
+                        onDuplicateAllCost={phases.length > 1 ? (cost) => handleDuplicateAllCost(cost, index) : undefined}
+                        categories={categories}
                       />
                     );
                   })
@@ -303,6 +369,15 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
             setPendingCost(null);
           }}
           onSave={handleSaveCost}
+        />
+
+        <ConfirmModal
+          isOpen={!!allocationToDelete}
+          title="Remove Team Member"
+          message="Are you sure you want to remove this team member from the phase? Their allocated hours and cost will be deducted from your fee proposal."
+          confirmText="Remove"
+          onConfirm={confirmDeleteAllocation}
+          onCancel={() => setAllocationToDelete(null)}
         />
       </div>
     </DndContext>

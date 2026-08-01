@@ -211,7 +211,7 @@ function LoginContent() {
         {!isResetting ? (
           <>
             <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && !inviteData && (
+          {!isLogin && !inviteData && !inviteToken && (
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Company Name</label>
               <input 

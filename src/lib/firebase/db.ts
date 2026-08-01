@@ -1,6 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc } from 'firebase/firestore';
 import { db } from './config';
-import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite } from './schema';
+import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory } from './schema';
 
 const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
@@ -53,6 +53,37 @@ export const getInvitesByCompany = async (): Promise<Invite[]> => {
   return snap.docs.map(extractData) as Invite[];
 };
 
+// --- Team Categories ---
+export const getCategories = async (): Promise<TeamCategory[]> => {
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'categories'), where('companyId', '==', companyId));
+  const snap = await getDocs(q);
+  return snap.docs.map(extractData) as TeamCategory[];
+};
+
+export const addCategory = async (category: Omit<TeamCategory, 'id' | 'companyId'>) => {
+  const docRef = await addDoc(collection(db, 'categories'), sanitize({ ...category, companyId: requireCompanyId() }));
+  return docRef.id;
+};
+
+export const updateCategory = async (id: string, updates: Partial<Omit<TeamCategory, 'id' | 'companyId'>>) => {
+  await updateDoc(doc(db, 'categories', id), sanitize(updates) as any);
+};
+
+export const deleteCategory = async (id: string) => {
+  await deleteDoc(doc(db, 'categories', id));
+};
+
+export const batchAddCategories = async (categories: Omit<TeamCategory, 'id' | 'companyId'>[]) => {
+  const batch = writeBatch(db);
+  const companyId = requireCompanyId();
+  for (const cat of categories) {
+    const newRef = doc(collection(db, 'categories'));
+    batch.set(newRef, sanitize({ ...cat, companyId }));
+  }
+  await batch.commit();
+};
+
 // --- Team Members ---
 export const getTeamMembers = async (): Promise<TeamMember[]> => {
   const companyId = requireCompanyId();
@@ -93,15 +124,25 @@ export const deleteTeamMember = async (id: string) => {
 };
 
 // --- Projects ---
-export const getProjects = async (): Promise<Project[]> => {
+export const getProjects = async (isTemplate: boolean = false, ownerId?: string): Promise<Project[]> => {
   const companyId = requireCompanyId();
-  const q = query(collection(db, 'projects'), where('companyId', '==', companyId));
+  let q = query(collection(db, 'projects'), where('companyId', '==', companyId));
+  if (ownerId) {
+    q = query(collection(db, 'projects'), where('companyId', '==', companyId), where('ownerId', '==', ownerId));
+  }
   const snap = await getDocs(q);
-  return snap.docs.map(extractData) as Project[];
+  const allProjects = snap.docs.map(extractData) as Project[];
+  return allProjects.filter(p => (!!p.isTemplate) === isTemplate);
 };
 
 export const addProject = async (project: Omit<Project, 'id' | 'companyId'>) => {
-  const docRef = await addDoc(collection(db, 'projects'), sanitize({ ...project, companyId: requireCompanyId() }));
+  const docRef = await addDoc(collection(db, 'projects'), sanitize({
+    ...project,
+    companyId: requireCompanyId(),
+    ownerId: project.ownerId || auth.currentUser?.uid,
+    status: project.status || 'Draft',
+    startDate: project.startDate || Date.now()
+  }));
   return docRef.id;
 };
 
@@ -114,7 +155,7 @@ export const deleteProject = async (id: string) => {
   await deleteDoc(doc(db, 'projects', id));
 };
 
-export const duplicateProject = async (id: string, includeAllocations: boolean = true): Promise<string> => {
+export const duplicateProject = async (id: string, includeAllocations: boolean = true, newName?: string, isTemplate: boolean = false): Promise<string> => {
   // 1. Fetch source project
   const companyId = requireCompanyId();
   const projectSnap = await getDocs(query(collection(db, 'projects'), where('companyId', '==', companyId)));
@@ -139,11 +180,14 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
   const newProjectId = newProjectRef.id;
   
   batch.set(newProjectRef, sanitize({
-    name: `${project.name} (Copy)`,
+    name: newName || `${project.name} (Copy)`,
     description: project.description || '',
     profitMargin: project.profitMargin || 30,
     companyId: requireCompanyId(),
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    isTemplate: isTemplate,
+    ownerId: auth.currentUser?.uid,
+    status: 'Draft'
   }));
 
   const phaseIdMap = new Map<string, string>();
@@ -245,9 +289,11 @@ export const clearPhase = async (phaseId: string) => {
 };
 
 // Project Costs
-export const getProjectCosts = async (projectId: string) => {
+export const getProjectCosts = async (projectId?: string) => {
   const companyId = requireCompanyId();
-  const q = query(collection(db, 'projectCosts'), where('projectId', '==', projectId), where('companyId', '==', companyId));
+  const q = projectId 
+    ? query(collection(db, 'projectCosts'), where('projectId', '==', projectId), where('companyId', '==', companyId))
+    : query(collection(db, 'projectCosts'), where('companyId', '==', companyId));
   const snap = await getDocs(q);
   return snap.docs.map(extractData) as ProjectCost[];
 };
