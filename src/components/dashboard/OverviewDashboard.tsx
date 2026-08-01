@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts } from '@/lib/firebase/db';
-import { Project, Phase, TeamMember, Allocation, ProjectCost } from '@/lib/firebase/schema';
+import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany } from '@/lib/firebase/db';
+import { Project, Phase, TeamMember, Allocation, ProjectCost, User } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { Folder, CircleDollarSign, TrendingUp, Users } from 'lucide-react';
@@ -20,6 +20,8 @@ export function OverviewDashboard() {
   
   const [scatterData, setScatterData] = useState<any[]>([]);
 
+  const [users, setUsers] = useState<User[]>([]);
+
   useEffect(() => {
     if (!dbUser) return;
     loadData();
@@ -35,7 +37,9 @@ export function OverviewDashboard() {
     const members = await getTeamMembers();
     const allocations = await getAllocations();
     const costs = await getProjectCosts();
+    const companyUsers = await getUsersByCompany();
     
+    setUsers(companyUsers);
     setProjects(projs);
 
     // Compute KPIs
@@ -164,13 +168,15 @@ export function OverviewDashboard() {
             <div className="flex-1 overflow-y-auto pr-2 space-y-3">
               {/* Note: since we don't have user display names easily accessible here, we'll group by ownerId and display it */}
               {Object.entries(scatterData.reduce((acc: any, curr) => {
-                const owner = curr.ownerId || 'Unassigned';
-                if (!acc[owner]) acc[owner] = { name: owner, totalGenerated: 0, projects: 0 };
-                acc[owner].totalGenerated += curr.totalFee;
-                acc[owner].projects += 1;
+                const owner = curr.ownerId;
+                const ownerUser = users.find(u => u.uid === owner);
+                const ownerName = ownerUser?.displayName || ownerUser?.email || 'Unassigned';
+                if (!acc[ownerName]) acc[ownerName] = { name: ownerName, totalGenerated: 0, projects: 0 };
+                acc[ownerName].totalGenerated += curr.totalFee;
+                acc[ownerName].projects += 1;
                 return acc;
-              }, {})).map(([ownerId, data]: any) => (
-                <div key={ownerId} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+              }, {})).map(([ownerName, data]: any) => (
+                <div key={ownerName as string} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
                   <div>
                     <p className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{data.name}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{data.projects} projects generated</p>

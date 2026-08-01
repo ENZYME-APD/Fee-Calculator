@@ -1,6 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc } from 'firebase/firestore';
 import { db, auth } from './config';
-import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory } from './schema';
+import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User } from './schema';
 
 const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
@@ -301,6 +301,13 @@ export const getProjectCosts = async (projectId?: string) => {
 export const addProjectCost = async (cost: Omit<ProjectCost, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'projectCosts'), sanitize({ ...cost, companyId: requireCompanyId() }));
   return docRef.id;
+};
+
+export const getUsersByCompany = async () => {
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'users'), where('companyId', '==', companyId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }) as User);
 };
 
 export const updateProjectCost = async (id: string, cost: Partial<Omit<ProjectCost, 'id' | 'companyId'>>) => {

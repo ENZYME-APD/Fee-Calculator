@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, Suspense } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, updateProfile } from 'firebase/auth';
 import { auth, db, googleProvider } from '@/lib/firebase/config';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -11,6 +11,7 @@ import { Building2, Users } from 'lucide-react';
 function LoginContent() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [error, setError] = useState('');
@@ -55,9 +56,11 @@ function LoginContent() {
             const userCred = await createUserWithEmailAndPassword(auth, email, password);
             await setDoc(doc(db, 'users', userCred.user.uid), {
               email,
+              displayName,
               companyId: inviteData.companyId,
               role: inviteData.role
             });
+            await updateProfile(userCred.user, { displayName });
           } catch (err: any) {
             if (err.code === 'auth/email-already-in-use') {
               // User exists, try signing them in
@@ -94,9 +97,12 @@ function LoginContent() {
             createdAt: Date.now()
           });
 
+          await updateProfile(userCred.user, { displayName });
+
           // 3. Create the user doc linked to the company
           await setDoc(doc(db, 'users', userCred.user.uid), {
             email,
+            displayName,
             companyId,
             role: 'admin'
           });
@@ -221,6 +227,19 @@ function LoginContent() {
                 onChange={e => setCompanyName(e.target.value)}
                 className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
                 placeholder="e.g. Enzyme APD"
+              />
+            </div>
+          )}
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+              <input 
+                type="text" 
+                required 
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
+                placeholder="John Doe"
               />
             </div>
           )}
