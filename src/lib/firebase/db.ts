@@ -228,10 +228,11 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
   for (const payment of payments) {
     const newPaymentRef = doc(collection(db, 'payments'));
     const { id: _ignore, projectId: _ignore2, phaseId, ...paymentData } = payment;
-    let newPhaseId = phaseId;
-    if (phaseId && phaseIdMap.has(phaseId)) {
-      newPhaseId = phaseIdMap.get(phaseId);
+    let newPhaseId = payment.phaseId;
+    if (payment.phaseId && phaseIdMap.has(payment.phaseId)) {
+      newPhaseId = phaseIdMap.get(payment.phaseId);
     }
+    
     batch.set(newPaymentRef, sanitize({ ...paymentData, projectId: newProjectId, phaseId: newPhaseId, companyId: companyId }));
   }
 
@@ -416,6 +417,13 @@ export const deleteAllocation = async (id: string) => {
 export const getPayments = async (projectId: string): Promise<Payment[]> => {
   const companyId = requireCompanyId();
   const q = query(collection(db, 'payments'), where('projectId', '==', projectId), where('companyId', '==', companyId));
+  const snap = await getDocs(q);
+  return snap.docs.map(extractData) as Payment[];
+};
+
+export const getAllPayments = async (): Promise<Payment[]> => {
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'payments'), where('companyId', '==', companyId));
   const snap = await getDocs(q);
   return snap.docs.map(extractData) as Payment[];
 };

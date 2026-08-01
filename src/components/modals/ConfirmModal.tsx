@@ -9,9 +9,13 @@ interface ConfirmModalProps {
   cancelText?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  secondaryAction?: {
+    text: string;
+    onClick: () => void;
+  };
 }
 
-export function ConfirmModal({ isOpen, title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel }: ConfirmModalProps) {
+export function ConfirmModal({ isOpen, title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel, secondaryAction }: ConfirmModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -42,6 +46,14 @@ export function ConfirmModal({ isOpen, title, message, confirmText = 'Confirm', 
           >
             {cancelText}
           </button>
+          {secondaryAction && (
+            <button
+              onClick={secondaryAction.onClick}
+              className="px-5 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-colors"
+            >
+              {secondaryAction.text}
+            </button>
+          )}
           <button
             onClick={onConfirm}
             className="px-5 py-2.5 rounded-xl font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/20 transition-colors"

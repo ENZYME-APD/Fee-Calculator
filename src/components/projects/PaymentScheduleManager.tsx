@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Phase, Payment } from '@/lib/firebase/schema';
 import { getPayments, addPayment, updatePayment, deletePayment, batchAddPayments, clearPayments, batchUpdatePayments } from '@/lib/firebase/db';
 import { FileSpreadsheet, Plus, Trash2, Pencil, Check, X, CalendarDays, MoreVertical } from 'lucide-react';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 interface PaymentScheduleManagerProps {
   projectId: string;
@@ -63,6 +64,18 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
 
   // Context Menu
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
   const loadPayments = async () => {
     setLoading(true);
@@ -115,10 +128,17 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Delete this payment stage?')) {
-      await deletePayment(id);
-      await loadPayments();
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Payment Stage',
+      message: 'Are you sure you want to delete this payment stage? This action cannot be undone.',
+      confirmText: 'Delete Payment',
+      onConfirm: async () => {
+        await deletePayment(id);
+        await loadPayments();
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
     setMenuOpenId(null);
   };
 
@@ -144,9 +164,8 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
   };
 
   const handleUseTemplate = async () => {
-    if (payments.length > 0 && !confirm('This will replace your current payment schedule. Continue?')) return;
-    
-    await clearPayments(projectId);
+    const applyTemplate = async () => {
+      await clearPayments(projectId);
     
     const newPayments: Omit<Payment, 'id' | 'companyId'>[] = [];
     let order = 1;
@@ -193,13 +212,28 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
     });
     
     await batchAddPayments(newPayments);
-    await loadPayments();
+      await loadPayments();
+    };
+
+    if (payments.length > 0) {
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Replace Schedule',
+        message: 'This will replace your current payment schedule. Are you sure you want to continue?',
+        confirmText: 'Replace',
+        onConfirm: async () => {
+          await applyTemplate();
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        }
+      });
+    } else {
+      await applyTemplate();
+    }
   };
 
   const handleMonthlyTemplate = async () => {
-    if (payments.length > 0 && !confirm('This will replace your current payment schedule. Continue?')) return;
-    
-    await clearPayments(projectId);
+    const applyTemplate = async () => {
+      await clearPayments(projectId);
     
     const newPayments: Omit<Payment, 'id' | 'companyId'>[] = [];
     let order = 1;
@@ -253,7 +287,23 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
     });
     
     await batchAddPayments(newPayments);
-    await loadPayments();
+      await loadPayments();
+    };
+
+    if (payments.length > 0) {
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Replace Schedule',
+        message: 'This will replace your current payment schedule. Are you sure you want to continue?',
+        confirmText: 'Replace',
+        onConfirm: async () => {
+          await applyTemplate();
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        }
+      });
+    } else {
+      await applyTemplate();
+    }
   };
 
   const totalPercentage = payments.reduce((sum, p) => sum + p.percentage, 0);
@@ -402,6 +452,14 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
           })
         )}
       </div>
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

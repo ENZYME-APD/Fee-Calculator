@@ -255,6 +255,7 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
         onClose={() => setIsBulkEditOpen(false)}
         onSave={handleBulkEditSave}
         selectedCount={selectedIds.size}
+        categories={categories}
       />
     </div>
   );

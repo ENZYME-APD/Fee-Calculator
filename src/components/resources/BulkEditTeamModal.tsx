@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { TeamMember } from '@/lib/firebase/schema';
+import { TeamMember, TeamCategory } from '@/lib/firebase/schema';
 import { X, Check } from 'lucide-react';
 
 interface BulkEditTeamModalProps {
@@ -8,14 +8,14 @@ interface BulkEditTeamModalProps {
   onClose: () => void;
   onSave: (updates: Partial<TeamMember>) => void;
   selectedCount: number;
+  categories: TeamCategory[];
 }
 
-export function BulkEditTeamModal({ isOpen, onClose, onSave, selectedCount }: BulkEditTeamModalProps) {
+export function BulkEditTeamModal({ isOpen, onClose, onSave, selectedCount, categories }: BulkEditTeamModalProps) {
   const [salary, setSalary] = useState('');
   const [overheads, setOverheads] = useState('');
   const [category, setCategory] = useState('');
   const [position, setPosition] = useState('');
-  const [type, setType] = useState('');
 
   if (!isOpen) return null;
 
@@ -28,7 +28,6 @@ export function BulkEditTeamModal({ isOpen, onClose, onSave, selectedCount }: Bu
     if (overheads.trim() !== '') updates.overheads = parseFloat(overheads) || 0;
     if (category.trim() !== '') updates.category = category.trim();
     if (position.trim() !== '') updates.position = position.trim();
-    if (type.trim() !== '') updates.type = type.trim();
 
     // Recalculate rates if money changed
     if (updates.salary !== undefined || updates.overheads !== undefined) {
@@ -59,13 +58,16 @@ export function BulkEditTeamModal({ isOpen, onClose, onSave, selectedCount }: Bu
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Category</label>
-            <input 
-              type="text" 
-              value={category} 
-              onChange={e => setCategory(e.target.value)} 
-              placeholder="Leave blank to keep existing"
+            <select
+              value={category}
+              onChange={e => setCategory(e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-            />
+            >
+              <option value="">(Leave blank to keep existing)</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.name}>{cat.name}</option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -79,18 +81,6 @@ export function BulkEditTeamModal({ isOpen, onClose, onSave, selectedCount }: Bu
             />
           </div>
           
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Type</label>
-            <select
-              value={type}
-              onChange={e => setType(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-            >
-              <option value="">(Leave blank to keep existing)</option>
-              <option value="Employee">Employee</option>
-              <option value="Consultant">Consultant</option>
-            </select>
-          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>

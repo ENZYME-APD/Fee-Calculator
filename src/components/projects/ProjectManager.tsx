@@ -33,6 +33,38 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const [editingPhaseName, setEditingPhaseName] = useState('');
   const [editingPhaseDuration, setEditingPhaseDuration] = useState('');
+  const [promptConfig, setPromptConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    defaultValue: string;
+    confirmText: string;
+    onConfirm: (val: string) => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    defaultValue: '',
+    confirmText: '',
+    onConfirm: () => {}
+  });
+
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    onConfirm: () => void;
+    secondaryAction?: {
+      text: string;
+      onClick: () => void;
+    };
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
   const { dbUser } = useAuth();
 
@@ -87,41 +119,71 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
 
   const handleDeleteProject = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Delete this project?')) {
-      await deleteProject(id);
-      if (activeProjectId === id) setActiveProjectId(null);
-      loadProjects();
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Project',
+      message: 'Are you sure you want to delete this project? This action cannot be undone.',
+      confirmText: 'Delete Project',
+      onConfirm: async () => {
+        await deleteProject(id);
+        if (activeProjectId === id) setActiveProjectId(null);
+        loadProjects();
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   const handleDuplicateProject = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const includeAllocations = window.confirm(
-      "Duplicate this project exactly as is? \n\nClick 'OK' to keep all team members and project costs.\nClick 'Cancel' to create a clean template with empty phases."
-    );
-    try {
-      const newProjectId = await duplicateProject(id, includeAllocations);
-      await loadProjects();
-      setActiveProjectId(newProjectId);
-    } catch (error) {
-      console.error("Failed to duplicate project:", error);
-      alert("Failed to duplicate project");
-    }
+    
+    const performDuplicate = async (includeAllocations: boolean) => {
+      try {
+        const newProjectId = await duplicateProject(id, includeAllocations);
+        await loadProjects();
+        setActiveProjectId(newProjectId);
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      } catch (error) {
+        console.error("Failed to duplicate project:", error);
+        alert("Failed to duplicate project");
+      }
+    };
+    
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Duplicate Project',
+      message: 'Do you want to duplicate this project exactly as is? You can keep all team members and project costs, or create a clean template with empty phases.',
+      confirmText: 'Keep All',
+      onConfirm: () => performDuplicate(true),
+      secondaryAction: {
+        text: 'Clean Template',
+        onClick: () => performDuplicate(false)
+      }
+    });
   };
 
   const handleSaveAsTemplate = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const p = projects.find(proj => proj.id === id);
     if (!p) return;
-    const name = window.prompt("Enter a name for this template:", `${p.name} Template`);
-    if (name) {
-      try {
-        await duplicateProject(id, true, name, true);
-        alert("Saved as template successfully! You can find it in Team Resources > Templates.");
-      } catch(err) {
-        alert("Failed to save template.");
+    
+    setPromptConfig({
+      isOpen: true,
+      title: 'Save as Template',
+      message: 'Enter a name for this template:',
+      defaultValue: `${p.name} Template`,
+      confirmText: 'Save Template',
+      onConfirm: async (name: string) => {
+        if (name.trim()) {
+          try {
+            await duplicateProject(id, true, name.trim(), true);
+            alert("Saved as template successfully! You can find it in Team Resources > Templates.");
+          } catch(err) {
+            alert("Failed to save template.");
+          }
+        }
+        setPromptConfig(prev => ({ ...prev, isOpen: false }));
       }
-    }
+    });
   };
 
   const handleEditProjectStart = (p: Project, e: React.MouseEvent) => {
@@ -179,17 +241,30 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   };
 
   const handleDeletePhase = async (id: string) => {
-    if (confirm('Delete this phase entirely?')) {
-      await deletePhase(id);
-      loadPhases(activeProjectId!);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Phase',
+      message: 'Are you sure you want to delete this phase entirely? All associated costs and resources will be lost.',
+      confirmText: 'Delete Phase',
+      onConfirm: async () => {
+        await deletePhase(id);
+        loadPhases(activeProjectId!);
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   const handleClearPhase = async (id: string) => {
-    if (confirm('Clear all team members and costs from this phase?')) {
-      await clearPhase(id);
-      alert('Phase cleared successfully.');
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Clear Phase',
+      message: 'Are you sure you want to clear all team members and costs from this phase?',
+      confirmText: 'Clear Phase',
+      onConfirm: async () => {
+        await clearPhase(id);
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   const handleMovePhase = async (index: number, direction: 'up' | 'down') => {
@@ -308,7 +383,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   {!isTemplateMode && (
-                    <button onClick={(e) => { e.stopPropagation(); router.push(`/?project=${p.id}`); }} title="Open Fee Proposal" className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); router.push(`/dashboard?project=${p.id}`); }} title="Open Fee Proposal" className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md transition-colors">
                       <Calculator size={14} />
                     </button>
                   )}

@@ -318,7 +318,7 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
                         allocations={phaseAllocations}
                         projectCosts={phaseCosts}
                         onUpdated={onAllocationAdded}
-                        onEditAllocation={(alloc, member) => setPendingAllocation({ member, phase, existing: alloc })}
+                        onEditAllocation={(alloc, member) => handleEditAllocation(alloc, member, phase)}
                         onDeleteAllocation={setAllocationToDelete}
                         hasNextPhase={index < phases.length - 1}
                         onDuplicateAllocation={(alloc) => handleDuplicateAllocation(alloc, index)}

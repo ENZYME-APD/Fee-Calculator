@@ -7,12 +7,25 @@ import { TeamTable } from '@/components/resources/TeamTable';
 import { TeamMemberForm } from '@/components/resources/TeamMemberForm';
 import { CsvManager } from '@/components/resources/CsvManager';
 import { Plus } from 'lucide-react';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | undefined>();
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
   const loadMembers = async () => {
     setLoading(true);
@@ -30,18 +43,32 @@ export default function TeamPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to remove this team member?')) {
-      await deleteTeamMember(id);
-      loadMembers();
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Remove Team Member',
+      message: 'Are you sure you want to remove this team member? This action cannot be undone.',
+      confirmText: 'Remove',
+      onConfirm: async () => {
+        await deleteTeamMember(id);
+        loadMembers();
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   const handleBulkDelete = async (ids: string[]) => {
-    if (confirm(`Are you sure you want to delete ${ids.length} team members?`)) {
-      setLoading(true);
-      await Promise.all(ids.map(id => deleteTeamMember(id)));
-      loadMembers();
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Team Members',
+      message: `Are you sure you want to delete ${ids.length} team members? This action cannot be undone.`,
+      confirmText: 'Delete All',
+      onConfirm: async () => {
+        setLoading(true);
+        await Promise.all(ids.map(id => deleteTeamMember(id)));
+        loadMembers();
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   const handleBulkEdit = async (ids: string[], updates: Partial<TeamMember>) => {
@@ -114,6 +141,15 @@ export default function TeamPage() {
         onClose={() => setIsFormOpen(false)}
         onSaved={loadMembers}
         initialData={editingMember}
+      />
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
   );
