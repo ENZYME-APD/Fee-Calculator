@@ -1,5 +1,5 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc } from 'firebase/firestore';
-import { db } from './config';
+import { db, auth } from './config';
 import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory } from './schema';
 
 const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));

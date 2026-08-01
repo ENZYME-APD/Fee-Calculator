@@ -11,14 +11,14 @@ export function TeamTab({ company }: { company: Company }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadInvites();
-  }, []);
-
   const loadInvites = async () => {
     const data = await getInvitesByCompany();
     setInvites(data);
   };
+
+  useEffect(() => {
+    loadInvites();
+  }, []);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
