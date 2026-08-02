@@ -311,6 +311,15 @@ export const getUsersByCompany = async () => {
   return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }) as User);
 };
 
+export const updateUser = async (uid: string, updates: Partial<User>) => {
+  await updateDoc(doc(db, 'users', uid), sanitize(updates) as any);
+};
+
+export const removeUserFromCompany = async (uid: string) => {
+  await deleteDoc(doc(db, 'users', uid));
+};
+
+
 export const updateProjectCost = async (id: string, cost: Partial<Omit<ProjectCost, 'id' | 'companyId'>>) => {
   await updateDoc(doc(db, 'projectCosts', id), sanitize(cost) as any);
 };

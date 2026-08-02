@@ -1,11 +1,13 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase } from '@/lib/firebase/db';
-import { Project, Phase } from '@/lib/firebase/schema';
+import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase, getUsersByCompany } from '@/lib/firebase/db';
+import { Project, Phase, User } from '@/lib/firebase/schema';
 import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save } from 'lucide-react';
 import { PaymentScheduleManager } from './PaymentScheduleManager';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
+import { PromptModal } from '@/components/modals/PromptModal';
 
 export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: boolean }) {
   const router = useRouter();
@@ -24,6 +26,8 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   const [editingProjectName, setEditingProjectName] = useState('');
   const [editingProjectStatus, setEditingProjectStatus] = useState('Draft');
   const [editingProjectStartDate, setEditingProjectStartDate] = useState(Date.now());
+  const [editingProjectOwnerId, setEditingProjectOwnerId] = useState('');
+  const [companyUsers, setCompanyUsers] = useState<User[]>([]);
   
   // New Phase Form
   const [newPhaseName, setNewPhaseName] = useState('');
@@ -98,6 +102,12 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
       setPhases([]);
     }
   }, [activeProjectId]);
+
+  useEffect(() => {
+    if (dbUser) {
+      getUsersByCompany().then(setCompanyUsers);
+    }
+  }, [dbUser]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,6 +202,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
     setEditingProjectName(p.name);
     setEditingProjectStatus(p.status || 'Draft');
     setEditingProjectStartDate(p.startDate || Date.now());
+    setEditingProjectOwnerId(p.ownerId || dbUser?.uid || '');
   };
 
   const handleEditProjectSave = async (e: React.FormEvent) => {
@@ -200,7 +211,8 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
       await updateProject(editingProjectId, { 
         name: editingProjectName.trim(),
         status: editingProjectStatus,
-        startDate: editingProjectStartDate
+        startDate: editingProjectStartDate,
+        ownerId: editingProjectOwnerId
       });
       await loadProjects();
     }
@@ -364,6 +376,16 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                           onChange={e => setEditingProjectStartDate(new Date(e.target.value).getTime())}
                           className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                         />
+                        <select
+                          value={editingProjectOwnerId}
+                          onChange={e => setEditingProjectOwnerId(e.target.value)}
+                          className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 w-28 truncate"
+                        >
+                          <option value="">No Originator</option>
+                          {companyUsers.map(u => (
+                            <option key={u.uid} value={u.uid}>{u.displayName || u.email}</option>
+                          ))}
+                        </select>
                       </div>
                     )}
                   </form>
@@ -527,6 +549,26 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
            <p>Select a project to manage its payment schedule.</p>
         </div>
       )}
+
+      <PromptModal
+        isOpen={promptConfig.isOpen}
+        title={promptConfig.title}
+        message={promptConfig.message}
+        defaultValue={promptConfig.defaultValue}
+        confirmText={promptConfig.confirmText}
+        onConfirm={promptConfig.onConfirm}
+        onCancel={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
+      />
+      
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        onConfirm={confirmConfig.onConfirm}
+        secondaryAction={confirmConfig.secondaryAction}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

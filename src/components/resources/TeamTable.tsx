@@ -157,7 +157,6 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                 </div>
               </th>
               <th className="px-4 py-3 font-semibold">Position</th>
-              <th className="px-4 py-3 font-semibold">Category</th>
               <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Salary/Mo ({currencyCode})</th>
               <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Overheads/Mo ({currencyCode})</th>
               <th className="px-4 py-3 font-semibold text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">Cost/Hr ({currencyCode})</th>
@@ -168,8 +167,8 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {Object.entries(membersByCategory)
               .sort(([catA], [catB]) => {
-                const orderA = categories.find(c => c.name === catA)?.order ?? 99;
-                const orderB = categories.find(c => c.name === catB)?.order ?? 99;
+                const orderA = categories.find(c => c.id === catA)?.order ?? 99;
+                const orderB = categories.find(c => c.id === catB)?.order ?? 99;
                 return orderA - orderB;
               })
               .map(([category, catMembers]) => {
@@ -189,11 +188,13 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                         className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
                       />
                     </td>
-                    <td colSpan={8} className="px-4 py-2">
-                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider">
+                    <td colSpan={9} className="px-4 py-3">
+                      <div className="flex items-center gap-2">
                         {isExpanded(category) ? <ChevronDown size={16} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400" /> : <ChevronRight size={16} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400" />}
-                        <Folder size={16} className="text-blue-500 dark:text-blue-400" />
-                        {category} ({catMembers.length})
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {categories.find(c => c.id === category)?.name || (category === 'UNCATEGORIZED' ? 'Uncategorized' : category)}
+                        </span>
+                        <span className="text-slate-500 dark:text-slate-400 font-medium">({catMembers.length})</span>
                       </div>
                     </td>
                   </tr>
@@ -220,7 +221,6 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                         </div>
                       </td>
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{member.position}</td>
-                      <td className="px-4 py-3 text-slate-400 dark:text-slate-500 text-xs">-</td>
                       <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatCurrency(member.salary)}</td>
                       <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatCurrency(member.overheads)}</td>
                       <td className="px-4 py-3 text-right font-medium text-rose-600 dark:text-rose-400">{formatCurrency(member.costPerHour)}</td>

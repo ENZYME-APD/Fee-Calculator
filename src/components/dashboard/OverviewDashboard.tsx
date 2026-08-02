@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments } from '@/lib/firebase/db';
 import { Project, Phase, TeamMember, Allocation, ProjectCost, User } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis } from 'recharts';
-import { Folder, CircleDollarSign, TrendingUp, Users } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, Cell, PieChart, Pie } from 'recharts';
+import { Folder, CircleDollarSign, TrendingUp, Users, PieChart as PieChartIcon, List } from 'lucide-react';
 
 export function OverviewDashboard() {
   const { dbUser } = useAuth();
@@ -37,6 +37,51 @@ export function OverviewDashboard() {
   });
 
   const [users, setUsers] = useState<User[]>([]);
+  const [leaderboardView, setLeaderboardView] = useState<'list' | 'chart'>('chart');
+
+  const CustomTooltip = ({ active, payload, label, formatter }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-700/50 dark:border-slate-800/50 p-3 rounded-xl shadow-xl min-w-[140px]">
+          {label && <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">{label}</p>}
+          <div className="flex flex-col gap-1.5">
+            {payload.map((entry: any, index: number) => (
+              <div key={`item-${index}`} className="flex items-center gap-2 text-xs">
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                <span className="text-slate-300 font-medium truncate max-w-[150px]">{entry.name}:</span>
+                <span className="text-white font-bold ml-auto pl-2">
+                  {formatter ? formatter(entry.value, entry.name) : entry.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomScatterTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-700/50 dark:border-slate-800/50 p-3 rounded-xl shadow-xl min-w-[140px]">
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">{data.name}</p>
+          <div className="flex flex-col gap-1.5 text-xs">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-slate-300 font-medium">Total Fee:</span>
+              <span className="text-white font-bold">{formatCurrency(data.totalFee)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-slate-300 font-medium">Margin:</span>
+              <span className="text-white font-bold">{data.margin.toFixed(1)}%</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   useEffect(() => {
     if (!dbUser) return;
@@ -48,7 +93,8 @@ export function OverviewDashboard() {
     const ownerId = dbUser?.role !== 'admin' ? dbUser?.uid : undefined;
     
     // Fetch all required data
-    const projs = await getProjects(false, ownerId);
+    const allProjs = await getProjects(false, ownerId);
+    const projs = allProjs.filter(p => p.status === 'Proposed' || p.status === 'Active');
     const phases = await getPhases();
     const members = await getTeamMembers();
     const allocations = await getAllocations();
@@ -164,6 +210,7 @@ export function OverviewDashboard() {
       tMap[bucketKey][proj.name] += paymentValue;
     });
 
+
     const tArr = Object.values(tMap).sort((a: any, b: any) => a.dateValue - b.dateValue);
     setTimelineData(tArr);
 
@@ -178,11 +225,30 @@ export function OverviewDashboard() {
     );
   }
 
-  const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+  };
+
+  const leaderboardData = Object.entries(scatterData.reduce((acc: any, curr) => {
+    const owner = curr.ownerId;
+    const ownerUser = users.find(u => u.uid === owner);
+    const ownerName = ownerUser?.displayName || ownerUser?.email || 'Unassigned';
+    if (!acc[ownerName]) acc[ownerName] = { name: ownerName, totalGenerated: 0, projects: 0 };
+    acc[ownerName].totalGenerated += curr.totalFee;
+    acc[ownerName].projects += 1;
+    return acc;
+  }, {})).map(([_, data]: any) => data).sort((a: any, b: any) => b.totalGenerated - a.totalGenerated);
+
+  const DONUT_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#f43f5e', '#06b6d4'];
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full h-full overflow-y-auto">
-      <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-8">Overview Dashboard</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Overview Dashboard</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Showing data for <strong>Proposed</strong> and <strong>Active</strong> projects only. You can change a project's status in the Projects tab.
+        </p>
+      </div>
       
       {/* Top KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -252,11 +318,11 @@ export function OverviewDashboard() {
                   <XAxis dataKey="label" stroke="#64748b" tick={{ fontSize: 12 }} tickMargin={10} />
                   <YAxis stroke="#64748b" tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12 }} />
                   <Tooltip 
-                    cursor={{ fill: 'transparent' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', backgroundColor: 'var(--tw-prose-bg, #fff)' }}
-                    formatter={(value: any) => formatCurrency(Number(value))}
+                    cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }}
+                    animationDuration={150}
+                    content={<CustomTooltip formatter={(value: any) => formatCurrency(Number(value))} />}
                   />
-                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                  <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: '#64748b' }} />
                   {projectNames.map(name => (
                     <Bar key={name} dataKey={name} stackId="a" fill={projectColors[name]} radius={[2, 2, 0, 0]} />
                   ))}
@@ -279,15 +345,15 @@ export function OverviewDashboard() {
                 <YAxis type="number" dataKey="margin" name="Margin" unit="%" stroke="#64748b" />
                 <ZAxis type="category" dataKey="name" name="Project" />
                 <Tooltip 
-                  cursor={{ strokeDasharray: '3 3' }} 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                  formatter={(value: any, name: any) => {
-                    if (name === "Total Fee") return formatCurrency(Number(value));
-                    if (name === "Margin") return `${Number(value).toFixed(1)}%`;
-                    return value;
-                  }}
+                  cursor={{ strokeDasharray: '3 3', stroke: 'rgba(148, 163, 184, 0.4)' }} 
+                  animationDuration={150}
+                  content={<CustomScatterTooltip />}
                 />
-                <Scatter name="Projects" data={scatterData} fill="#3b82f6" />
+                <Scatter name="Projects" data={scatterData}>
+                  {scatterData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={projectColors[entry.name] || '#3b82f6'} />
+                  ))}
+                </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -296,31 +362,66 @@ export function OverviewDashboard() {
         {/* Leaderboard (If Admin) */}
         {dbUser?.role === 'admin' && (
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm overflow-hidden flex flex-col">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2">
-              <Users size={20} className="text-blue-500" />
-              Proposal Leaderboard
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Users size={20} className="text-blue-500" />
+                Proposal Leaderboard
+              </h2>
+              <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                <button 
+                  onClick={() => setLeaderboardView('list')}
+                  className={`p-1.5 rounded-md transition-colors ${leaderboardView === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                >
+                  <List size={16} />
+                </button>
+                <button 
+                  onClick={() => setLeaderboardView('chart')}
+                  className={`p-1.5 rounded-md transition-colors ${leaderboardView === 'chart' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                >
+                  <PieChartIcon size={16} />
+                </button>
+              </div>
+            </div>
             <div className="flex-1 overflow-y-auto pr-2 space-y-3">
-              {/* Note: since we don't have user display names easily accessible here, we'll group by ownerId and display it */}
-              {Object.entries(scatterData.reduce((acc: any, curr) => {
-                const owner = curr.ownerId;
-                const ownerUser = users.find(u => u.uid === owner);
-                const ownerName = ownerUser?.displayName || ownerUser?.email || 'Unassigned';
-                if (!acc[ownerName]) acc[ownerName] = { name: ownerName, totalGenerated: 0, projects: 0 };
-                acc[ownerName].totalGenerated += curr.totalFee;
-                acc[ownerName].projects += 1;
-                return acc;
-              }, {})).map(([ownerName, data]: any) => (
-                <div key={ownerName as string} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
-                  <div>
-                    <p className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{data.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{data.projects} projects generated</p>
+              {leaderboardView === 'list' ? (
+                leaderboardData.map((data: any) => (
+                  <div key={data.name as string} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{data.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{data.projects} projects generated</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-black text-blue-600 dark:text-blue-400">{formatCurrency(data.totalGenerated)}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-black text-blue-600 dark:text-blue-400">{formatCurrency(data.totalGenerated)}</p>
-                  </div>
+                ))
+              ) : (
+                <div className="h-full w-full min-h-[250px] flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={leaderboardData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="totalGenerated"
+                        nameKey="name"
+                      >
+                        {leaderboardData.map((entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={DONUT_COLORS[index % DONUT_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        animationDuration={150}
+                        content={<CustomTooltip formatter={(value: any) => formatCurrency(Number(value))} />}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}

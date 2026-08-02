@@ -63,7 +63,7 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => ({
       ...prev,
-      [cat]: prev[cat] === undefined ? false : !prev[cat] // If undefined, it means it's expanded by default, so set to false
+      [cat]: prev[cat] === undefined ? true : !prev[cat] // If undefined, it means it's collapsed by default, so set to true
     }));
   };
 
@@ -81,7 +81,7 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
     setIsTeamMenuOpen(false);
   };
 
-  const isExpanded = (cat: string) => expandedCategories[cat] !== false; // true by default
+  const isExpanded = (cat: string) => expandedCategories[cat] === true; // false by default
 
   const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 5 } });
   const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } });
@@ -254,18 +254,24 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
             
             {Object.entries(membersByCategory)
               .sort(([catA], [catB]) => {
-                const orderA = categories.find(c => c.name === catA)?.order ?? 99;
-                const orderB = categories.find(c => c.name === catB)?.order ?? 99;
+                const orderA = categories.find(c => c.id === catA)?.order ?? 99;
+                const orderB = categories.find(c => c.id === catB)?.order ?? 99;
                 return orderA - orderB;
               })
-              .map(([category, catMembers]) => (
+              .map(([category, catMembers]) => {
+                const displayCat = categories.find(c => c.id === category)?.name || (category === 'UNCATEGORIZED' ? 'Uncategorized' : category);
+                const displayColor = categories.find(c => c.id === category)?.color || '#94a3b8';
+                return (
               <div key={category} className="flex flex-col gap-1.5">
                 <button 
                   onClick={() => toggleCategory(category)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-1 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                  className="flex items-center justify-between w-full text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-1 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
                 >
-                  {isExpanded(category) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  {category} ({catMembers.length})
+                  <div className="flex items-center gap-1.5">
+                    {isExpanded(category) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    {displayCat} ({catMembers.length})
+                  </div>
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0 mr-1" style={{ backgroundColor: displayColor }} />
                 </button>
                 
                 {isExpanded(category) && (
@@ -276,7 +282,8 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

@@ -43,24 +43,18 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
   const baseCostPercent = totalCost > 0 ? (baseCost / totalCost) * 100 : 0;
   const addedCostPercent = totalCost > 0 ? (addedCost / totalCost) * 100 : 0;
 
-  let costMgmt = 0;
-  let costGlobal = 0;
-  let costJakarta = 0;
-  let costConsult = 0;
+  const breakdown: Record<string, number> = {};
+  let otherExpenses = 0;
 
   allocations.forEach(a => {
     const cost = a.hours * a.member.costPerHour;
-    const cat = (a.member.category || '').toUpperCase();
-    if (cat.includes('MANAGEMENT')) costMgmt += cost;
-    else if (cat.includes('GLOBAL')) costGlobal += cost;
-    else if (cat.includes('JAKARTA')) costJakarta += cost;
-    else if (cat.includes('CONSULTANT')) costConsult += cost;
+    const catId = a.member.category || 'uncategorized';
+    breakdown[catId] = (breakdown[catId] || 0) + cost;
   });
-
-  const pMgmt = totalCost > 0 ? (costMgmt / totalCost) * 100 : 0;
-  const pGlobal = totalCost > 0 ? (costGlobal / totalCost) * 100 : 0;
-  const pJakarta = totalCost > 0 ? (costJakarta / totalCost) * 100 : 0;
-  const pConsult = totalCost > 0 ? (costConsult / totalCost) * 100 : 0;
+  
+  projectCosts.forEach(c => {
+    otherExpenses += c.quantity * c.unitCost;
+  });
 
   const confirmDeleteCost = async () => {
     if (costToDelete) {
@@ -111,15 +105,49 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
           <span className="text-orange-500 dark:text-orange-400">Other: {formatCurrency(addedCost)}</span>
         </div>
         <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
-          {pMgmt > 0 && <div style={{width: `${pMgmt}%`}} className="bg-blue-600 transition-all hover:opacity-90" title={`Management: ${pMgmt.toFixed(1)}%`} />}
-          {pGlobal > 0 && <div style={{width: `${pGlobal}%`}} className="bg-blue-500 transition-all hover:opacity-90" title={`Team Global: ${pGlobal.toFixed(1)}%`} />}
-          {pJakarta > 0 && <div style={{width: `${pJakarta}%`}} className="bg-blue-400 transition-all hover:opacity-90" title={`Team Jakarta: ${pJakarta.toFixed(1)}%`} />}
-          {pConsult > 0 && <div style={{width: `${pConsult}%`}} className="bg-emerald-400 transition-all hover:opacity-90" title={`Consultants: ${pConsult.toFixed(1)}%`} />}
-          {addedCostPercent > 0 && <div style={{width: `${addedCostPercent}%`}} className="bg-orange-400 dark:bg-orange-500 transition-all hover:opacity-90" title={`Project Costs: ${addedCostPercent.toFixed(1)}%`} />}
+          {categories.map((cat, idx) => {
+            if (cat.isFixed) return null;
+            const cost = breakdown[cat.id!] || 0;
+            if (cost === 0) return null;
+            const percent = (cost / totalCost) * 100;
+            const bgColor = cat.color || '#3b82f6';
+            return <div key={cat.id} style={{width: `${percent}%`, backgroundColor: bgColor}} className="transition-all hover:opacity-90" title={`${cat.name}: ${percent.toFixed(1)}%`} />
+          })}
+          {(breakdown['uncategorized'] || 0) > 0 && (
+            <div style={{width: `${((breakdown['uncategorized'] || 0) / totalCost) * 100}%`}} className="bg-slate-400 transition-all hover:opacity-90" title={`Uncategorized: ${(((breakdown['uncategorized'] || 0) / totalCost) * 100).toFixed(1)}%`} />
+          )}
+          {otherExpenses > 0 && (
+            <div style={{width: `${(otherExpenses / totalCost) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}} className="transition-all hover:opacity-90" title={`Other Expenses: ${((otherExpenses / totalCost) * 100).toFixed(1)}%`} />
+          )}
         </div>
-        <div className="flex justify-between text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1">
-          <span>{baseCostPercent.toFixed(1)}%</span>
-          <span>{addedCostPercent.toFixed(1)}%</span>
+        <div className="flex w-full mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+          {categories.map((cat, idx) => {
+            if (cat.isFixed) return null;
+            const cost = breakdown[cat.id!] || 0;
+            if (cost === 0) return null;
+            const percent = (cost / totalCost) * 100;
+            return (
+              <div key={cat.id} style={{width: `${percent}%`}} className="text-center overflow-hidden whitespace-nowrap">
+                {percent >= 4 ? `${percent.toFixed(1)}%` : ''}
+              </div>
+            );
+          })}
+          {(breakdown['uncategorized'] || 0) > 0 && (() => {
+            const percent = ((breakdown['uncategorized'] || 0) / totalCost) * 100;
+            return (
+              <div style={{width: `${percent}%`}} className="text-center overflow-hidden whitespace-nowrap">
+                {percent >= 4 ? `${percent.toFixed(1)}%` : ''}
+              </div>
+            );
+          })()}
+          {otherExpenses > 0 && (() => {
+            const percent = (otherExpenses / totalCost) * 100;
+            return (
+              <div style={{width: `${percent}%`}} className="text-center overflow-hidden whitespace-nowrap">
+                {percent >= 4 ? `${percent.toFixed(1)}%` : ''}
+              </div>
+            );
+          })()}
         </div>
       </div>
       
@@ -127,8 +155,8 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
         {allocations
           .slice()
           .sort((a, b) => {
-            const orderA = categories.find(c => c.name === a.member.category)?.order ?? 99;
-            const orderB = categories.find(c => c.name === b.member.category)?.order ?? 99;
+            const orderA = categories.find(c => c.id === a.member.category)?.order ?? 99;
+            const orderB = categories.find(c => c.id === b.member.category)?.order ?? 99;
             return orderA - orderB;
           })
           .map(allocation => (

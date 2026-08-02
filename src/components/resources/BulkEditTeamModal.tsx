@@ -64,8 +64,8 @@ export function BulkEditTeamModal({ isOpen, onClose, onSave, selectedCount, cate
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
             >
               <option value="">(Leave blank to keep existing)</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.name}>{cat.name}</option>
+              {categories.filter(c => !c.isFixed).map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
           </div>

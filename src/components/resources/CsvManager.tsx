@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Download, Upload } from 'lucide-react';
-import { batchAddTeamMembers } from '@/lib/firebase/db';
+import { batchAddTeamMembers, getTeamMembers, getCategories } from '@/lib/firebase/db';
 import { TeamMember } from '@/lib/firebase/schema';
 
 interface CsvManagerProps {
@@ -32,6 +32,50 @@ export function CsvManager({ onComplete }: CsvManagerProps) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const downloadFullTeam = async () => {
+    setLoading(true);
+    try {
+      const [members, categories] = await Promise.all([
+        getTeamMembers(),
+        getCategories()
+      ]);
+      
+      const headers = ['Name', 'Position', 'Category', 'Salary', 'Overheads', 'Currency', 'Cost/Hr', 'Fee/Hr'];
+      
+      const rows = members.map(m => {
+        const catName = categories.find(c => c.id === m.category)?.name || (m.category === 'UNCATEGORIZED' ? 'Uncategorized' : m.category);
+        return [
+          `"${m.name || ''}"`, 
+          `"${m.position || ''}"`, 
+          `"${catName}"`, 
+          m.salary?.toString() || '0', 
+          m.overheads?.toString() || '0', 
+          m.currency || 'USD',
+          m.costPerHour?.toString() || '0',
+          m.roundedFeeHour?.toString() || '0'
+        ];
+      });
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'team_members_export.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to download team list');
+    }
+    setLoading(false);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,6 +153,15 @@ export function CsvManager({ onComplete }: CsvManagerProps) {
       >
         <Download size={16} />
         Template
+      </button>
+
+      <button 
+        onClick={downloadFullTeam}
+        disabled={loading}
+        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 text-sm"
+      >
+        <Download size={16} />
+        Export CSV
       </button>
 
       <input 

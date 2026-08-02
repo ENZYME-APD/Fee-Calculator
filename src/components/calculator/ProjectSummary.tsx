@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from 'react';
-import { Project, Phase, Allocation, TeamMember, ProjectCost } from '@/lib/firebase/schema';
-import { updateProject } from '@/lib/firebase/db';
+import React, { useState, useEffect } from 'react';
+import { Project, Phase, Allocation, TeamMember, ProjectCost, TeamCategory } from '@/lib/firebase/schema';
+import { updateProject, getCategories } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Calculator, Edit3, Check, X, Download } from 'lucide-react';
 
@@ -21,6 +21,11 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
   const [marginInput, setMarginInput] = useState(project.profitMargin?.toString() || '30');
   const [isEditingArea, setIsEditingArea] = useState(false);
   const [areaInput, setAreaInput] = useState(project.area?.toString() || '0');
+  const [categories, setCategories] = useState<TeamCategory[]>([]);
+
+  useEffect(() => {
+    getCategories().then(c => setCategories(c.sort((a, b) => a.order - b.order)));
+  }, []);
 
   // Compute stats per phase
   const phaseStats = phases.map(phase => {
@@ -28,13 +33,8 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
     let totalHours = 0;
     let totalCost = 0;
 
-    const breakdown = {
-      management: 0,
-      global: 0,
-      jakarta: 0,
-      consultants: 0,
-      projectCosts: 0
-    };
+    const breakdown: Record<string, number> = {};
+    let otherExpenses = 0;
 
     phaseAllocations.forEach(alloc => {
       const member = members.find(m => m.id === alloc.memberId);
@@ -43,11 +43,8 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
         const cost = alloc.hours * member.costPerHour;
         totalCost += cost;
 
-        const cat = member.category?.toUpperCase() || '';
-        if (cat === 'MANAGEMENT') breakdown.management += cost;
-        else if (cat === 'TEAM GLOBAL') breakdown.global += cost;
-        else if (cat === 'TEAM JAKARTA') breakdown.jakarta += cost;
-        else if (cat === 'CONSULTANTS' || member.type === 'Consultant') breakdown.consultants += cost;
+        const catId = member.category || 'uncategorized';
+        breakdown[catId] = (breakdown[catId] || 0) + cost;
       }
     });
 
@@ -57,8 +54,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
     
     phaseCosts.forEach(c => {
       const cost = c.quantity * c.unitCost;
-      if (c.type === 'consultant') breakdown.consultants += cost;
-      else breakdown.projectCosts += cost;
+      otherExpenses += cost;
     });
 
     return {
@@ -66,6 +62,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
       totalHours,
       totalCost,
       breakdown,
+      otherExpenses
     };
   });
 
@@ -367,11 +364,6 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                   
                   // Compute breakdown percentages (relative to phase total cost)
                   const total = stat.totalCost || 1;
-                  const pMgmt = (stat.breakdown.management / total) * 100;
-                  const pGlobal = (stat.breakdown.global / total) * 100;
-                  const pJakarta = (stat.breakdown.jakarta / total) * 100;
-                  const pConsult = (stat.breakdown.consultants / total) * 100;
-                  const pProjectCosts = (stat.breakdown.projectCosts / total) * 100;
 
                   // Generate alternating pastel colors like the image
                   const colors = ['bg-green-200 border-green-300', 'bg-blue-200 border-blue-300', 'bg-pink-200 border-pink-300', 'bg-purple-200 border-purple-300', 'bg-yellow-200 border-yellow-300'];
@@ -396,11 +388,19 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                       
                       {/* Breakdown Bar */}
                       <div className="h-4 w-full flex bg-slate-100 dark:bg-slate-800">
-                        {pMgmt > 0 && <div style={{width: `${pMgmt}%`}} className="bg-blue-600 transition-all hover:opacity-90" title={`Management: ${pMgmt.toFixed(1)}%`} />}
-                        {pGlobal > 0 && <div style={{width: `${pGlobal}%`}} className="bg-blue-500 transition-all hover:opacity-90" title={`Team Global: ${pGlobal.toFixed(1)}%`} />}
-                        {pJakarta > 0 && <div style={{width: `${pJakarta}%`}} className="bg-blue-400 transition-all hover:opacity-90" title={`Team Jakarta: ${pJakarta.toFixed(1)}%`} />}
-                        {pConsult > 0 && <div style={{width: `${pConsult}%`}} className="bg-emerald-400 transition-all hover:opacity-90" title={`Consultants: ${pConsult.toFixed(1)}%`} />}
-                        {pProjectCosts > 0 && <div style={{width: `${pProjectCosts}%`}} className="bg-orange-400 transition-all hover:opacity-90" title={`Project Costs: ${pProjectCosts.toFixed(1)}%`} />}
+                        {categories.map((cat, idx) => {
+                          const cost = stat.breakdown[cat.id!] || 0;
+                          if (cost === 0) return null;
+                          const percent = (cost / total) * 100;
+                          const bgColor = cat.color || '#3b82f6';
+                          return <div key={cat.id} style={{width: `${percent}%`, backgroundColor: bgColor}} className={`transition-all hover:opacity-90`} title={`${cat.name}: ${percent.toFixed(1)}%`} />
+                        })}
+                        {(stat.breakdown['uncategorized'] || 0) > 0 && (
+                          <div style={{width: `${((stat.breakdown['uncategorized'] || 0) / total) * 100}%`}} className="bg-slate-400 transition-all hover:opacity-90" title={`Uncategorized: ${(((stat.breakdown['uncategorized'] || 0) / total) * 100).toFixed(1)}%`} />
+                        )}
+                        {stat.otherExpenses > 0 && (
+                          <div style={{width: `${(stat.otherExpenses / total) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}} className="transition-all hover:opacity-90" title={`Other Expenses: ${((stat.otherExpenses / total) * 100).toFixed(1)}%`} />
+                        )}
                       </div>
                     </div>
                   );
@@ -412,11 +412,15 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
           {/* Legend moved to bottom */}
           <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] font-medium text-slate-500 dark:text-slate-400">
-              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-blue-600"></div>Management</div>
-              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-blue-500"></div>Global</div>
-              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400"></div>Jakarta</div>
-              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-emerald-400"></div>Consultants</div>
-              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-orange-400"></div>Project Costs</div>
+              {categories.map((cat, idx) => {
+                if (cat.isFixed) return null;
+                const bgColor = cat.color || '#3b82f6';
+                return (
+                  <div key={cat.id} className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm" style={{backgroundColor: bgColor}}></div>{cat.name}</div>
+                );
+              })}
+              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-slate-400"></div>Uncategorized</div>
+              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm" style={{backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}}></div>Other Expenses</div>
             </div>
           </div>
         </div>

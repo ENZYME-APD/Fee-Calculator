@@ -33,6 +33,8 @@ export interface TeamCategory {
   companyId: string;
   name: string;
   order: number;
+  color?: string;
+  isFixed?: boolean;
 }
 
 export interface TeamMember {
