@@ -6,6 +6,7 @@ import { Mail, Copy, Check, Trash2, Users, Edit2, Save, KeyRound } from 'lucide-
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 export function TeamTab({ company }: { company: Company }) {
   const { dbUser } = useAuth();
@@ -194,22 +195,24 @@ export function TeamTab({ company }: { company: Company }) {
                     <option value="viewer">Viewer</option>
                   </select>
                   
-                  <button
-                    onClick={() => handleResetPassword(user.email)}
-                    title="Send Password Reset"
-                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                  >
-                    <KeyRound size={16} />
-                  </button>
+                  <Tooltip content="Send Password Reset" position="top">
+                    <button
+                      onClick={() => handleResetPassword(user.email)}
+                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                    >
+                      <KeyRound size={16} />
+                    </button>
+                  </Tooltip>
                   
                   {user.uid !== dbUser?.uid && (
-                    <button
-                      onClick={() => handleDeleteUser(user.uid!)}
-                      title="Remove from workspace"
-                      className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <Tooltip content="Remove from workspace" position="top">
+                      <button
+                        onClick={() => handleDeleteUser(user.uid!)}
+                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </Tooltip>
                   )}
                 </div>
               </div>

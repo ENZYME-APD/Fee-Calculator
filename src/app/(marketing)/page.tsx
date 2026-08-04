@@ -1,10 +1,12 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Calculator, CheckCircle2, FileSpreadsheet, FolderKanban, Users } from 'lucide-react';
+import { ArrowRight, Calculator, CheckCircle2, FileSpreadsheet, FolderKanban, Users, Share2, BarChart3, Database } from 'lucide-react';
+import { AuthRedirect } from '@/components/marketing/AuthRedirect';
 
 export default function LandingPage() {
   return (
     <div className="flex flex-col pt-20">
+      <AuthRedirect />
       {/* Hero Section */}
       <section className="relative px-4 pt-20 pb-32 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
         {/* Background glow */}
@@ -32,7 +34,7 @@ export default function LandingPage() {
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link 
-              href="/login" 
+              href="/login?signup=true" 
               className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-600/25 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-lg"
             >
               Start 7-Day Free Trial
@@ -79,6 +81,30 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Team Allocation</h3>
               <p className="text-slate-500 dark:text-slate-400">Assign roles to team members and ensure you always have the right mix of seniors and juniors on the job.</p>
+            </div>
+            
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-12 w-12 bg-rose-100 dark:bg-rose-900/30 rounded-2xl flex items-center justify-center mb-6">
+                <Share2 size={24} className="text-rose-600 dark:text-rose-400" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Collaborative</h3>
+              <p className="text-slate-500 dark:text-slate-400">Team can work together on fees and pipeline in real-time. Share proposals effortlessly.</p>
+            </div>
+            
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mb-6">
+                <BarChart3 size={24} className="text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Business Intelligence</h3>
+              <p className="text-slate-500 dark:text-slate-400">Complete dashboard to view pipeline and understand the overall health of your business.</p>
+            </div>
+            
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-12 w-12 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-6">
+                <Database size={24} className="text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Centralised Database</h3>
+              <p className="text-slate-500 dark:text-slate-400">Store all your templates, categories, and historical project data in one secure location.</p>
             </div>
           </div>
         </div>
@@ -127,7 +153,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               
-              <Link href="/login" className="w-full py-4 rounded-xl font-bold text-center border-2 border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+              <Link href="/login?signup=true" className="w-full py-4 rounded-xl font-bold text-center border-2 border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                 Start Free Trial
               </Link>
             </div>
@@ -165,7 +191,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               
-              <Link href="/login" className="w-full py-4 rounded-xl font-bold text-center bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5">
+              <Link href="/login?signup=true" className="w-full py-4 rounded-xl font-bold text-center bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5">
                 Start Free Trial
               </Link>
             </div>

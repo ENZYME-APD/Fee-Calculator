@@ -4,6 +4,7 @@ import { Pencil, Trash2, ChevronDown, ChevronRight, Folder, Edit3 } from 'lucide
 import { getCategories } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { BulkEditTeamModal } from './BulkEditTeamModal';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 interface TeamTableProps {
   members: TeamMember[];
@@ -135,24 +136,26 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 sticky top-0 border-b border-slate-200 dark:border-slate-800 z-10">
             <tr>
-              <th className="px-4 py-3 w-10">
-                <input 
-                  type="checkbox" 
-                  checked={selectedIds.size === members.length && members.length > 0}
-                  onChange={toggleSelectAll}
-                  className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  title="Select All"
-                />
+              <th className="px-4 py-3 w-10 text-center">
+                <Tooltip content="Select All" position="top">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.size === members.length && members.length > 0}
+                    onChange={toggleSelectAll}
+                    className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </Tooltip>
               </th>
               <th className="px-4 py-3 font-semibold whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={toggleAllFolders} 
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                    title="Toggle All Folders"
-                  >
-                    <Folder size={14} />
-                  </button>
+                  <Tooltip content="Toggle All Folders" position="top">
+                    <button 
+                      onClick={toggleAllFolders} 
+                      className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    >
+                      <Folder size={14} />
+                    </button>
+                  </Tooltip>
                   Name
                 </div>
               </th>
@@ -194,6 +197,11 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                         <span className="font-bold text-slate-800 dark:text-slate-200">
                           {categories.find(c => c.id === category)?.name || (category === 'UNCATEGORIZED' ? 'Uncategorized' : category)}
                         </span>
+                        {categories.find(c => c.id === category)?.type === 'external' && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-400">
+                            EXTERNAL
+                          </span>
+                        )}
                         <span className="text-slate-500 dark:text-slate-400 font-medium">({catMembers.length})</span>
                       </div>
                     </td>
@@ -227,18 +235,22 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                       <td className="px-4 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(member.roundedFeeHour)}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => onEdit(member)}
-                            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button 
-                            onClick={() => member.id && onDelete(member.id)}
-                            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <Tooltip content="Edit" position="top">
+                            <button 
+                              onClick={() => onEdit(member)}
+                              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                          </Tooltip>
+                          <Tooltip content="Delete" position="top">
+                            <button 
+                              onClick={() => member.id && onDelete(member.id)}
+                              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </Tooltip>
                         </div>
                       </td>
                     </tr>

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getCompany } from '@/lib/firebase/db';
 import { Company } from '@/lib/firebase/schema';
@@ -11,9 +12,18 @@ import { CategoriesTab } from '@/components/settings/CategoriesTab';
 
 export default function SettingsPage() {
   const { dbUser } = useAuth();
+  const searchParams = useSearchParams();
   const [company, setCompany] = useState<Company | null>(null);
+  
   const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'categories' | 'team' | 'security'>('profile');
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['profile', 'preferences', 'categories', 'team', 'security'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (dbUser?.companyId) {
@@ -33,14 +43,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto flex flex-col h-full overflow-y-auto">
+    <div className="p-8 max-w-6xl mx-auto flex flex-col h-full overflow-y-auto">
       <div className="mb-8 shrink-0">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your company preferences, team, and security.</p>
       </div>
 
-      <div className="flex gap-8">
-        <div className="w-64 shrink-0">
+      <div className="flex gap-8 items-start">
+        <div className="w-64 shrink-0 sticky top-0">
           <nav className="space-y-1">
             <button
               onClick={() => setActiveTab('profile')}

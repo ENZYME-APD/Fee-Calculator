@@ -36,6 +36,54 @@ export function WikiContent() {
       {/* Wiki Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
         
+        {/* Quick Start Guide */}
+        <div className="mb-16 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-3xl p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-blue-600 rounded-xl text-white">
+              <Book size={24} />
+            </div>
+            <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Quick Start Guide</h2>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300">1</div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Set Up Your Team</h4>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">Head to the <strong>Settings &gt; Team Management</strong> tab to add your team members, their internal costs, and external billing rates.</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300">2</div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Create a Project</h4>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">Click <strong>New Project</strong> in the Projects tab. Define the scope and add project phases (e.g., Concept Design, Schematic Design).</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300">3</div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Allocate Hours</h4>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm"><strong>Drag and drop</strong> team members from the right sidebar into your project phases to allocate hours and calculate costs.</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300">4</div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Review Fee Proposal</h4>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">Switch to the <strong>Fee Proposal</strong> tab to see your bottom-up calculation of internal costs, external fees, and profit margin.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Table of Contents */}
         <div className="mb-16 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Contents</h2>

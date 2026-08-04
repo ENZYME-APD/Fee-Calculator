@@ -8,6 +8,7 @@ import { TeamMemberForm } from '@/components/resources/TeamMemberForm';
 import { CsvManager } from '@/components/resources/CsvManager';
 import { Plus } from 'lucide-react';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
+import Link from 'next/link';
 
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -117,6 +118,9 @@ export default function TeamPage() {
           <p className="text-slate-500 dark:text-slate-400 mt-1">Manage team members, salaries, and rates.</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/settings?tab=categories" className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 mr-2 flex items-center gap-1">
+            Manage Categories
+          </Link>
           <CsvManager onComplete={loadMembers} />
           <button 
             onClick={handleAddNew}

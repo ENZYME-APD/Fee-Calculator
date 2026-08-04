@@ -3,6 +3,7 @@ import React from 'react';
 import { Project, Phase, Allocation, TeamMember, ProjectCost, Payment } from '@/lib/firebase/schema';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { FileSpreadsheet, X, Download } from 'lucide-react';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 interface PaymentScheduleModalProps {
   project: Project;
@@ -186,10 +187,10 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                   <div className="h-10"></div> {/* Header spacer aligned to new h-10 headers */}
                   <div className="flex-1 flex flex-col gap-1 justify-center pb-1">
                     {startPayments.map(p => (
-                      <div key={p.id} className={`w-16 border rounded p-1.5 flex flex-col items-center justify-center shadow-sm ${unlinkedColor.pastel}`} title={p.name}>
+                      <Tooltip key={p.id} content={p.name} wrapper="div" className={`w-16 border rounded p-1.5 flex flex-col items-center justify-center shadow-sm ${unlinkedColor.pastel}`}>
                         <span className="text-[10px] font-bold">{p.percentage}%</span>
                         <span className="text-[9px] font-medium truncate w-full text-center mt-0.5">{p.name}</span>
-                      </div>
+                      </Tooltip>
                     ))}
                   </div>
                 </div>
@@ -204,9 +205,9 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                   
                   return (
                     <div key={phase.id} className={`flex flex-col border rounded-lg overflow-hidden shadow-sm shrink-0 ${phaseColors.pastel}`} style={{ flex: Math.max(1, phase.durationWeeks) }}>
-                      <div className={`h-10 text-[10px] font-bold px-1 py-0.5 text-center border-b leading-tight flex items-center justify-center break-words ${phaseColors.pastel}`} title={phase.name}>
-                        <span className="line-clamp-2">{phase.name}</span>
-                      </div>
+                      <Tooltip content={phase.name} wrapper="div" className={`h-10 text-[10px] font-bold px-1 py-0.5 text-center border-b leading-tight flex items-center justify-center break-words ${phaseColors.pastel}`}>
+                        {phase.name}
+                      </Tooltip>
                       <div className="flex flex-1">
                         {Array.from({ length: weeks }).map((_, wIndex) => {
                           const weekNum = wIndex + 1;
@@ -221,9 +222,9 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                               <span className="text-[8px] font-medium opacity-50 mb-1">W{weekNum}</span>
                               <div className="mt-auto flex flex-col justify-end gap-0.5 w-full">
                                 {paymentsThisWeek.map(p => (
-                                  <div key={p.id} className={`w-full border rounded py-0.5 px-0.5 flex flex-col items-center shadow-sm cursor-help transition-transform hover:scale-110 ${phaseColors.bright}`} title={`${p.name} - ${formatCurrency((p.percentage / 100) * projectTotalFee, 0)}`}>
+                                  <Tooltip key={p.id} content={`${p.name} - ${formatCurrency((p.percentage / 100) * projectTotalFee, 0)}`} wrapper="div" className={`w-full border rounded py-0.5 px-0.5 flex flex-col items-center shadow-sm cursor-help transition-transform hover:scale-110 ${phaseColors.bright}`}>
                                     <span className="text-[9px] font-extrabold leading-none">{p.percentage}%</span>
-                                  </div>
+                                  </Tooltip>
                                 ))}
                               </div>
                             </div>
@@ -241,10 +242,10 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                   <div className="h-10"></div> {/* Header spacer aligned to new h-10 headers */}
                   <div className="flex-1 flex flex-col gap-1 justify-center pb-1">
                     {endPayments.map(p => (
-                      <div key={p.id} className={`w-16 border rounded p-1.5 flex flex-col items-center justify-center shadow-sm ${unlinkedColor.pastel}`} title={p.name}>
+                      <Tooltip key={p.id} content={p.name} wrapper="div" className={`w-16 border rounded p-1.5 flex flex-col items-center justify-center shadow-sm ${unlinkedColor.pastel}`}>
                         <span className="text-[10px] font-bold">{p.percentage}%</span>
                         <span className="text-[9px] font-medium truncate w-full text-center mt-0.5">{p.name}</span>
-                      </div>
+                      </Tooltip>
                     ))}
                   </div>
                 </div>

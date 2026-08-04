@@ -4,10 +4,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProjectSummary } from '@/components/calculator/ProjectSummary';
 import { PaymentScheduleModal } from '@/components/calculator/PaymentScheduleModal';
-import { getProjects, getPhases, getTeamMembers, getAllocations, importProjectData, getProjectCosts, getPayments } from '@/lib/firebase/db';
+import { getProjects, getPhases, getTeamMembers, getAllocations, importProjectData, getProjectCosts, getPayments, getCategories } from '@/lib/firebase/db';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { Project, Phase, TeamMember, Allocation, ProjectCost, Payment } from '@/lib/firebase/schema';
-import { Folder, Download, Upload, FileSpreadsheet } from 'lucide-react';
+import { Project, Phase, TeamMember, Allocation, ProjectCost, Payment, TeamCategory } from '@/lib/firebase/schema';
+import { Folder, Download, Upload, FileSpreadsheet, Table } from 'lucide-react';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { exportProposalToExcel } from '@/lib/excelExport';
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -20,6 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [categories, setCategories] = useState<TeamCategory[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { dbUser } = useAuth();
@@ -29,10 +32,12 @@ export default function Home() {
     const projs = await getProjects(false, ownerId);
     const mems = await getTeamMembers();
     const allocs = await getAllocations();
+    const cats = await getCategories();
     
     setProjects(projs);
     setMembers(mems);
     setAllocations(allocs);
+    setCategories(cats);
     
     // Maintain active project if it exists in new data
     if (projs.length > 0) {
@@ -95,6 +100,20 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportExcel = () => {
+    if (!activeProject) return;
+    exportProposalToExcel(
+      activeProject,
+      phases,
+      allocations,
+      members,
+      projectCosts,
+      payments,
+      categories,
+      'USD' // or get currency from settings
+    );
+  };
+
   const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -155,23 +174,36 @@ export default function Home() {
         <div className="flex items-center gap-3">
           {activeProject && (
             <>
-              <button 
-                onClick={handleExportJSON}
-                className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm text-xs"
-                title="Export to JSON"
-              >
-                <Download size={14} />
-                <span>Save</span>
-              </button>
+              <Tooltip content="Export Project Data" position="bottom">
+                <button 
+                  onClick={handleExportJSON}
+                  className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm text-xs"
+                >
+                  <Download size={14} />
+                  <span>Save</span>
+                </button>
+              </Tooltip>
               
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm text-xs"
-                title="Import from JSON"
-              >
-                <Upload size={14} />
-                <span>Load</span>
-              </button>
+              <Tooltip content="Import Project Data" position="bottom">
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm text-xs"
+                >
+                  <Upload size={14} />
+                  <span>Load</span>
+                </button>
+              </Tooltip>
+
+              <Tooltip content="Export to Excel" position="bottom">
+                <button 
+                  onClick={handleExportExcel}
+                  className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors shadow-sm text-xs"
+                >
+                  <Table size={14} />
+                  <span>Excel</span>
+                </button>
+              </Tooltip>
+
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -204,6 +236,7 @@ export default function Home() {
       
       <div className="flex-1 overflow-hidden relative">
         <AppLayout 
+          project={activeProject}
           members={members} 
           phases={phases} 
           allocations={allocations} 

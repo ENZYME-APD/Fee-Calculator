@@ -4,12 +4,16 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswor
 import { auth, db, googleProvider } from '@/lib/firebase/config';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getInviteByToken, deleteInvite } from '@/lib/firebase/db';
+import { getInviteByToken, deleteInvite, bootstrapCompanyData } from '@/lib/firebase/db';
 import { Invite } from '@/lib/firebase/schema';
 import { Building2, Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 function LoginContent() {
-  const [isLogin, setIsLogin] = useState(true);
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+  const isSignupParam = searchParams.get('signup') === 'true';
+  const [isLogin, setIsLogin] = useState(!isSignupParam);
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
@@ -19,8 +23,6 @@ function LoginContent() {
   const [isResetting, setIsResetting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const inviteToken = searchParams.get('invite');
   const [inviteData, setInviteData] = useState<Invite | null>(null);
 
   React.useEffect(() => {
@@ -45,7 +47,7 @@ function LoginContent() {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        router.push('/');
+        router.push('/dashboard');
       } else {
         // Sign up
         if (!inviteData && !companyName.trim()) throw new Error("Company name is required");
@@ -106,6 +108,9 @@ function LoginContent() {
             companyId,
             role: 'admin'
           });
+
+          // 4. Bootstrap sample data
+          await bootstrapCompanyData(companyId, userCred.user.uid);
         }
         router.push('/dashboard');
       }
@@ -151,7 +156,7 @@ function LoginContent() {
           }, { merge: true });
           if (inviteData.id) await deleteInvite(inviteData.id);
         }
-        router.push('/');
+        router.push('/dashboard');
       } else {
         if (inviteData) {
           await setDoc(userDocRef, {
@@ -177,8 +182,10 @@ function LoginContent() {
             companyId,
             role: 'admin'
           });
+
+          await bootstrapCompanyData(companyId, user.uid);
         }
-        router.push('/');
+        router.push('/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'Google Sign-in failed.');
@@ -194,6 +201,31 @@ function LoginContent() {
             {inviteData ? <Users size={32} className="text-white" /> : <Building2 size={32} className="text-white" />}
           </div>
         </div>
+        
+        {!inviteData && !isResetting && (
+          <div className="flex p-1 mb-8 bg-slate-100 dark:bg-slate-800/50 rounded-xl">
+            <button
+              type="button"
+              onClick={() => { setIsLogin(true); setError(''); }}
+              className={cn(
+                "flex-1 py-2 text-sm font-bold rounded-lg transition-colors",
+                isLogin ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              )}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsLogin(false); setError(''); }}
+              className={cn(
+                "flex-1 py-2 text-sm font-bold rounded-lg transition-colors",
+                !isLogin ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              )}
+            >
+              Create Workspace
+            </button>
+          </div>
+        )}
         
         <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-2">
           {isResetting ? 'Reset Password' : isLogin ? 'Welcome back' : (inviteData ? 'Accept your invite' : 'Create your workspace')}
@@ -302,18 +334,7 @@ function LoginContent() {
           </button>
         </form>
 
-        {!inviteData && !isResetting && (
-          <div className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button 
-              type="button" 
-              onClick={() => { setIsLogin(!isLogin); setError(''); }}
-              className="text-blue-600 dark:text-blue-400 font-bold hover:underline"
-            >
-              {isLogin ? 'Sign up' : 'Log in'}
-            </button>
-          </div>
-        )}
+
           </>
         ) : (
           <form onSubmit={handleResetPassword} className="space-y-4">

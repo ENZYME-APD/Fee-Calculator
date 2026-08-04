@@ -4,6 +4,7 @@ import { Project, Phase, Allocation, TeamMember, ProjectCost, TeamCategory } fro
 import { updateProject, getCategories } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Calculator, Edit3, Check, X, Download } from 'lucide-react';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 interface ProjectSummaryProps {
   project: Project;
@@ -393,13 +394,13 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                           if (cost === 0) return null;
                           const percent = (cost / total) * 100;
                           const bgColor = cat.color || '#3b82f6';
-                          return <div key={cat.id} style={{width: `${percent}%`, backgroundColor: bgColor}} className={`transition-all hover:opacity-90`} title={`${cat.name}: ${percent.toFixed(1)}%`} />
+                          return <Tooltip key={cat.id} content={`${cat.name}: ${percent.toFixed(1)}%`} className="transition-all hover:opacity-90 h-full" style={{width: `${percent}%`, backgroundColor: bgColor}} children={<></>} />
                         })}
                         {(stat.breakdown['uncategorized'] || 0) > 0 && (
-                          <div style={{width: `${((stat.breakdown['uncategorized'] || 0) / total) * 100}%`}} className="bg-slate-400 transition-all hover:opacity-90" title={`Uncategorized: ${(((stat.breakdown['uncategorized'] || 0) / total) * 100).toFixed(1)}%`} />
+                          <Tooltip content={`Uncategorized: ${(((stat.breakdown['uncategorized'] || 0) / total) * 100).toFixed(1)}%`} className="bg-slate-400 transition-all hover:opacity-90 h-full" style={{width: `${((stat.breakdown['uncategorized'] || 0) / total) * 100}%`}} children={<></>} />
                         )}
                         {stat.otherExpenses > 0 && (
-                          <div style={{width: `${(stat.otherExpenses / total) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}} className="transition-all hover:opacity-90" title={`Other Expenses: ${((stat.otherExpenses / total) * 100).toFixed(1)}%`} />
+                          <Tooltip content={`Other Expenses: ${((stat.otherExpenses / total) * 100).toFixed(1)}%`} className="transition-all hover:opacity-90 h-full" style={{width: `${(stat.otherExpenses / total) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}} children={<></>} />
                         )}
                       </div>
                     </div>

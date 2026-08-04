@@ -35,6 +35,7 @@ export interface TeamCategory {
   order: number;
   color?: string;
   isFixed?: boolean;
+  type?: 'internal' | 'external';
 }
 
 export interface TeamMember {

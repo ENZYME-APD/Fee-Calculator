@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   DndContext, DragEndEvent, DragStartEvent, TouchSensor, MouseSensor, useSensor, useSensors, DragOverlay
 } from '@dnd-kit/core';
-import { TeamMember, Phase, Allocation, ProjectCost } from '@/lib/firebase/schema';
+import { TeamMember, Phase, Allocation, ProjectCost, Project } from '@/lib/firebase/schema';
 import { addAllocation, addProjectCost, updateAllocation, deleteAllocation } from '@/lib/firebase/db';
 import { DraggablePersonChip } from '../dnd/DraggablePersonChip';
 import { DraggableCostChip } from '../dnd/DraggableCostChip';
@@ -14,8 +14,11 @@ import { ConfirmModal } from '../modals/ConfirmModal';
 import { PanelLeftClose, PanelLeftOpen, Users, ChevronDown, ChevronRight, PlusCircle, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCategories } from '@/lib/firebase/db';
+import { useAppSettings } from '@/lib/auth/AuthContext';
 import { TeamCategory } from '@/lib/firebase/schema';
+import { Tooltip } from '@/components/ui/Tooltip';
 interface AppLayoutProps {
+  project?: Project | null;
   members: TeamMember[];
   phases: Phase[];
   allocations: Allocation[];
@@ -23,7 +26,8 @@ interface AppLayoutProps {
   onAllocationAdded: () => void;
 }
 
-export function AppLayout({ members, phases, allocations, projectCosts = [], onAllocationAdded }: AppLayoutProps) {
+export function AppLayout({ project, members, phases, allocations, projectCosts = [], onAllocationAdded }: AppLayoutProps) {
+  const { formatCurrency } = useAppSettings();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeMember, setActiveMember] = useState<TeamMember | null>(null);
   
@@ -231,12 +235,14 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
             </div>
             
             <div className="relative">
-              <button 
-                onClick={() => setIsTeamMenuOpen(!isTeamMenuOpen)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
-              >
-                <Menu size={16} />
-              </button>
+              <Tooltip content="Menu" position="left">
+                <button 
+                  onClick={() => setIsTeamMenuOpen(!isTeamMenuOpen)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+                >
+                  <Menu size={16} />
+                </button>
+              </Tooltip>
               
               {isTeamMenuOpen && (
                 <>
@@ -303,6 +309,25 @@ export function AppLayout({ members, phases, allocations, projectCosts = [], onA
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed opacity-95 dark:opacity-20 pointer-events-none transition-opacity" />
             
             <div className="absolute inset-0 overflow-x-hidden overflow-y-auto p-8 z-10">
+              {project && (
+                <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm mb-6">
+                  <div className="flex items-center gap-3">
+                    <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100">{project.name}</h2>
+                    <span className="px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                      {project.status || 'Draft'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Cost</span>
+                    <span className="text-xl font-black text-slate-800 dark:text-slate-100">
+                      {formatCurrency(
+                        allocations.filter(a => a.projectId === project.id).reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
+                        projectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0)
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 items-start pb-12">
                 {phases.length === 0 ? (
                   <div className="text-slate-500 dark:text-slate-400 flex items-center justify-center w-full h-full font-medium">This project has no phases yet. Add some in the Projects tab.</div>

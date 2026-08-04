@@ -87,7 +87,7 @@ export function PreferencesTab({ company }: { company: Company }) {
         </div>
       </div>
 
-      <div className="pt-4 flex items-center gap-4">
+      <div className="pt-4 flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-8">
         <button
           onClick={handleSave}
           disabled={saving}
@@ -101,6 +101,34 @@ export function PreferencesTab({ company }: { company: Company }) {
             {message}
           </span>
         )}
+      </div>
+
+      <div className="pt-4 space-y-4">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">Sample Data</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">If your workspace was populated with sample projects and team members, you can safely remove them here.</p>
+        </div>
+        <button
+          onClick={async () => {
+            if (confirm('Are you sure you want to delete all sample data? This cannot be undone.')) {
+              setSaving(true);
+              try {
+                const { clearSampleData } = await import('@/lib/firebase/db');
+                if (company.id) {
+                  await clearSampleData(company.id);
+                  setMessage('Sample data cleared successfully.');
+                  setTimeout(() => window.location.reload(), 1000);
+                }
+              } catch (e) {
+                setMessage('Error clearing sample data.');
+              }
+              setSaving(false);
+            }
+          }}
+          className="px-4 py-2 bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400 font-bold rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors text-sm border border-rose-200 dark:border-rose-800/50"
+        >
+          Clear Sample Data
+        </button>
       </div>
     </div>
   );

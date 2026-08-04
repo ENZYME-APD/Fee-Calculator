@@ -476,3 +476,57 @@ export const clearPayments = async (projectId: string) => {
   });
   await batch.commit();
 };
+
+// --- Bootstrapping Sample Data ---
+export const bootstrapCompanyData = async (companyId: string, ownerId: string) => {
+  // Create sample categories
+  const catRef1 = await addDoc(collection(db, 'teamCategories'), { companyId, name: 'Leadership', order: 1, color: '#3b82f6', isFixed: true });
+  const catRef2 = await addDoc(collection(db, 'teamCategories'), { companyId, name: 'Architecture', order: 2, color: '#10b981', isFixed: true });
+  const catRef3 = await addDoc(collection(db, 'teamCategories'), { companyId, name: 'Drafting', order: 3, color: '#8b5cf6', isFixed: true });
+
+  // Create sample team members
+  const member1 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Alice (Sample)', position: 'Partner', type: 'Employee', salary: 10000, overheads: 2000, costPerHour: 75, roundedFeeHour: 150, currency: 'USD', category: catRef1.id, isSample: true });
+  const member2 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Bob (Sample)', position: 'Senior Architect', type: 'Employee', salary: 7500, overheads: 1500, costPerHour: 56, roundedFeeHour: 120, currency: 'USD', category: catRef2.id, isSample: true });
+  const member3 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Charlie (Sample)', position: 'BIM Coordinator', type: 'Employee', salary: 6000, overheads: 1000, costPerHour: 43, roundedFeeHour: 90, currency: 'USD', category: catRef2.id, isSample: true });
+  const member4 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Diana (Sample)', position: 'Draftsperson', type: 'Employee', salary: 4500, overheads: 800, costPerHour: 33, roundedFeeHour: 75, currency: 'USD', category: catRef3.id, isSample: true });
+
+  // Create sample project
+  const project = await addDoc(collection(db, 'projects'), { companyId, ownerId, name: 'Sample Office Fit-out', description: 'A sample project to get you started.', createdAt: Date.now(), profitMargin: 30, area: 1200, status: 'Draft', isSample: true });
+
+  // Create sample phases
+  const phase1 = await addDoc(collection(db, 'phases'), { companyId, projectId: project.id, name: 'Concept Design', description: 'Initial concept and feasibility', durationWeeks: 4, order: 1, isSample: true });
+  const phase2 = await addDoc(collection(db, 'phases'), { companyId, projectId: project.id, name: 'Schematic Design', description: 'Developing the concept', durationWeeks: 6, order: 2, isSample: true });
+  const phase3 = await addDoc(collection(db, 'phases'), { companyId, projectId: project.id, name: 'Detailed Design', description: 'Construction documentation', durationWeeks: 8, order: 3, isSample: true });
+
+  // Create sample allocations
+  await addDoc(collection(db, 'allocations'), { companyId, projectId: project.id, phaseId: phase1.id, memberId: member1.id, allocationType: 'hours', allocationValue: 40, hours: 40, isSample: true });
+  await addDoc(collection(db, 'allocations'), { companyId, projectId: project.id, phaseId: phase1.id, memberId: member2.id, allocationType: 'hours', allocationValue: 80, hours: 80, isSample: true });
+  
+  await addDoc(collection(db, 'allocations'), { companyId, projectId: project.id, phaseId: phase2.id, memberId: member2.id, allocationType: 'hours', allocationValue: 120, hours: 120, isSample: true });
+  await addDoc(collection(db, 'allocations'), { companyId, projectId: project.id, phaseId: phase2.id, memberId: member3.id, allocationType: 'hours', allocationValue: 160, hours: 160, isSample: true });
+  
+  await addDoc(collection(db, 'allocations'), { companyId, projectId: project.id, phaseId: phase3.id, memberId: member2.id, allocationType: 'hours', allocationValue: 80, hours: 80, isSample: true });
+  await addDoc(collection(db, 'allocations'), { companyId, projectId: project.id, phaseId: phase3.id, memberId: member3.id, allocationType: 'hours', allocationValue: 120, hours: 120, isSample: true });
+  await addDoc(collection(db, 'allocations'), { companyId, projectId: project.id, phaseId: phase3.id, memberId: member4.id, allocationType: 'hours', allocationValue: 240, hours: 240, isSample: true });
+};
+
+export const clearSampleData = async (companyId: string) => {
+  const deleteSamples = async (collectionName: string) => {
+    const q = query(collection(db, collectionName), where('companyId', '==', companyId), where('isSample', '==', true));
+    const snap = await getDocs(q);
+    const batch = writeBatch(db);
+    snap.docs.forEach(docSnap => batch.delete(docSnap.ref));
+    if (!snap.empty) {
+      await batch.commit();
+    }
+  };
+
+  await Promise.all([
+    deleteSamples('projects'),
+    deleteSamples('phases'),
+    deleteSamples('teamMembers'),
+    deleteSamples('allocations'),
+    deleteSamples('projectCosts'),
+    deleteSamples('payments'),
+  ]);
+};

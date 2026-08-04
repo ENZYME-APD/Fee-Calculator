@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Company, TeamCategory } from '@/lib/firebase/schema';
 import { getCategories, addCategory, updateCategory, deleteCategory } from '@/lib/firebase/db';
 import { Plus, Trash2, Edit2, Check, X, GripVertical } from 'lucide-react';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 export function CategoriesTab({ company }: { company: Company }) {
   const [categories, setCategories] = useState<TeamCategory[]>([]);
@@ -10,8 +11,9 @@ export function CategoriesTab({ company }: { company: Company }) {
   
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
-  const [formData, setFormData] = useState({ name: '', order: 10, color: '#3b82f6' });
+  const [formData, setFormData] = useState<{name: string, order: number, color: string, type: 'internal' | 'external'}>({ name: '', order: 10, color: '#3b82f6', type: 'internal' });
 
   useEffect(() => {
     loadCategories();
@@ -20,38 +22,57 @@ export function CategoriesTab({ company }: { company: Company }) {
   const loadCategories = async () => {
     setLoading(true);
     const data = await getCategories();
-    // Sort by order
-    setCategories(data.sort((a, b) => a.order - b.order));
+    // Sort by type (internal first), then by order
+    setCategories(data.sort((a, b) => {
+      const typeA = a.type || 'internal';
+      const typeB = b.type || 'internal';
+      if (typeA !== typeB) {
+        return typeA === 'internal' ? -1 : 1;
+      }
+      return a.order - b.order;
+    }));
     setLoading(false);
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim() || isSaving) return;
     
-    await addCategory({
-      name: formData.name.trim().toUpperCase(),
-      order: Number(formData.order),
-      color: formData.color
-    });
-    
-    setFormData({ name: '', order: categories.length > 0 ? Math.max(...categories.map(c => c.order)) + 10 : 10, color: '#3b82f6' });
-    setIsAdding(false);
-    await loadCategories();
+    setIsSaving(true);
+    try {
+      await addCategory({
+        name: formData.name.trim().toUpperCase(),
+        order: Number(formData.order),
+        color: formData.color,
+        type: formData.type
+      });
+      
+      setFormData({ name: '', order: categories.length > 0 ? Math.max(...categories.map(c => c.order)) + 10 : 10, color: '#3b82f6', type: 'internal' });
+      setIsAdding(false);
+      await loadCategories();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleUpdate = async (id: string, e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim() || isSaving) return;
     
-    await updateCategory(id, {
-      name: formData.name.trim().toUpperCase(),
-      order: Number(formData.order),
-      color: formData.color
-    });
-    
-    setEditingId(null);
-    await loadCategories();
+    setIsSaving(true);
+    try {
+      await updateCategory(id, {
+        name: formData.name.trim().toUpperCase(),
+        order: Number(formData.order),
+        color: formData.color,
+        type: formData.type
+      });
+      
+      setEditingId(null);
+      await loadCategories();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -61,7 +82,7 @@ export function CategoriesTab({ company }: { company: Company }) {
   };
 
   const startEditing = (category: TeamCategory) => {
-    setFormData({ name: category.name, order: category.order, color: category.color || '#3b82f6' });
+    setFormData({ name: category.name, order: category.order, color: category.color || '#3b82f6', type: category.type || 'internal' });
     setEditingId(category.id!);
   };
 
@@ -76,7 +97,7 @@ export function CategoriesTab({ company }: { company: Company }) {
           onClick={() => {
             setIsAdding(true);
             setEditingId(null);
-            setFormData({ name: '', order: categories.length > 0 ? Math.max(...categories.map(c => c.order)) + 10 : 10, color: '#3b82f6' });
+            setFormData({ name: '', order: categories.length > 0 ? Math.max(...categories.map(c => c.order)) + 10 : 10, color: '#3b82f6', type: 'internal' });
           }}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shrink-0"
         >
@@ -99,14 +120,25 @@ export function CategoriesTab({ company }: { company: Company }) {
                 required
               />
             </div>
-            <div className="w-16">
-              <input
-                type="color"
-                value={formData.color}
-                onChange={e => setFormData({ ...formData, color: e.target.value })}
-                className="w-full h-10 p-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 cursor-pointer"
-                title="Category Color"
-              />
+            <div className="w-10 h-10 shrink-0">
+              <Tooltip content="Category Color" position="top">
+                <input
+                  type="color"
+                  value={formData.color}
+                  onChange={e => setFormData({ ...formData, color: e.target.value })}
+                  className="w-full h-full p-0 border-0 rounded cursor-pointer bg-transparent overflow-hidden"
+                />
+              </Tooltip>
+            </div>
+            <div className="w-28 shrink-0">
+              <select
+                value={formData.type}
+                onChange={e => setFormData({ ...formData, type: e.target.value as 'internal' | 'external' })}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 outline-none"
+              >
+                <option value="internal">Internal</option>
+                <option value="external">External</option>
+              </select>
             </div>
             <div className="w-32">
               <input
@@ -119,10 +151,10 @@ export function CategoriesTab({ company }: { company: Company }) {
               />
             </div>
             <div className="flex items-center gap-2">
-              <button type="submit" className="p-2 text-blue-600 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900 rounded-lg transition-colors">
+              <button type="submit" disabled={isSaving} className="p-2 text-blue-600 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900 rounded-lg transition-colors disabled:opacity-50">
                 <Check size={18} />
               </button>
-              <button type="button" onClick={() => setIsAdding(false)} className="p-2 text-slate-500 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg transition-colors">
+              <button type="button" disabled={isSaving} onClick={() => setIsAdding(false)} className="p-2 text-slate-500 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50">
                 <X size={18} />
               </button>
             </div>
@@ -151,14 +183,25 @@ export function CategoriesTab({ company }: { company: Company }) {
                       disabled={!!category.isFixed}
                     />
                   </div>
-                  <div className="w-16">
-                    <input
-                      type="color"
-                      value={formData.color}
-                      onChange={e => setFormData({ ...formData, color: e.target.value })}
-                      className="w-full h-8 p-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 cursor-pointer"
-                      title="Category Color"
-                    />
+                  <div className="w-8 h-8 shrink-0">
+                    <Tooltip content="Category Color" position="top">
+                      <input
+                        type="color"
+                        value={formData.color}
+                        onChange={e => setFormData({ ...formData, color: e.target.value })}
+                        className="w-full h-full p-0 border-0 rounded cursor-pointer bg-transparent overflow-hidden"
+                      />
+                    </Tooltip>
+                  </div>
+                  <div className="w-28 shrink-0">
+                    <select
+                      value={formData.type}
+                      onChange={e => setFormData({ ...formData, type: e.target.value as 'internal' | 'external' })}
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 outline-none"
+                    >
+                      <option value="internal">Internal</option>
+                      <option value="external">External</option>
+                    </select>
                   </div>
                   <div className="w-24">
                     <input
@@ -170,10 +213,10 @@ export function CategoriesTab({ company }: { company: Company }) {
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <button type="submit" className="p-2 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg transition-colors">
+                    <button type="submit" disabled={isSaving} className="p-2 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg transition-colors disabled:opacity-50">
                       <Check size={18} />
                     </button>
-                    <button type="button" onClick={() => setEditingId(null)} className="p-2 text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <button type="button" disabled={isSaving} onClick={() => setEditingId(null)} className="p-2 text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50">
                       <X size={18} />
                     </button>
                   </div>
@@ -190,27 +233,30 @@ export function CategoriesTab({ company }: { company: Company }) {
                         <h3 className="font-bold text-slate-900 dark:text-white uppercase flex items-center">
                           {category.name}
                           {category.isFixed && <span className="ml-2 text-[10px] font-normal bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded uppercase">Fixed</span>}
+                          {category.type === 'external' && <span className="ml-2 text-[10px] font-normal bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded uppercase border border-orange-200 dark:border-orange-800/50">External</span>}
                         </h3>
                         <p className="text-xs text-slate-500 font-medium">Sort Order: {category.order}</p>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => startEditing(category)}
-                      className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
-                      title="Edit Category"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    {!category.isFixed && (
+                    <Tooltip content="Edit Category" position="top">
                       <button
-                        onClick={() => handleDelete(category.id!)}
-                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/50 transition-colors"
-                        title="Delete Category"
+                        onClick={() => startEditing(category)}
+                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
                       >
-                        <Trash2 size={16} />
+                        <Edit2 size={16} />
                       </button>
+                    </Tooltip>
+                    {!category.isFixed && (
+                      <Tooltip content="Delete Category" position="top">
+                        <button
+                          onClick={() => handleDelete(category.id!)}
+                          className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/50 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </Tooltip>
                     )}
                   </div>
                 </>
