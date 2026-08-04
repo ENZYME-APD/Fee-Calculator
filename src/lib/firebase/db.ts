@@ -485,10 +485,10 @@ export const bootstrapCompanyData = async (companyId: string, ownerId: string) =
   const catRef3 = await addDoc(collection(db, 'teamCategories'), { companyId, name: 'Drafting', order: 3, color: '#8b5cf6', isFixed: true });
 
   // Create sample team members
-  const member1 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Alice (Sample)', position: 'Partner', type: 'Employee', salary: 10000, overheads: 2000, costPerHour: 75, roundedFeeHour: 150, currency: 'USD', category: catRef1.id, isSample: true });
-  const member2 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Bob (Sample)', position: 'Senior Architect', type: 'Employee', salary: 7500, overheads: 1500, costPerHour: 56, roundedFeeHour: 120, currency: 'USD', category: catRef2.id, isSample: true });
-  const member3 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Charlie (Sample)', position: 'BIM Coordinator', type: 'Employee', salary: 6000, overheads: 1000, costPerHour: 43, roundedFeeHour: 90, currency: 'USD', category: catRef2.id, isSample: true });
-  const member4 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Diana (Sample)', position: 'Draftsperson', type: 'Employee', salary: 4500, overheads: 800, costPerHour: 33, roundedFeeHour: 75, currency: 'USD', category: catRef3.id, isSample: true });
+  const member1 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Alice (Sample)', position: 'Partner', type: 'Employee', salary: 10000, overheads: 2000, costPerHour: 75, currency: 'USD', category: catRef1.id, isSample: true });
+  const member2 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Bob (Sample)', position: 'Senior Architect', type: 'Employee', salary: 7500, overheads: 1500, costPerHour: 56, currency: 'USD', category: catRef2.id, isSample: true });
+  const member3 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Charlie (Sample)', position: 'BIM Coordinator', type: 'Employee', salary: 6000, overheads: 1000, costPerHour: 43, currency: 'USD', category: catRef2.id, isSample: true });
+  const member4 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Diana (Sample)', position: 'Draftsperson', type: 'Employee', salary: 4500, overheads: 800, costPerHour: 33, currency: 'USD', category: catRef3.id, isSample: true });
 
   // Create sample project
   const project = await addDoc(collection(db, 'projects'), { companyId, ownerId, name: 'Sample Office Fit-out', description: 'A sample project to get you started.', createdAt: Date.now(), profitMargin: 30, area: 1200, status: 'Draft', isSample: true });

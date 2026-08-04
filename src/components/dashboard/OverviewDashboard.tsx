@@ -5,6 +5,7 @@ import { Project, Phase, TeamMember, Allocation, ProjectCost, User } from '@/lib
 import { useAuth } from '@/lib/auth/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, Cell, PieChart, Pie, ReferenceLine, LineChart, Line } from 'recharts';
 import { Tooltip } from '@/components/ui/Tooltip';
+import Link from 'next/link';
 import { Folder, CircleDollarSign, TrendingUp, Users, PieChart as PieChartIcon, List } from 'lucide-react';
 
 export function OverviewDashboard() {
@@ -375,9 +376,9 @@ export function OverviewDashboard() {
             const mid = alloc.memberId;
             
             if (!oMap[bucketKey][mid]) oMap[bucketKey][mid] = { totalPercent: 0 };
-            if (!oMap[bucketKey][mid][proj.name]) oMap[bucketKey][mid][proj.name] = 0;
+            if (!oMap[bucketKey][mid][proj.name]) oMap[bucketKey][mid][proj.name] = { percent: 0, id: proj.id };
             
-            oMap[bucketKey][mid][proj.name] += percentPerWeek;
+            oMap[bucketKey][mid][proj.name].percent += percentPerWeek;
             oMap[bucketKey][mid].totalPercent += percentPerWeek;
           });
         }
@@ -785,12 +786,12 @@ export function OverviewDashboard() {
                               </Tooltip>
                             </td>
                             {filteredWeeks.map((week, idx) => {
-                              const allocs: { projectName: string, percent: number }[] = [];
+                              const allocs: { projectName: string, percent: number, projectId: string }[] = [];
                               const memberData = week[member.id!];
                               if (memberData) {
                                 Object.keys(memberData).forEach(k => {
-                                  if (k !== 'totalPercent' && memberData[k] > 0) {
-                                    allocs.push({ projectName: k, percent: memberData[k] });
+                                  if (k !== 'totalPercent' && memberData[k].percent > 0) {
+                                    allocs.push({ projectName: k, percent: memberData[k].percent, projectId: memberData[k].id });
                                   }
                                 });
                               }
@@ -806,10 +807,12 @@ export function OverviewDashboard() {
                                   <div className="flex flex-wrap gap-1.5 justify-center">
                                     {allocs.map((alloc, i) => {
                                       return (
-                                        <Tooltip key={i} content={`${alloc.projectName}\nResource: ${member.name}\nProject: ${alloc.percent.toFixed(0)}%\nTotal Weekly: ${memberData?.totalPercent.toFixed(0)}%`} wrapper="div" className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold border transition-colors cursor-default ${isOver ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50 hover:bg-red-200 dark:hover:bg-red-900/50' : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-                                          <span className="max-w-[80px] truncate">{alloc.projectName}</span>
-                                          <span className={`text-[10px] ${isOver ? 'opacity-80' : 'opacity-50'}`}>{alloc.percent.toFixed(0)}%</span>
-                                        </Tooltip>
+                                        <Link key={i} href={`/dashboard?project=${alloc.projectId}`}>
+                                          <Tooltip content={`${alloc.projectName}\nResource: ${member.name}\nProject: ${alloc.percent.toFixed(0)}%\nTotal Weekly: ${memberData?.totalPercent.toFixed(0)}%`} wrapper="div" className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold border transition-colors cursor-pointer ${isOver ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50 hover:bg-red-300 dark:hover:bg-red-900/70' : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
+                                            <span className="max-w-[80px] truncate">{alloc.projectName}</span>
+                                            <span className={`text-[10px] ${isOver ? 'opacity-80' : 'opacity-50'}`}>{alloc.percent.toFixed(0)}%</span>
+                                          </Tooltip>
+                                        </Link>
                                       );
                                     })}
                                   </div>

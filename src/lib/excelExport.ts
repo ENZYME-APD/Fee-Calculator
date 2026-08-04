@@ -12,10 +12,19 @@ export function exportProposalToExcel(
   currencyCode: string
 ) {
   const wb = XLSX.utils.book_new();
+  
+  const headerStyle = { font: { bold: true } };
+  const titleStyle = { font: { bold: true, sz: 14 } };
 
   // 1. Team Tab
-  const teamRows = [
-    ['Name', 'Position', 'Category', 'Type', 'Cost/Hr', 'Fee/Hr']
+  const teamRows: any[][] = [
+    [
+      { v: 'Name', s: headerStyle },
+      { v: 'Position', s: headerStyle },
+      { v: 'Category', s: headerStyle },
+      { v: 'Type', s: headerStyle },
+      { v: `Cost/Hr (${currencyCode})`, s: headerStyle }
+    ]
   ];
   const membersMap = new Map(members.map(m => [m.id, m]));
   const projectMembers = new Set(allocations.map(a => a.memberId));
@@ -29,137 +38,190 @@ export function exportProposalToExcel(
         m.position,
         cat?.name || 'Uncategorized',
         cat?.type || 'internal',
-        m.costPerHour.toString(),
-        m.roundedFeeHour.toString()
+        { v: m.costPerHour, t: 'n', z: '#,##0.00' }
       ]);
     }
   });
   
   const wsTeam = XLSX.utils.aoa_to_sheet(teamRows);
+  wsTeam['!cols'] = [{ wch: 25 }, { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
   XLSX.utils.book_append_sheet(wb, wsTeam, 'Team');
 
   // 2. Project Phases
   const phaseRows: any[][] = [];
+  let rowNum = 1;
+  
   phases.forEach(phase => {
-    phaseRows.push([`Phase: ${phase.name} (${phase.durationWeeks} Weeks)`]);
-    phaseRows.push(['Team Member', 'Category', 'Hours', 'Cost/Hr', 'Fee/Hr', 'Total Cost', 'Total Fee']);
+    phaseRows.push([{ v: `Phase: ${phase.name} (${phase.durationWeeks} Weeks)`, s: titleStyle }]);
+    rowNum++;
+    
+    phaseRows.push([
+      { v: 'Team Member', s: headerStyle },
+      { v: 'Category', s: headerStyle },
+      { v: 'Hours', s: headerStyle },
+      { v: `Cost/Hr`, s: headerStyle },
+      { v: 'Total Cost', s: headerStyle }
+    ]);
+    rowNum++;
     
     const phaseAllocs = allocations.filter(a => a.phaseId === phase.id);
-    let totalCost = 0;
-    let totalFee = 0;
+    const startAllocRow = rowNum;
     
     phaseAllocs.forEach(alloc => {
       const m = membersMap.get(alloc.memberId);
       if (m) {
         const cat = categories.find(c => c.id === m.category);
-        const cost = alloc.hours * m.costPerHour;
-        const fee = alloc.hours * m.roundedFeeHour;
-        totalCost += cost;
-        totalFee += fee;
-        
         phaseRows.push([
           m.name,
           cat?.name || '',
-          alloc.hours,
-          m.costPerHour,
-          m.roundedFeeHour,
-          cost,
-          fee
+          { v: alloc.hours, t: 'n', z: '#,##0.00' },
+          { v: m.costPerHour, t: 'n', z: '#,##0.00' },
+          { f: `C${rowNum}*D${rowNum}`, t: 'n', z: '#,##0.00' }
         ]);
+        rowNum++;
       }
     });
+    const endAllocRow = rowNum - 1;
     
     // Add Phase Costs if any
     const pCosts = projectCosts.filter(c => c.phaseId === phase.id);
+    let startCostRow = 0;
+    let endCostRow = 0;
+    
     if (pCosts.length > 0) {
       phaseRows.push([]);
-      phaseRows.push(['Additional Project Costs']);
-      phaseRows.push(['Name', 'Type', 'Quantity', 'Unit Cost', '', 'Total Cost']);
+      rowNum++;
+      phaseRows.push([{ v: 'Additional Project Costs', s: titleStyle }]);
+      rowNum++;
+      phaseRows.push([
+        { v: 'Name', s: headerStyle },
+        { v: 'Type', s: headerStyle },
+        { v: 'Quantity', s: headerStyle },
+        { v: 'Unit Cost', s: headerStyle },
+        { v: 'Total Cost', s: headerStyle }
+      ]);
+      rowNum++;
+      
+      startCostRow = rowNum;
       pCosts.forEach(c => {
-        const cost = c.quantity * c.unitCost;
-        totalCost += cost;
-        totalFee += cost; // Assuming costs are passed to fee directly
         phaseRows.push([
           c.name,
           c.type,
-          c.quantity,
-          c.unitCost,
-          '',
-          cost
+          { v: c.quantity, t: 'n', z: '#,##0.00' },
+          { v: c.unitCost, t: 'n', z: '#,##0.00' },
+          { f: `C${rowNum}*D${rowNum}`, t: 'n', z: '#,##0.00' }
         ]);
+        rowNum++;
       });
+      endCostRow = rowNum - 1;
     }
     
-    phaseRows.push(['', '', '', '', 'PHASE TOTALS:', totalCost, totalFee]);
-    phaseRows.push([]); // Empty row to separate phases
+    const allocSum = (startAllocRow > 0 && startAllocRow <= endAllocRow) ? `SUM(E${startAllocRow}:E${endAllocRow})` : '0';
+    const costSum = (startCostRow > 0 && startCostRow <= endCostRow) ? `SUM(E${startCostRow}:E${endCostRow})` : '0';
+    const totalCostFormula = `${allocSum}+${costSum}`;
+    
+    phaseRows.push(['', '', '', { v: 'PHASE TOTALS:', s: headerStyle }, { f: totalCostFormula, t: 'n', z: '#,##0.00', s: headerStyle }]);
+    const totalCostRow = rowNum;
+    rowNum++;
+    
+    const marginDec = project.profitMargin / 100;
+    phaseRows.push(['', '', '', { v: 'PHASE FEE:', s: headerStyle }, { f: `E${totalCostRow}/(1-${marginDec})`, t: 'n', z: '#,##0.00', s: headerStyle }]);
+    rowNum++;
+    
+    phaseRows.push([]); // Empty row
+    rowNum++;
   });
   
   const wsPhases = XLSX.utils.aoa_to_sheet(phaseRows);
+  wsPhases['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 20 }];
   XLSX.utils.book_append_sheet(wb, wsPhases, 'Project Phases');
 
   // 3. Financial Summary
-  const summaryRows = [
-    ['Phase', 'Duration (Wks)', 'Total Cost', 'Fee Proposal', 'Margin (%)']
+  const summaryRows: any[][] = [
+    [
+      { v: 'Phase', s: headerStyle },
+      { v: 'Duration (Wks)', s: headerStyle },
+      { v: 'Total Cost', s: headerStyle },
+      { v: 'Fee Proposal', s: headerStyle },
+      { v: 'Margin', s: headerStyle }
+    ]
   ];
-  let grandTotalCost = 0;
-  let grandTotalFee = 0;
+  let sumRow = 2; // Data starts at row 2
   
-  phases.forEach(phase => {
+  phases.forEach((phase, index) => {
     const phaseAllocs = allocations.filter(a => a.phaseId === phase.id);
     const pCosts = projectCosts.filter(c => c.phaseId === phase.id);
     
     let pCost = 0;
-    let pFee = 0;
-    
     phaseAllocs.forEach(alloc => {
       const m = membersMap.get(alloc.memberId);
       if (m) {
         pCost += alloc.hours * m.costPerHour;
-        pFee += alloc.hours * m.roundedFeeHour;
       }
     });
-    
     pCosts.forEach(c => {
-      const cst = c.quantity * c.unitCost;
-      pCost += cst;
-      pFee += cst;
+      pCost += c.quantity * c.unitCost;
     });
     
-    grandTotalCost += pCost;
-    grandTotalFee += pFee;
+    const marginDec = project.profitMargin / 100;
     
-    const margin = pFee > 0 ? ((pFee - pCost) / pFee) * 100 : 0;
     summaryRows.push([
       phase.name,
-      phase.durationWeeks.toString(),
-      pCost.toString(),
-      pFee.toString(),
-      margin.toFixed(1) + '%'
+      { v: phase.durationWeeks, t: 'n', z: '0' },
+      { v: pCost, t: 'n', z: '#,##0.00' },
+      { f: `C${sumRow}/(1-${marginDec})`, t: 'n', z: '#,##0.00' },
+      { f: `(D${sumRow}-C${sumRow})/D${sumRow}`, t: 'n', z: '0.0%' }
     ]);
+    sumRow++;
   });
   
-  const totalMargin = grandTotalFee > 0 ? ((grandTotalFee - grandTotalCost) / grandTotalFee) * 100 : 0;
+  const endSumRow = sumRow - 1;
   summaryRows.push([]);
-  summaryRows.push(['TOTALS', '', grandTotalCost.toString(), grandTotalFee.toString(), totalMargin.toFixed(1) + '%']);
+  sumRow++;
+  
+  summaryRows.push([
+    { v: 'TOTALS', s: headerStyle }, 
+    { f: `SUM(B2:B${endSumRow})`, t: 'n', z: '0', s: headerStyle }, 
+    { f: `SUM(C2:C${endSumRow})`, t: 'n', z: '#,##0.00', s: headerStyle }, 
+    { f: `SUM(D2:D${endSumRow})`, t: 'n', z: '#,##0.00', s: headerStyle }, 
+    { f: `(D${sumRow}-C${sumRow})/D${sumRow}`, t: 'n', z: '0.0%', s: headerStyle }
+  ]);
   
   const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+  wsSummary['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
   XLSX.utils.book_append_sheet(wb, wsSummary, 'Financial Summary');
 
   // 4. Payment Schedule
-  const paymentRows = [
-    ['Phase / Milestone', 'Percentage', 'Amount']
+  const paymentRows: any[][] = [
+    [
+      { v: 'Phase / Milestone', s: headerStyle },
+      { v: 'Percentage', s: headerStyle },
+      { v: 'Amount', s: headerStyle }
+    ]
   ];
+  let payRow = 2;
   
   payments.sort((a, b) => a.order - b.order).forEach(p => {
-    const amount = (grandTotalFee * p.percentage) / 100;
     paymentRows.push([
       p.name,
-      p.percentage.toString() + '%',
-      amount.toString()
+      { v: p.percentage / 100, t: 'n', z: '0.0%' },
+      { f: `B${payRow}*'Financial Summary'!D${sumRow}`, t: 'n', z: '#,##0.00' }
     ]);
+    payRow++;
   });
   
+  const endPayRow = payRow - 1;
+  paymentRows.push([]);
+  payRow++;
+  
+  paymentRows.push([
+    { v: 'TOTALS', s: headerStyle },
+    { f: `SUM(B2:B${endPayRow})`, t: 'n', z: '0.0%', s: headerStyle },
+    { f: `SUM(C2:C${endPayRow})`, t: 'n', z: '#,##0.00', s: headerStyle }
+  ]);
+  
   const wsPayments = XLSX.utils.aoa_to_sheet(paymentRows);
+  wsPayments['!cols'] = [{ wch: 35 }, { wch: 15 }, { wch: 20 }];
   XLSX.utils.book_append_sheet(wb, wsPayments, 'Payment Schedule');
 
   // Export

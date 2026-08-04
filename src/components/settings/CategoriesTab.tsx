@@ -22,8 +22,11 @@ export function CategoriesTab({ company }: { company: Company }) {
   const loadCategories = async () => {
     setLoading(true);
     const data = await getCategories();
-    // Sort by type (internal first), then by order
+    // Sort by type (internal first), then by order, putting fixed categories at the end
     setCategories(data.sort((a, b) => {
+      if (a.isFixed && !b.isFixed) return 1;
+      if (!a.isFixed && b.isFixed) return -1;
+      
       const typeA = a.type || 'internal';
       const typeB = b.type || 'internal';
       if (typeA !== typeB) {
@@ -173,8 +176,18 @@ export function CategoriesTab({ company }: { company: Company }) {
             No categories defined yet. Add one to organize your team.
           </div>
         ) : (
-          categories.map(category => (
-            <div key={category.id} className="group flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-blue-300 dark:hover:border-blue-800 transition-colors">
+          categories.map((category, index) => {
+            const isFirstFixed = category.isFixed && (index === 0 || !categories[index - 1].isFixed);
+            
+            return (
+            <React.Fragment key={category.id}>
+              {isFirstFixed && (
+                <div className="pt-6 pb-2 border-t border-slate-100 dark:border-slate-800/50 mt-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">System Categories</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">These categories are required by the system. You can change their color and name.</p>
+                </div>
+              )}
+            <div className="group flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-blue-300 dark:hover:border-blue-800 transition-colors">
               {editingId === category.id ? (
                 <form onSubmit={(e) => handleUpdate(category.id!, e)} className="flex items-center gap-4 flex-1">
                   <div className="flex-1">
@@ -185,7 +198,6 @@ export function CategoriesTab({ company }: { company: Company }) {
                       className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 outline-none uppercase"
                       autoFocus
                       required
-                      disabled={!!category.isFixed}
                     />
                   </div>
                   <div className="w-8 h-8 shrink-0">
@@ -198,25 +210,29 @@ export function CategoriesTab({ company }: { company: Company }) {
                       />
                     </Tooltip>
                   </div>
-                  <div className="w-28 shrink-0">
-                    <select
-                      value={formData.type}
-                      onChange={e => setFormData({ ...formData, type: e.target.value as 'internal' | 'external' })}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 outline-none"
-                    >
-                      <option value="internal">Internal</option>
-                      <option value="external">External</option>
-                    </select>
-                  </div>
-                  <div className="w-24">
-                    <input
-                      type="number"
-                      value={formData.order}
-                      onChange={e => setFormData({ ...formData, order: Number(e.target.value) })}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 outline-none"
-                      required
-                    />
-                  </div>
+                  {!category.isFixed && (
+                    <div className="w-28 shrink-0">
+                      <select
+                        value={formData.type}
+                        onChange={e => setFormData({ ...formData, type: e.target.value as 'internal' | 'external' })}
+                        className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 outline-none"
+                      >
+                        <option value="internal">Internal</option>
+                        <option value="external">External</option>
+                      </select>
+                    </div>
+                  )}
+                  {!category.isFixed && (
+                    <div className="w-24">
+                      <input
+                        type="number"
+                        value={formData.order}
+                        onChange={e => setFormData({ ...formData, order: Number(e.target.value) })}
+                        className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 outline-none"
+                        required
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <button type="submit" disabled={isSaving} className="p-2 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg transition-colors disabled:opacity-50">
                       <Check size={18} />
@@ -229,7 +245,7 @@ export function CategoriesTab({ company }: { company: Company }) {
               ) : (
                 <>
                   <div className="flex items-center gap-4">
-                    <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-400">
+                    <div className={`p-2 rounded-lg text-slate-400 ${category.isFixed ? 'opacity-30 cursor-not-allowed' : 'bg-slate-100 dark:bg-slate-800'}`}>
                       <GripVertical size={18} />
                     </div>
                     <div className="flex items-center gap-3">
@@ -238,9 +254,9 @@ export function CategoriesTab({ company }: { company: Company }) {
                         <h3 className="font-bold text-slate-900 dark:text-white uppercase flex items-center">
                           {category.name}
                           {category.isFixed && <span className="ml-2 text-[10px] font-normal bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded uppercase">Fixed</span>}
-                          {category.type === 'external' && <span className="ml-2 text-[10px] font-normal bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded uppercase border border-orange-200 dark:border-orange-800/50">External</span>}
+                          {category.type === 'external' && !category.isFixed && <span className="ml-2 text-[10px] font-normal bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded uppercase border border-orange-200 dark:border-orange-800/50">External</span>}
                         </h3>
-                        <p className="text-xs text-slate-500 font-medium">Sort Order: {category.order}</p>
+                        {!category.isFixed && <p className="text-xs text-slate-500 font-medium">Sort Order: {category.order}</p>}
                       </div>
                     </div>
                   </div>
@@ -267,7 +283,8 @@ export function CategoriesTab({ company }: { company: Company }) {
                 </>
               )}
             </div>
-          ))
+            </React.Fragment>
+          )})
         )}
       </div>
     </div>

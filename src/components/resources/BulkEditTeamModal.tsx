@@ -35,7 +35,7 @@ export function BulkEditTeamModal({ isOpen, onClose, onSave, selectedCount, cate
       // so we must recalculate it in the parent or handle it by assuming if they change salary/overheads in bulk,
       // they must provide both, or the parent will merge it before saving.
       // Actually, since the db update is partial, we can't compute derived fields in bulk easily using just a single generic update unless we do it per-member.
-      // We will let the parent handle the mapping so derived fields (costPerHour, roundedFeeHour) are correct.
+      // We will let the parent handle the mapping so derived fields (costPerHour) are correct.
     }
     
     onSave(updates);

@@ -44,7 +44,6 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
   }
 
   const finalCost = finalHours * member.costPerHour;
-  const finalFee = finalHours * member.roundedFeeHour;
 
   const handleSave = () => {
     if (val > 0) {
@@ -84,10 +83,6 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Cost Rate</span>
               <span className="font-semibold text-slate-700 dark:text-slate-300">${member.costPerHour}/hr</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Fee Rate</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">${member.roundedFeeHour}/hr</span>
             </div>
           </div>
 

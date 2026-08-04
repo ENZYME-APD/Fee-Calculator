@@ -21,7 +21,6 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
     salary: 0,
     overheads: 0,
     costPerHour: 0,
-    roundedFeeHour: 0,
     currency: 'USD',
     category: ''
   });
@@ -41,7 +40,7 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
       setFormData(initialData);
     } else {
       setFormData({
-        name: '', position: '', type: 'Employee', salary: 0, overheads: 0, costPerHour: 0, roundedFeeHour: 0, currency: 'USD', category: ''
+        name: '', position: '', type: 'Employee', salary: 0, overheads: 0, costPerHour: 0, currency: 'USD', category: ''
       });
     }
   }, [initialData, isOpen]);
@@ -57,8 +56,7 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
     setFormData({
       ...formData,
       [field]: value,
-      costPerHour: parseFloat(baseCost.toFixed(2)),
-      roundedFeeHour: parseFloat((baseCost * 2.5).toFixed(2)) // Default 2.5x multiplier based on their sheet
+      costPerHour: baseCost
     });
   };
 
@@ -130,11 +128,6 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cost / Hour ({currencyCode})</label>
               <input readOnly type="number" step="0.01" value={formData.costPerHour === 0 ? '' : formData.costPerHour} className="w-full px-3 py-2 border border-rose-200 dark:border-rose-900/30 bg-rose-50/70 dark:bg-rose-950/70 text-rose-700 dark:text-rose-400 rounded-xl focus:outline-none cursor-not-allowed opacity-80" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fee / Hour ({currencyCode})</label>
-              <input required type="number" step="0.01" value={formData.roundedFeeHour === 0 ? '' : formData.roundedFeeHour} onChange={e => setFormData({...formData, roundedFeeHour: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border border-emerald-200 dark:border-emerald-900/30 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 rounded-xl focus:ring-2 focus:ring-emerald-500/20" />
             </div>
           </div>
           

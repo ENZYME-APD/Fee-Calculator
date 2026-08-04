@@ -53,8 +53,7 @@ export function CsvManager({ onComplete }: CsvManagerProps) {
           m.salary?.toString() || '0', 
           m.overheads?.toString() || '0', 
           m.currency || 'USD',
-          m.costPerHour?.toString() || '0',
-          m.roundedFeeHour?.toString() || '0'
+          m.costPerHour?.toString() || '0'
         ];
       });
 
@@ -113,7 +112,6 @@ export function CsvManager({ onComplete }: CsvManagerProps) {
           const salary = parseFloat(member.salary) || 0;
           const overheads = parseFloat(member.overheads) || 0;
           const costPerHour = (salary + overheads) / 160;
-          const roundedFeeHour = costPerHour * 2.5;
 
           newMembers.push({
             name: member.name || 'Unknown',
@@ -123,8 +121,7 @@ export function CsvManager({ onComplete }: CsvManagerProps) {
             salary,
             overheads,
             currency: member.currency || 'USD',
-            costPerHour: parseFloat(costPerHour.toFixed(2)),
-            roundedFeeHour: parseFloat(roundedFeeHour.toFixed(2))
+            costPerHour: parseFloat(costPerHour.toFixed(2))
           });
         }
 

@@ -51,7 +51,7 @@ export function WikiContent() {
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300">1</div>
                 <div>
                   <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Set Up Your Team</h4>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">Head to the <strong>Settings &gt; Team Management</strong> tab to add your team members, their internal costs, and external billing rates.</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">Head to the <strong>Settings &gt; Team Management</strong> tab to add your team members, their internal costs, and external billing rates. You can add them manually or <strong>upload from a CSV template</strong>.</p>
                 </div>
               </div>
               
@@ -59,7 +59,7 @@ export function WikiContent() {
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300">2</div>
                 <div>
                   <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Create a Project</h4>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">Click <strong>New Project</strong> in the Projects tab. Define the scope and add project phases (e.g., Concept Design, Schematic Design).</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">Click <strong>New Project</strong> in the Projects tab. You can start from scratch or use <strong>preset templates for standard architectural phases</strong> (like RIBA). Everything comes fully editable so you can update them later to fit your requirements.</p>
                 </div>
               </div>
             </div>
@@ -77,7 +77,7 @@ export function WikiContent() {
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300">4</div>
                 <div>
                   <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Review Fee Proposal</h4>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">Switch to the <strong>Fee Proposal</strong> tab to see your bottom-up calculation of internal costs, external fees, and profit margin.</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">Switch to the <strong>Fee Proposal</strong> tab to see your bottom-up calculation of costs and margins. <strong>Payment schedules are auto-set</strong> based on your phases and can be customized as needed.</p>
                 </div>
               </div>
             </div>

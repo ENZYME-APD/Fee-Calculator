@@ -47,7 +47,6 @@ export interface TeamMember {
   salary: number; // Monthly base cost
   overheads: number; // Monthly overheads
   costPerHour: number;
-  roundedFeeHour: number;
   currency: string;
   category?: string;
   avatarUrl?: string;

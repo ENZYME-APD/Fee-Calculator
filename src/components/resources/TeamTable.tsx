@@ -132,7 +132,7 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
         </div>
       )}
       
-      <div className="flex-1 overflow-auto bg-white dark:bg-slate-950">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white dark:bg-slate-950">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 sticky top-0 border-b border-slate-200 dark:border-slate-800 z-10">
             <tr>
@@ -163,7 +163,6 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
               <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Salary/Mo ({currencyCode})</th>
               <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Overheads/Mo ({currencyCode})</th>
               <th className="px-4 py-3 font-semibold text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">Cost/Hr ({currencyCode})</th>
-              <th className="px-4 py-3 font-semibold text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">Fee/Hr ({currencyCode})</th>
               <th className="px-4 py-3 font-semibold text-right w-20">Actions</th>
             </tr>
           </thead>
@@ -232,9 +231,8 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                       <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatCurrency(member.salary)}</td>
                       <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatCurrency(member.overheads)}</td>
                       <td className="px-4 py-3 text-right font-medium text-rose-600 dark:text-rose-400">{formatCurrency(member.costPerHour)}</td>
-                      <td className="px-4 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(member.roundedFeeHour)}</td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-2">
                           <Tooltip content="Edit" position="top">
                             <button 
                               onClick={() => onEdit(member)}
