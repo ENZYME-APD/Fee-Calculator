@@ -47,7 +47,7 @@ function LoginContent() {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        router.push('/dashboard');
+        router.push('/overview');
       } else {
         // Sign up
         if (!inviteData && !companyName.trim()) throw new Error("Company name is required");
@@ -112,7 +112,7 @@ function LoginContent() {
           // 4. Bootstrap sample data
           await bootstrapCompanyData(companyId, userCred.user.uid);
         }
-        router.push('/dashboard');
+        router.push('/overview');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
@@ -156,7 +156,7 @@ function LoginContent() {
           }, { merge: true });
           if (inviteData.id) await deleteInvite(inviteData.id);
         }
-        router.push('/dashboard');
+        router.push('/overview');
       } else {
         if (inviteData) {
           await setDoc(userDocRef, {
@@ -185,7 +185,7 @@ function LoginContent() {
 
           await bootstrapCompanyData(companyId, user.uid);
         }
-        router.push('/dashboard');
+        router.push('/overview');
       }
     } catch (err: any) {
       setError(err.message || 'Google Sign-in failed.');

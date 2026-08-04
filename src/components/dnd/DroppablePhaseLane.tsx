@@ -7,7 +7,9 @@ import { ConfirmModal } from '../modals/ConfirmModal';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Palette, Plane, Briefcase, Pencil, Trash2, ArrowRight, CopyPlus, Copy } from 'lucide-react';
 import { useAppSettings } from '@/lib/auth/AuthContext';
+import { useUndo } from '@/lib/context/UndoContext';
 import { cn } from '@/lib/utils';
+import { addProjectCost } from '@/lib/firebase/db';
 
 interface DroppablePhaseLaneProps {
   phase: Phase;
@@ -25,6 +27,7 @@ interface DroppablePhaseLaneProps {
 }
 
 export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUpdated, onEditAllocation, onDeleteAllocation, hasNextPhase, onDuplicateAllocation, onDuplicateCost, onDuplicateAllAllocation, onDuplicateAllCost, categories = [] }: DroppablePhaseLaneProps) {
+  const { pushAction } = useUndo();
   const { formatCurrency } = useAppSettings();
   const [editingCost, setEditingCost] = useState<ProjectCost | null>(null);
   const [costToDelete, setCostToDelete] = useState<string | null>(null);
@@ -56,7 +59,18 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
 
   const confirmDeleteCost = async () => {
     if (costToDelete) {
+      const costObj = projectCosts.find(c => c.id === costToDelete);
       await deleteProjectCost(costToDelete);
+      if (costObj) {
+        pushAction({
+          name: 'Remove Cost',
+          undo: async () => {
+            const { id, ...rest } = costObj;
+            await addProjectCost(rest);
+            if (onUpdated) onUpdated();
+          }
+        });
+      }
       setCostToDelete(null);
       if (onUpdated) onUpdated();
     }
@@ -64,7 +78,20 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
 
   const handleUpdateCost = async (costData: any) => {
     if (editingCost && editingCost.id) {
-      await updateProjectCost(editingCost.id, costData);
+      const oldData = { ...editingCost };
+      const id = editingCost.id;
+      await updateProjectCost(id, costData);
+      pushAction({
+        name: 'Edit Cost',
+        undo: async () => {
+          await updateProjectCost(id, {
+            quantity: oldData.quantity,
+            unitCost: oldData.unitCost,
+            details: oldData.details
+          });
+          if (onUpdated) onUpdated();
+        }
+      });
       if (onUpdated) onUpdated();
     }
   };

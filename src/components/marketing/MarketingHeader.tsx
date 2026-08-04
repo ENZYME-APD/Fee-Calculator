@@ -55,7 +55,7 @@ export function MarketingHeader() {
             </button>
             
             {!loading && user ? (
-              <Link href="/dashboard" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-full transition-all shadow-md shadow-blue-600/20">
+              <Link href="/overview" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-full transition-all shadow-md shadow-blue-600/20">
                 Dashboard
               </Link>
             ) : (
@@ -87,7 +87,7 @@ export function MarketingHeader() {
           
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
             {!loading && user ? (
-              <Link href="/dashboard" className="w-full py-3 text-center bg-blue-600 text-white font-bold rounded-xl shadow-md shadow-blue-600/20" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
+              <Link href="/overview" className="w-full py-3 text-center bg-blue-600 text-white font-bold rounded-xl shadow-md shadow-blue-600/20" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
             ) : (
               <>
                 <Link href="/login" className="w-full py-3 text-center text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 font-bold rounded-xl" onClick={() => setIsMobileMenuOpen(false)}>Log in</Link>

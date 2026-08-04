@@ -14,6 +14,8 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [templates, setTemplates] = useState<Project[]>([]);
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'status'>('date');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -332,6 +334,18 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
 
   if (loading) return <div className="p-8 text-slate-500">Loading projects...</div>;
 
+  const sortedProjects = [...projects].sort((a, b) => {
+    let comparison = 0;
+    if (sortBy === 'date') {
+      comparison = (a.createdAt || 0) - (b.createdAt || 0);
+    } else if (sortBy === 'name') {
+      comparison = a.name.localeCompare(b.name);
+    } else if (sortBy === 'status') {
+      comparison = (a.status || '').localeCompare(b.status || '');
+    }
+    return sortOrder === 'asc' ? comparison : -comparison;
+  });
+
   return (
     <div className="flex h-full gap-6 mx-auto w-full p-8" style={{ maxWidth: '1600px' }}>
       {/* Projects List */}
@@ -339,6 +353,26 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-2 bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex justify-between items-center">
             <h2 className="font-bold text-xl text-slate-800 dark:text-slate-100">{isTemplateMode ? 'Project Templates' : 'Projects'}</h2>
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [newSortBy, newSortOrder] = e.target.value.split('-');
+                setSortBy(newSortBy as 'date' | 'name' | 'status');
+                setSortOrder(newSortOrder as 'asc' | 'desc');
+              }}
+              className="px-2 py-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors shadow-sm cursor-pointer"
+            >
+              <option value="date-desc">Newest First</option>
+              <option value="date-asc">Oldest First</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+              {!isTemplateMode && (
+                <>
+                  <option value="status-asc">Status (A-Z)</option>
+                  <option value="status-desc">Status (Z-A)</option>
+                </>
+              )}
+            </select>
           </div>
           {!isTemplateMode && (
             <div className="flex flex-wrap gap-3 mt-1 text-[11px] font-medium uppercase tracking-wider">
@@ -358,7 +392,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                 onChange={(e) => setSelectedTemplateId(e.target.value)}
                 className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
               >
-                <option value="">Blank Project</option>
+                <option value="">No Template</option>
                 <optgroup label="Templates">
                   {templates.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
@@ -379,7 +413,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
           </form>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-1 bg-slate-50/30 dark:bg-slate-900/30 transition-colors">
-          {projects.map(p => {
+          {sortedProjects.map(p => {
             if (editingProjectId === p.id) {
               return (
                 <div key={p.id} className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 shadow-sm transition-colors">

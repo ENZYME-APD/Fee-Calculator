@@ -122,10 +122,7 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
                 <span className="text-blue-700 dark:text-blue-400 font-medium">Estimated Cost</span>
                 <span className="font-bold text-rose-600 dark:text-rose-400">${finalCost.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-blue-700 dark:text-blue-400 font-medium">Estimated Fee</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">${finalFee.toLocaleString()}</span>
-              </div>
+
             </div>
           )}
         </div>

@@ -4,7 +4,8 @@ import {
   DndContext, DragEndEvent, DragStartEvent, TouchSensor, MouseSensor, useSensor, useSensors, DragOverlay
 } from '@dnd-kit/core';
 import { TeamMember, Phase, Allocation, ProjectCost, Project } from '@/lib/firebase/schema';
-import { addAllocation, addProjectCost, updateAllocation, deleteAllocation } from '@/lib/firebase/db';
+import { addAllocation, addProjectCost, updateAllocation, deleteAllocation, deleteProjectCost } from '@/lib/firebase/db';
+import { useUndo } from '@/lib/context/UndoContext';
 import { DraggablePersonChip } from '../dnd/DraggablePersonChip';
 import { DraggableCostChip } from '../dnd/DraggableCostChip';
 import { DroppablePhaseLane } from '../dnd/DroppablePhaseLane';
@@ -27,6 +28,7 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ project, members, phases, allocations, projectCosts = [], onAllocationAdded }: AppLayoutProps) {
+  const { pushAction } = useUndo();
   const { formatCurrency } = useAppSettings();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeMember, setActiveMember] = useState<TeamMember | null>(null);
@@ -124,13 +126,33 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
   const handleSaveAllocation = async (allocationData: Omit<Allocation, 'id' | 'phaseId' | 'memberId' | 'companyId' | 'projectId'>) => {
     if (pendingAllocation && pendingAllocation.phase.id && pendingAllocation.member.id) {
       if (pendingAllocation.existing && pendingAllocation.existing.id) {
-        await updateAllocation(pendingAllocation.existing.id, allocationData);
+        const oldData = { ...pendingAllocation.existing };
+        const id = pendingAllocation.existing.id;
+        await updateAllocation(id, allocationData);
+        pushAction({
+          name: 'Edit Allocation',
+          undo: async () => {
+            await updateAllocation(id, {
+              allocationType: oldData.allocationType,
+              allocationValue: oldData.allocationValue,
+              hours: oldData.hours
+            });
+            onAllocationAdded();
+          }
+        });
       } else {
-        await addAllocation({
+        const newId = await addAllocation({
           projectId: pendingAllocation.phase.projectId,
           phaseId: pendingAllocation.phase.id,
           memberId: pendingAllocation.member.id,
           ...allocationData
+        });
+        pushAction({
+          name: 'Add Allocation',
+          undo: async () => {
+            await deleteAllocation(newId);
+            onAllocationAdded();
+          }
         });
       }
       onAllocationAdded();
@@ -148,7 +170,18 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
 
   const confirmDeleteAllocation = async () => {
     if (allocationToDelete) {
+      const allocObj = allocations.find(a => a.id === allocationToDelete);
       await deleteAllocation(allocationToDelete);
+      if (allocObj) {
+        pushAction({
+          name: 'Remove Allocation',
+          undo: async () => {
+            const { id, ...rest } = allocObj;
+            await addAllocation(rest);
+            onAllocationAdded();
+          }
+        });
+      }
       setAllocationToDelete(null);
       onAllocationAdded();
     }
@@ -156,10 +189,17 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
 
   const handleSaveCost = async (costData: Omit<ProjectCost, 'id' | 'phaseId' | 'projectId' | 'companyId'>) => {
     if (pendingCost && pendingCost.phase.id && pendingCost.phase.projectId) {
-      await addProjectCost({
+      const newId = await addProjectCost({
         projectId: pendingCost.phase.projectId,
         phaseId: pendingCost.phase.id,
         ...costData
+      });
+      pushAction({
+        name: 'Add Cost',
+        undo: async () => {
+          await deleteProjectCost(newId);
+          onAllocationAdded();
+        }
       });
       onAllocationAdded(); // trigger data reload
     }
@@ -169,7 +209,14 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
     if (currentIndex + 1 < phases.length) {
       const nextPhase = phases[currentIndex + 1];
       const { id, ...allocData } = allocation;
-      await addAllocation({ ...allocData, phaseId: nextPhase.id! });
+      const newId = await addAllocation({ ...allocData, phaseId: nextPhase.id! });
+      pushAction({
+        name: 'Duplicate Allocation',
+        undo: async () => {
+          await deleteAllocation(newId);
+          onAllocationAdded();
+        }
+      });
       onAllocationAdded();
     }
   };
@@ -178,7 +225,14 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
     if (currentIndex + 1 < phases.length) {
       const nextPhase = phases[currentIndex + 1];
       const { id, ...costData } = cost;
-      await addProjectCost({ ...costData, phaseId: nextPhase.id! });
+      const newId = await addProjectCost({ ...costData, phaseId: nextPhase.id! });
+      pushAction({
+        name: 'Duplicate Cost',
+        undo: async () => {
+          await deleteProjectCost(newId);
+          onAllocationAdded();
+        }
+      });
       onAllocationAdded();
     }
   };
@@ -189,8 +243,16 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
       if (idx !== currentIndex) {
         return addAllocation({ ...allocData, phaseId: phase.id! });
       }
+      return Promise.resolve(null);
     });
-    await Promise.all(promises);
+    const newIds = (await Promise.all(promises)).filter(Boolean) as string[];
+    pushAction({
+      name: 'Duplicate Allocation to All',
+      undo: async () => {
+        await Promise.all(newIds.map(newId => deleteAllocation(newId)));
+        onAllocationAdded();
+      }
+    });
     onAllocationAdded();
   };
 
@@ -200,8 +262,16 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
       if (idx !== currentIndex) {
         return addProjectCost({ ...costData, phaseId: phase.id! });
       }
+      return Promise.resolve(null);
     });
-    await Promise.all(promises);
+    const newIds = (await Promise.all(promises)).filter(Boolean) as string[];
+    pushAction({
+      name: 'Duplicate Cost to All',
+      undo: async () => {
+        await Promise.all(newIds.map(newId => deleteProjectCost(newId)));
+        onAllocationAdded();
+      }
+    });
     onAllocationAdded();
   };
 

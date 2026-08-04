@@ -9,7 +9,7 @@ export function AuthRedirect() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/dashboard');
+      router.push('/overview');
     }
   }, [user, loading, router]);
 
