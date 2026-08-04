@@ -110,6 +110,53 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How it Works Section */}
+      <section id="how-it-works" className="py-24 bg-white dark:bg-slate-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">How it works</h2>
+            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">Get up and running in minutes, not days.</p>
+          </div>
+          
+          <div className="grid md:grid-cols-4 gap-8">
+            <div className="relative">
+              <div className="hidden md:block absolute top-6 left-12 w-full h-0.5 bg-blue-100 dark:bg-blue-900/50" />
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl mb-4 shadow-lg shadow-blue-600/20">1</div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Set Up Your Team</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Add your team members manually or upload them from a CSV. Set their internal costs and external billing rates.</p>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="hidden md:block absolute top-6 left-12 w-full h-0.5 bg-blue-100 dark:bg-blue-900/50" />
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl mb-4 shadow-lg shadow-blue-600/20">2</div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Create a Project</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Use preset templates for standard architectural phases (like RIBA) or start from scratch. Everything is fully editable.</p>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="hidden md:block absolute top-6 left-12 w-full h-0.5 bg-blue-100 dark:bg-blue-900/50" />
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl mb-4 shadow-lg shadow-blue-600/20">3</div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Allocate Hours</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Drag and drop team members into your project phases to allocate hours and calculate costs interactively.</p>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl mb-4 shadow-lg shadow-blue-600/20">4</div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Review Proposal</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Review your automated fee proposal, edit payment schedules, and export your accurate calculation.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
       <section id="pricing" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

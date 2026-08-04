@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -11,6 +11,21 @@ export function SecurityTab() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleResetPassword = async () => {
+    if (!auth.currentUser || !auth.currentUser.email) return;
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await sendPasswordResetEmail(auth, auth.currentUser.email);
+      setSuccess(`Password reset email sent to ${auth.currentUser.email}.`);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to send reset email.');
+    }
+    setLoading(false);
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +100,17 @@ export function SecurityTab() {
 
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Current Password</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Current Password</label>
+              <button 
+                type="button" 
+                onClick={handleResetPassword}
+                disabled={loading}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium disabled:opacity-50"
+              >
+                Forgot password?
+              </button>
+            </div>
             <input 
               type="password" 
               required 

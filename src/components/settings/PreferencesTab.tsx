@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Company } from '@/lib/firebase/schema';
 import { updateCompany } from '@/lib/firebase/db';
 import { Save, Loader2 } from 'lucide-react';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 const CURRENCIES = [
   { code: 'USD', name: 'US Dollar ($)' },
@@ -40,6 +41,7 @@ export function PreferencesTab({ company }: { company: Company }) {
   const [areaUnit, setAreaUnit] = useState(company.areaUnit || 'sqm');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSave = async () => {
     if (!company.id) return;
@@ -52,6 +54,22 @@ export function PreferencesTab({ company }: { company: Company }) {
     } catch (error) {
       console.error(error);
       setMessage('Failed to save preferences.');
+    }
+    setSaving(false);
+  };
+
+  const handleClearData = async () => {
+    setShowConfirm(false);
+    setSaving(true);
+    try {
+      const { clearSampleData } = await import('@/lib/firebase/db');
+      if (company.id) {
+        await clearSampleData(company.id);
+        setMessage('Sample data cleared successfully.');
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    } catch (e) {
+      setMessage('Error clearing sample data.');
     }
     setSaving(false);
   };
@@ -119,27 +137,22 @@ export function PreferencesTab({ company }: { company: Company }) {
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">If your workspace was populated with sample projects and team members, you can safely remove them here.</p>
         </div>
         <button
-          onClick={async () => {
-            if (confirm('Are you sure you want to delete all sample data? This cannot be undone.')) {
-              setSaving(true);
-              try {
-                const { clearSampleData } = await import('@/lib/firebase/db');
-                if (company.id) {
-                  await clearSampleData(company.id);
-                  setMessage('Sample data cleared successfully.');
-                  setTimeout(() => window.location.reload(), 1000);
-                }
-              } catch (e) {
-                setMessage('Error clearing sample data.');
-              }
-              setSaving(false);
-            }
-          }}
+          onClick={() => setShowConfirm(true)}
           className="px-4 py-2 bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400 font-bold rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors text-sm border border-rose-200 dark:border-rose-800/50"
         >
           Clear Sample Data
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        title="Clear Sample Data"
+        message="Are you sure you want to delete all sample data? This cannot be undone."
+        confirmText="Clear Data"
+        cancelText="Cancel"
+        onConfirm={handleClearData}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }
