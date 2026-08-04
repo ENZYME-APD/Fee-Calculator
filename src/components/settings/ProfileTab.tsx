@@ -48,7 +48,7 @@ export function ProfileTab() {
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage your personal details.</p>
       </div>
 
-      <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
+      <form onSubmit={handleUpdateProfile} className="space-y-4">
         {error && (
           <div className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 p-3 rounded-xl text-sm font-medium">
             {error}

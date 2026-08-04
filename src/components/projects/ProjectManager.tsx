@@ -509,7 +509,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                 </div>
               </form>
             </div>
-            <div className="flex-1 p-6 overflow-y-auto space-y-3 bg-slate-50/30 dark:bg-slate-900/30 transition-colors">
+            <div className="flex-1 p-6 overflow-y-auto overflow-x-hidden space-y-3 bg-slate-50/30 dark:bg-slate-900/30 transition-colors">
               {phases.length === 0 ? (
                 <div className="text-center text-slate-400 dark:text-slate-600 py-12 flex flex-col items-center gap-2">
                   <Folder size={48} className="text-slate-200 dark:text-slate-700" />

@@ -83,7 +83,7 @@ export function SecurityTab() {
           </div>
         )}
 
-        <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+        <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Current Password</label>
             <input 

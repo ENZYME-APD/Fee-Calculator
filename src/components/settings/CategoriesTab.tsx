@@ -91,7 +91,12 @@ export function CategoriesTab({ company }: { company: Company }) {
       <div className="flex items-start sm:items-center justify-between">
         <div className="flex-1 pr-4">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Team Categories</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Organize team members into folders by defining custom categories and sorting order.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Organise the Team sorting order in folders and fee proposal cards, color in the graph, allow to set internal and external.</p>
+          <div className="mt-4 p-4 bg-blue-50/50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 rounded-xl">
+            <p className="text-blue-800 dark:text-blue-300 text-sm">
+              <span className="font-semibold">Note:</span> Only <em>Internal</em> categories count for the monthly cashflow calculation.
+            </p>
+          </div>
         </div>
         <button
           onClick={() => {

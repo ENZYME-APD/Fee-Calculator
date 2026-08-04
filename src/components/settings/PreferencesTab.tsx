@@ -8,16 +8,26 @@ const CURRENCIES = [
   { code: 'USD', name: 'US Dollar ($)' },
   { code: 'EUR', name: 'Euro (€)' },
   { code: 'GBP', name: 'British Pound (£)' },
+  { code: 'CHF', name: 'Swiss Franc (CHF)' },
+  { code: 'SEK', name: 'Swedish Krona (kr)' },
+  { code: 'NOK', name: 'Norwegian Krone (kr)' },
+  { code: 'DKK', name: 'Danish Krone (kr)' },
+  { code: 'PLN', name: 'Polish Złoty (zł)' },
+  { code: 'CZK', name: 'Czech Koruna (Kč)' },
+  { code: 'HUF', name: 'Hungarian Forint (Ft)' },
+  { code: 'INR', name: 'Indian Rupee (₹)' },
+  { code: 'IDR', name: 'Indonesian Rupiah (Rp)' },
   { code: 'AUD', name: 'Australian Dollar (A$)' },
   { code: 'CAD', name: 'Canadian Dollar (C$)' },
   { code: 'JPY', name: 'Japanese Yen (¥)' },
   { code: 'CNY', name: 'Chinese Yuan (¥)' },
   { code: 'VND', name: 'Vietnamese Dong (₫)' },
   { code: 'PHP', name: 'Philippine Peso (₱)' },
-  { code: 'PLN', name: 'Polish Złoty (zł)' },
   { code: 'AED', name: 'UAE Dirham (د.إ)' },
   { code: 'SAR', name: 'Saudi Riyal (﷼)' },
   { code: 'SGD', name: 'Singapore Dollar (S$)' },
+  { code: 'MYR', name: 'Malaysian Ringgit (RM)' },
+  { code: 'THB', name: 'Thai Baht (฿)' }
 ];
 
 const AREA_UNITS = [
@@ -47,7 +57,7 @@ export function PreferencesTab({ company }: { company: Company }) {
   };
 
   return (
-    <div className="space-y-8 max-w-xl">
+    <div className="space-y-8">
       <div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Global Preferences</h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Configure default units and formatting used across your company.</p>

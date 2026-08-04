@@ -320,7 +320,7 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
         <div className="flex gap-2">
           <button onClick={handleUseTemplate} className="text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-1.5">
             <FileSpreadsheet size={14} />
-            Template
+            By Phase
           </button>
           <button onClick={handleMonthlyTemplate} className="text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-1.5">
             <CalendarDays size={14} />
