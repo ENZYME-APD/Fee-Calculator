@@ -40,7 +40,7 @@ const InlinePercentInput = ({ value, onChange }: { value: number, onChange: (val
         onChange={e => setVal(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="w-12 text-right bg-transparent text-sm font-bold text-slate-700 dark:text-slate-300 px-1 py-1 focus:outline-none"
+        className="w-20 text-right bg-transparent text-sm font-bold text-slate-700 dark:text-slate-300 px-1 py-1 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none m-0"
       />
       <span className="text-slate-500 text-sm font-bold pr-2">%</span>
     </div>
@@ -336,7 +336,7 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
             <input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Phase 1 Completion" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors" />
           </div>
           <div className="flex gap-3 items-end">
-            <div className="w-24">
+            <div className="w-32">
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">% Value</label>
               <input type="number" required min="0" step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="10" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors" />
             </div>
@@ -377,7 +377,7 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
                     <div className="flex gap-2 items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-500">%:</span>
-                        <input type="number" required min="0" step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className="w-20 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 text-center" />
+                        <input type="number" required min="0" step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className="w-28 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 text-center" />
                       </div>
                       <div className="flex-1">
                         <select value={editPhaseId} onChange={e => setEditPhaseId(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20">

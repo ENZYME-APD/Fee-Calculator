@@ -3,6 +3,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Monitor } from "lucide-react";
 import { UndoProvider } from "@/lib/context/UndoContext";
 import { GlobalToast } from "@/components/ui/Toast";
+import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 
 export default function AppLayoutGroup({
   children,
@@ -41,6 +42,7 @@ export default function AppLayoutGroup({
         </main>
       </div>
       <GlobalToast />
+      <WelcomeOverlay />
     </>
   );
 }

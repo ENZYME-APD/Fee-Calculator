@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Phase, Allocation, TeamMember, ProjectCost, TeamCategory } from '@/lib/firebase/schema';
-import { deleteProjectCost, updateProjectCost } from '@/lib/firebase/db';
+import { deleteProjectCost, updateProjectCost, addProjectCost } from '@/lib/firebase/db';
 import { CostModal } from '../modals/CostModal';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { Palette, Plane, Briefcase, Pencil, Trash2, ArrowRight, CopyPlus, Copy } from 'lucide-react';
+import { Plus, Clock, Copy, ArrowRight, Pencil, Trash2, Palette, Plane, Briefcase, ChevronRight, X, Check } from 'lucide-react';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { useUndo } from '@/lib/context/UndoContext';
 import { cn } from '@/lib/utils';
-import { addProjectCost } from '@/lib/firebase/db';
+import { DraggablePhaseAllocationChip, ExtendedAllocation } from './DraggablePhaseAllocationChip';
+import { DraggablePhaseCostChip } from './DraggablePhaseCostChip';
 
 interface DroppablePhaseLaneProps {
   phase: Phase;
@@ -96,11 +97,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
     }
   };
 
-  const getCostIcon = (type: string) => {
-    if (type === 'rendering') return <Palette size={16} className="text-pink-500" />;
-    if (type === 'trip') return <Plane size={16} className="text-sky-500" />;
-    return <Briefcase size={16} className="text-purple-500" />;
-  };
+  // Removed getCostIcon as it is now in DraggablePhaseCostChip
 
   return (
     <div
@@ -187,89 +184,31 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
           
           return (
             <>
-              {internal.map(allocation => (
-                <div key={allocation.id} className="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center group hover:shadow-md transition-shadow relative">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{allocation.member.name}</span>
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">{allocation.hours} hrs</span>
-                  </div>
-                  <div className="flex flex-col items-end pr-2 pl-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Cost</span>
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatCurrency(allocation.hours * allocation.member.costPerHour)}</span>
-                    <span className="text-[10px] text-slate-400 font-medium mt-0.5">@ {formatCurrency(allocation.member.costPerHour)}/h</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 pl-2 border-l border-slate-100 dark:border-slate-700 shrink-0">
-                    {onDuplicateAllAllocation && (
-                      <Tooltip content="Duplicate to all phases" position="top">
-                        <button onClick={() => onDuplicateAllAllocation(allocation)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center">
-                          <Copy size={12} />
-                        </button>
-                      </Tooltip>
-                    )}
-                    {hasNextPhase && onDuplicateAllocation && (
-                      <Tooltip content="Duplicate to next phase" position="top">
-                        <button onClick={() => onDuplicateAllocation(allocation)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center">
-                          <ArrowRight size={12} />
-                        </button>
-                      </Tooltip>
-                    )}
-                    <Tooltip content="Edit" position="top">
-                      <button onClick={() => onEditAllocation && onEditAllocation(allocation, allocation.member)} className="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors flex justify-center">
-                        <Pencil size={12} />
-                      </button>
-                    </Tooltip>
-                    <Tooltip content="Delete" position="top">
-                      <button onClick={() => onDeleteAllocation && allocation.id && onDeleteAllocation(allocation.id)} className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors flex justify-center">
-                        <Trash2 size={12} />
-                      </button>
-                    </Tooltip>
-                  </div>
-                </div>
+              {internal.map((allocation) => (
+                <DraggablePhaseAllocationChip
+                  key={allocation.id}
+                  allocation={allocation as ExtendedAllocation}
+                  hasNextPhase={hasNextPhase}
+                  onDuplicateAllAllocation={onDuplicateAllAllocation}
+                  onDuplicateAllocation={onDuplicateAllocation}
+                  onEditAllocation={onEditAllocation}
+                  onDeleteAllocation={onDeleteAllocation}
+                />
               ))}
               
               {external.length > 0 && (
                 <div className="mt-1 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col gap-3">
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">External Resources</h4>
-                  {external.map(allocation => (
-                    <div key={allocation.id} className="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center group hover:shadow-md transition-shadow relative">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{allocation.member.name}</span>
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">{allocation.hours} hrs</span>
-                      </div>
-                      <div className="flex flex-col items-end pr-2 pl-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Cost</span>
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatCurrency(allocation.hours * allocation.member.costPerHour)}</span>
-                        <span className="text-[10px] text-slate-400 font-medium mt-0.5">@ {formatCurrency(allocation.member.costPerHour)}/h</span>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 pl-2 border-l border-slate-100 dark:border-slate-700 shrink-0">
-                        {onDuplicateAllAllocation && (
-                          <Tooltip content="Duplicate to all phases" position="top">
-                            <button onClick={() => onDuplicateAllAllocation(allocation)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center">
-                              <Copy size={12} />
-                            </button>
-                          </Tooltip>
-                        )}
-                        {hasNextPhase && onDuplicateAllocation && (
-                          <Tooltip content="Duplicate to next phase" position="top">
-                            <button onClick={() => onDuplicateAllocation(allocation)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center">
-                              <ArrowRight size={12} />
-                            </button>
-                          </Tooltip>
-                        )}
-                        <Tooltip content="Edit" position="top">
-                          <button onClick={() => onEditAllocation && onEditAllocation(allocation, allocation.member)} className="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors flex justify-center">
-                            <Pencil size={12} />
-                          </button>
-                        </Tooltip>
-                        <Tooltip content="Delete" position="top">
-                          <button onClick={() => onDeleteAllocation && allocation.id && onDeleteAllocation(allocation.id)} className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors flex justify-center">
-                            <Trash2 size={12} />
-                          </button>
-                        </Tooltip>
-                      </div>
-                    </div>
+                  {external.map((allocation) => (
+                    <DraggablePhaseAllocationChip
+                      key={allocation.id}
+                      allocation={allocation as ExtendedAllocation}
+                      hasNextPhase={hasNextPhase}
+                      onDuplicateAllAllocation={onDuplicateAllAllocation}
+                      onDuplicateAllocation={onDuplicateAllocation}
+                      onEditAllocation={onEditAllocation}
+                      onDeleteAllocation={onDeleteAllocation}
+                    />
                   ))}
                 </div>
               )}
@@ -280,47 +219,16 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
         {projectCosts.length > 0 && (
           <div className="mt-2 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col gap-3">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Project Costs</h4>
-            {projectCosts.map(cost => (
-              <div key={cost.id} className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center group hover:shadow-md transition-shadow relative">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    {getCostIcon(cost.type)}
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{cost.name}</span>
-                  </div>
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{cost.quantity} × {formatCurrency(cost.unitCost)}</span>
-                </div>
-                <div className="flex flex-col items-end pr-2 pl-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Cost</span>
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatCurrency(cost.quantity * cost.unitCost)}</span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 pl-2 border-l border-slate-100 dark:border-slate-700 shrink-0">
-                  {onDuplicateAllCost && (
-                    <Tooltip content="Duplicate to all phases" position="top">
-                      <button onClick={() => onDuplicateAllCost(cost)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center">
-                        <Copy size={12} />
-                      </button>
-                    </Tooltip>
-                  )}
-                  {hasNextPhase && onDuplicateCost && (
-                    <Tooltip content="Duplicate to next phase" position="top">
-                      <button onClick={() => onDuplicateCost(cost)} className="p-1 text-slate-400 hover:text-emerald-600 rounded hover:bg-emerald-50 transition-colors flex justify-center">
-                        <ArrowRight size={12} />
-                      </button>
-                    </Tooltip>
-                  )}
-                  <Tooltip content="Edit" position="top">
-                    <button onClick={() => setEditingCost(cost)} className="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors flex justify-center">
-                      <Pencil size={12} />
-                    </button>
-                  </Tooltip>
-                  <Tooltip content="Delete" position="top">
-                    <button onClick={() => cost.id && setCostToDelete(cost.id)} className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors flex justify-center">
-                      <Trash2 size={12} />
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
+            {projectCosts.map((cost) => (
+              <DraggablePhaseCostChip
+                key={cost.id}
+                cost={cost}
+                hasNextPhase={hasNextPhase}
+                onDuplicateAllCost={onDuplicateAllCost}
+                onDuplicateCost={onDuplicateCost}
+                onEditCost={(c) => setEditingCost(c)}
+                onDeleteCost={(id) => setCostToDelete(id)}
+              />
             ))}
           </div>
         )}

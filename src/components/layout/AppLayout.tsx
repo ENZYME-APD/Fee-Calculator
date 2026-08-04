@@ -4,15 +4,18 @@ import {
   DndContext, DragEndEvent, DragStartEvent, TouchSensor, MouseSensor, useSensor, useSensors, DragOverlay
 } from '@dnd-kit/core';
 import { TeamMember, Phase, Allocation, ProjectCost, Project } from '@/lib/firebase/schema';
-import { addAllocation, addProjectCost, updateAllocation, deleteAllocation, deleteProjectCost } from '@/lib/firebase/db';
+import { addAllocation, addProjectCost, updateAllocation, deleteAllocation, deleteProjectCost, updateProject } from '@/lib/firebase/db';
 import { useUndo } from '@/lib/context/UndoContext';
 import { DraggablePersonChip } from '../dnd/DraggablePersonChip';
 import { DraggableCostChip } from '../dnd/DraggableCostChip';
+import { DraggablePhaseAllocationChip, ExtendedAllocation } from '../dnd/DraggablePhaseAllocationChip';
+import { DraggablePhaseCostChip } from '../dnd/DraggablePhaseCostChip';
 import { DroppablePhaseLane } from '../dnd/DroppablePhaseLane';
 import { AllocationModal } from '../modals/AllocationModal';
 import { CostModal } from '../modals/CostModal';
 import { ConfirmModal } from '../modals/ConfirmModal';
-import { PanelLeftClose, PanelLeftOpen, Users, ChevronDown, ChevronRight, PlusCircle, Menu } from 'lucide-react';
+import { ProjectSettingsModal } from '../modals/ProjectSettingsModal';
+import { PanelLeftClose, PanelLeftOpen, Users, ChevronDown, ChevronRight, PlusCircle, Menu, Edit3, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCategories } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
@@ -29,7 +32,11 @@ interface AppLayoutProps {
 
 export function AppLayout({ project, members, phases, allocations, projectCosts = [], onAllocationAdded }: AppLayoutProps) {
   const { pushAction } = useUndo();
-  const { formatCurrency } = useAppSettings();
+  const { formatCurrency, areaUnit } = useAppSettings();
+  
+  const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
+  const [isEditingMargin, setIsEditingMargin] = useState(false);
+  const [marginInput, setMarginInput] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeMember, setActiveMember] = useState<TeamMember | null>(null);
   
@@ -46,13 +53,41 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
   const [isCostModalOpen, setIsCostModalOpen] = useState(false);
   const [pendingCost, setPendingCost] = useState<{ type: 'rendering' | 'trip' | 'consultant' | 'other', phase: Phase } | null>(null);
   const [activeCostTemplate, setActiveCostTemplate] = useState<'rendering' | 'trip' | 'consultant' | null>(null);
+  const [activeExistingAllocation, setActiveExistingAllocation] = useState<ExtendedAllocation | null>(null);
+  const [activeExistingCost, setActiveExistingCost] = useState<ProjectCost | null>(null);
+  const [isAltPressed, setIsAltPressed] = useState(false);
 
   const [categories, setCategories] = useState<TeamCategory[]>([]);
+  
+  // Local state for optimistic UI updates during drag-and-drop
+  const [localAllocations, setLocalAllocations] = useState<Allocation[]>(allocations);
+  const [localProjectCosts, setLocalProjectCosts] = useState<ProjectCost[]>(projectCosts);
+
+  React.useEffect(() => {
+    setLocalAllocations(allocations);
+  }, [allocations]);
+
+  React.useEffect(() => {
+    setLocalProjectCosts(projectCosts);
+  }, [projectCosts]);
 
   React.useEffect(() => {
     getCategories().then(data => {
       setCategories(data);
     });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Alt') setIsAltPressed(true);
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Alt') setIsAltPressed(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
   }, []);
 
   // Group members by category
@@ -100,14 +135,53 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
       if (member) setActiveMember(member);
     } else if (active.data.current?.type === 'CostTemplate') {
       setActiveCostTemplate(active.data.current.costType);
+    } else if (active.data.current?.type === 'ExistingAllocation') {
+      setActiveExistingAllocation(active.data.current.allocation);
+    } else if (active.data.current?.type === 'ExistingCost') {
+      setActiveExistingCost(active.data.current.cost);
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     setActiveMember(null);
     setActiveCostTemplate(null);
+    setActiveExistingAllocation(null);
+    setActiveExistingCost(null);
+    
     const { active, over } = event;
     
+    // Deletion handling (dropped outside any droppable)
+    if (!over) {
+      if (active.data.current?.type === 'ExistingAllocation') {
+        const { allocation } = active.data.current;
+        setLocalAllocations(prev => prev.filter(a => a.id !== allocation.id));
+        await deleteAllocation(allocation.id);
+        pushAction({
+          name: 'Remove Allocation',
+          undo: async () => {
+            const { id, ...rest } = allocation;
+            await addAllocation(rest);
+            onAllocationAdded();
+          }
+        });
+        onAllocationAdded();
+      } else if (active.data.current?.type === 'ExistingCost') {
+        const { cost } = active.data.current;
+        setLocalProjectCosts(prev => prev.filter(c => c.id !== cost.id));
+        await deleteProjectCost(cost.id);
+        pushAction({
+          name: 'Remove Cost',
+          undo: async () => {
+            const { id, ...rest } = cost;
+            await addProjectCost(rest);
+            onAllocationAdded();
+          }
+        });
+        onAllocationAdded();
+      }
+      return;
+    }
+
     if (over && over.data.current?.type === 'Phase') {
       const phase = over.data.current.phase as Phase;
       
@@ -119,6 +193,64 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
         const type = active.data.current.costType as 'rendering' | 'trip' | 'consultant' | 'other';
         setPendingCost({ type, phase });
         setIsCostModalOpen(true);
+      } else if (active.data.current?.type === 'ExistingAllocation') {
+        const { allocation, sourcePhaseId } = active.data.current;
+        if (sourcePhaseId !== phase.id) {
+          if (isAltPressed) {
+            // Duplicate
+            const { id, member, ...allocData } = allocation;
+            const newId = await addAllocation({ ...allocData, phaseId: phase.id! });
+            pushAction({
+              name: 'Duplicate Allocation',
+              undo: async () => {
+                await deleteAllocation(newId);
+                onAllocationAdded();
+              }
+            });
+          } else {
+            // Move
+            const id = allocation.id;
+            setLocalAllocations(prev => prev.map(a => a.id === id ? { ...a, phaseId: phase.id } : a));
+            await updateAllocation(id, { phaseId: phase.id });
+            pushAction({
+              name: 'Move Allocation',
+              undo: async () => {
+                await updateAllocation(id, { phaseId: sourcePhaseId });
+                onAllocationAdded();
+              }
+            });
+          }
+          onAllocationAdded();
+        }
+      } else if (active.data.current?.type === 'ExistingCost') {
+        const { cost, sourcePhaseId } = active.data.current;
+        if (sourcePhaseId !== phase.id) {
+          if (isAltPressed) {
+            // Duplicate
+            const { id, ...costData } = cost;
+            const newId = await addProjectCost({ ...costData, phaseId: phase.id! });
+            pushAction({
+              name: 'Duplicate Cost',
+              undo: async () => {
+                await deleteProjectCost(newId);
+                onAllocationAdded();
+              }
+            });
+          } else {
+            // Move
+            const id = cost.id;
+            setLocalProjectCosts(prev => prev.map(c => c.id === id ? { ...c, phaseId: phase.id } : c));
+            await updateProjectCost(id, { phaseId: phase.id });
+            pushAction({
+              name: 'Move Cost',
+              undo: async () => {
+                await updateProjectCost(id, { phaseId: sourcePhaseId });
+                onAllocationAdded();
+              }
+            });
+          }
+          onAllocationAdded();
+        }
       }
     }
   };
@@ -379,31 +511,94 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed opacity-95 dark:opacity-20 pointer-events-none transition-opacity" />
             
             <div className="absolute inset-0 overflow-x-hidden overflow-y-auto p-8 z-10">
-              {project && (
-                <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm mb-6">
-                  <div className="flex items-center gap-3">
-                    <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100">{project.name}</h2>
-                    <span className="px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-                      {project.status || 'Draft'}
-                    </span>
+              {project && (() => {
+                const totalCost = allocations.filter(a => a.projectId === project.id).reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
+                  projectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
+                const profitMarginPercent = project.profitMargin ?? 20;
+                const profitMarginAmount = totalCost * (profitMarginPercent / 100);
+                const totalFee = totalCost + profitMarginAmount;
+
+                return (
+                  <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-baseline gap-2">
+                        <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100">{project.name}</h2>
+                        <button 
+                          onClick={() => setIsProjectSettingsOpen(true)}
+                          className="text-slate-400 hover:text-blue-500 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                        {project.area && (
+                          <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-2">
+                            {project.area} {areaUnit}
+                          </span>
+                        )}
+                      </div>
+                      <span className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                        {project.status || 'Draft'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-8">
+                      <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Cost</span>
+                        <span className="text-xl font-bold text-slate-700 dark:text-slate-300">
+                          {formatCurrency(totalCost)}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Profit Margin</span>
+                        {isEditingMargin ? (
+                          <form 
+                            onSubmit={async (e) => {
+                              e.preventDefault();
+                              const val = parseFloat(marginInput);
+                              if (!isNaN(val)) {
+                                await updateProject(project.id!, { profitMargin: val });
+                                onAllocationAdded(); // Trigger re-render
+                              }
+                              setIsEditingMargin(false);
+                            }} 
+                            className="flex items-center gap-1"
+                          >
+                            <input 
+                              type="number" 
+                              step="0.1" 
+                              value={marginInput} 
+                              onChange={e => setMarginInput(e.target.value)}
+                              className="w-16 px-1.5 py-0.5 text-sm border border-slate-300 dark:border-slate-600 rounded text-right font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-blue-500"
+                              autoFocus
+                              onBlur={() => setIsEditingMargin(false)}
+                            />
+                            <span className="text-sm font-bold text-slate-600 dark:text-slate-400">%</span>
+                          </form>
+                        ) : (
+                          <div 
+                            className="flex items-center gap-1.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 px-2 py-0.5 rounded -mr-2 transition-colors"
+                            onClick={() => { setIsEditingMargin(true); setMarginInput(profitMarginPercent.toString()); }}
+                          >
+                            <span className="text-xl font-bold text-slate-700 dark:text-slate-300">{profitMarginPercent}%</span>
+                            <Edit3 size={12} className="text-slate-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Total Fee</span>
+                        <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(totalFee)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Cost</span>
-                    <span className="text-xl font-black text-slate-800 dark:text-slate-100">
-                      {formatCurrency(
-                        allocations.filter(a => a.projectId === project.id).reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
-                        projectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0)
-                      )}
-                    </span>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 items-start pb-12">
                 {phases.length === 0 ? (
                   <div className="text-slate-500 dark:text-slate-400 flex items-center justify-center w-full h-full font-medium">This project has no phases yet. Add some in the Projects tab.</div>
                 ) : (
                   phases.map((phase, index) => {
-                    const phaseAllocations = allocations
+                    const phaseAllocations = localAllocations
                       .filter(a => a.phaseId === phase.id)
                       .map(a => ({
                         ...a,
@@ -411,7 +606,7 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                       }))
                       .filter(a => a.member); // Filter out if member was deleted
                       
-                    const phaseCosts = projectCosts.filter(c => c.phaseId === phase.id);
+                    const phaseCosts = localProjectCosts.filter(c => c.phaseId === phase.id);
                       
                     return (
                       <DroppablePhaseLane 
@@ -447,6 +642,20 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
             <div className="opacity-95 scale-105 rotate-3 shadow-2xl cursor-grabbing">
               <DraggableCostChip type={activeCostTemplate} />
             </div>
+          ) : activeExistingAllocation ? (
+            <div className="opacity-95 scale-105 shadow-2xl cursor-grabbing w-[300px]">
+              <DraggablePhaseAllocationChip 
+                allocation={activeExistingAllocation} 
+                hasNextPhase={false} 
+              />
+            </div>
+          ) : activeExistingCost ? (
+            <div className="opacity-95 scale-105 shadow-2xl cursor-grabbing w-[300px]">
+              <DraggablePhaseCostChip 
+                cost={activeExistingCost} 
+                hasNextPhase={false} 
+              />
+            </div>
           ) : null}
         </DragOverlay>
 
@@ -481,6 +690,18 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
           onConfirm={confirmDeleteAllocation}
           onCancel={() => setAllocationToDelete(null)}
         />
+
+        {project && (
+          <ProjectSettingsModal
+            isOpen={isProjectSettingsOpen}
+            project={project}
+            onClose={() => setIsProjectSettingsOpen(false)}
+            onSave={async (updates) => {
+              await updateProject(project.id!, updates);
+              onAllocationAdded(); // Trigger re-render to load fresh project data
+            }}
+          />
+        )}
       </div>
     </DndContext>
   );

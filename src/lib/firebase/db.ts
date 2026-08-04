@@ -530,3 +530,39 @@ export const clearSampleData = async (companyId: string) => {
     deleteSamples('payments'),
   ]);
 };
+
+export const deleteAccountData = async (companyId: string, uid: string) => {
+  // Check how many users are in this company
+  const usersQ = query(collection(db, 'users'), where('companyId', '==', companyId));
+  const usersSnap = await getDocs(usersQ);
+  
+  // If this is the last user, delete the whole company
+  if (usersSnap.size <= 1) {
+    const deleteCompanyCollection = async (collectionName: string) => {
+      const q = query(collection(db, collectionName), where('companyId', '==', companyId));
+      const snap = await getDocs(q);
+      const batch = writeBatch(db);
+      snap.docs.forEach(docSnap => batch.delete(docSnap.ref));
+      if (!snap.empty) {
+        await batch.commit();
+      }
+    };
+
+    await Promise.all([
+      deleteCompanyCollection('projects'),
+      deleteCompanyCollection('phases'),
+      deleteCompanyCollection('teamMembers'),
+      deleteCompanyCollection('allocations'),
+      deleteCompanyCollection('projectCosts'),
+      deleteCompanyCollection('payments'),
+      deleteCompanyCollection('teamCategories'),
+      deleteCompanyCollection('invites')
+    ]);
+
+    // Delete the company document itself
+    await deleteDoc(doc(db, 'companies', companyId));
+  }
+
+  // Always delete the user document
+  await deleteDoc(doc(db, 'users', uid));
+};

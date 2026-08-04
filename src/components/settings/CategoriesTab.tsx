@@ -134,7 +134,7 @@ export function CategoriesTab({ company }: { company: Company }) {
                   type="color"
                   value={formData.color}
                   onChange={e => setFormData({ ...formData, color: e.target.value })}
-                  className="w-full h-full p-0 border-0 rounded cursor-pointer bg-transparent overflow-hidden"
+                  className="w-full h-full p-0 border-0 rounded cursor-pointer block"
                 />
               </Tooltip>
             </div>
@@ -206,7 +206,7 @@ export function CategoriesTab({ company }: { company: Company }) {
                         type="color"
                         value={formData.color}
                         onChange={e => setFormData({ ...formData, color: e.target.value })}
-                        className="w-full h-full p-0 border-0 rounded cursor-pointer bg-transparent overflow-hidden"
+                        className="w-full h-full p-0 border-0 rounded cursor-pointer block"
                       />
                     </Tooltip>
                   </div>

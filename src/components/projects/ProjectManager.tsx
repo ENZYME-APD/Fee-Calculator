@@ -207,11 +207,50 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
       confirmText: 'Save Template',
       onConfirm: async (name: string) => {
         if (name.trim()) {
+          const finalName = name.trim();
+          const existing = templates.find(t => t.name.toLowerCase() === finalName.toLowerCase());
+          
+          if (existing) {
+            setPromptConfig(prev => ({ ...prev, isOpen: false }));
+            setConfirmConfig({
+              isOpen: true,
+              title: 'Template Already Exists',
+              message: `A template named "${finalName}" already exists. Do you want to overwrite it, or save this as a copy?`,
+              confirmText: 'Overwrite',
+              onConfirm: async () => {
+                try {
+                  await deleteProject(existing.id!);
+                  await duplicateProject(id, true, finalName, true);
+                  window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Template overwritten successfully!' } }));
+                  await loadProjects();
+                } catch(err) {
+                  window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to overwrite template.' } }));
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+              },
+              secondaryAction: {
+                text: 'Save as Copy',
+                onClick: async () => {
+                  try {
+                    await duplicateProject(id, true, `${finalName} (Copy)`, true);
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Template copy saved successfully!' } }));
+                    await loadProjects();
+                  } catch(err) {
+                    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to save template.' } }));
+                  }
+                  setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                }
+              }
+            });
+            return;
+          }
+
           try {
-            await duplicateProject(id, true, name.trim(), true);
-            alert("Saved as template successfully! You can find it in Team Resources > Templates.");
+            await duplicateProject(id, true, finalName, true);
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Saved as template successfully!' } }));
+            await loadProjects();
           } catch(err) {
-            alert("Failed to save template.");
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to save template.' } }));
           }
         }
         setPromptConfig(prev => ({ ...prev, isOpen: false }));

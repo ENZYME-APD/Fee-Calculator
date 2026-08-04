@@ -230,51 +230,15 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Project Area ({areaUnit})</span>
-                {isEditingArea ? (
-                  <form onSubmit={handleSaveArea} className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                    <input 
-                      type="number" 
-                      value={areaInput} 
-                      onChange={e => setAreaInput(e.target.value)}
-                      className="w-20 px-2 py-0.5 text-sm border border-slate-300 dark:border-slate-600 rounded text-right font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500"
-                      autoFocus
-                    />
-                    <button type="submit" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 p-1"><Check size={16} /></button>
-                  </form>
-                ) : (
-                  <div 
-                    className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-600 hover:border-blue-400 transition-colors"
-                    onClick={(e) => { e.stopPropagation(); setIsEditingArea(true); setAreaInput(project.area?.toString() || '0'); }}
-                  >
-                    <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{project.area || 0}</span>
-                    <Edit3 size={12} className="text-slate-400 dark:text-slate-500" />
-                  </div>
-                )}
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{project.area || 0}</span>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Profit Margin</span>
-              {isEditingMargin ? (
-                <form onSubmit={handleSaveMargin} className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                  <input 
-                    type="number" 
-                    step="0.1" 
-                    value={marginInput} 
-                    onChange={e => setMarginInput(e.target.value)}
-                    className="w-16 px-2 py-0.5 text-sm border border-slate-300 dark:border-slate-600 rounded text-right font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500"
-                    autoFocus
-                  />
-                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400">%</span>
-                  <button type="submit" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 p-1"><Check size={16} /></button>
-                </form>
-              ) : (
-                <div 
-                  className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-600 hover:border-blue-400 transition-colors"
-                  onClick={(e) => { e.stopPropagation(); setIsEditingMargin(true); setMarginInput(profitMarginPercent.toString()); }}
-                >
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                   <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{profitMarginPercent}%</span>
-                  <Edit3 size={12} className="text-slate-400 dark:text-slate-500" />
                 </div>
-              )}
               </div>
             </div>
           </div>

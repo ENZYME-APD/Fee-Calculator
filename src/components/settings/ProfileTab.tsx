@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, deleteUser } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
-import { User, CheckCircle2 } from 'lucide-react';
+import { User, CheckCircle2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { deleteAccountData } from '@/lib/firebase/db';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 export function ProfileTab() {
-  const { dbUser } = useAuth();
+  const { dbUser, companyId } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
@@ -37,9 +41,33 @@ export function ProfileTab() {
     }
     setLoading(false);
   };
+  const handleDeleteAccount = async () => {
+    if (!auth.currentUser || !dbUser || !companyId) return;
+    
+    setDeleting(true);
+    setError('');
+    
+    try {
+      // First delete all the Firestore data
+      await deleteAccountData(companyId, dbUser.uid);
+      
+      // Then delete the auth user
+      await deleteUser(auth.currentUser);
+      
+      // The auth state change listener will automatically kick them to /login
+    } catch (err: any) {
+      if (err.code === 'auth/requires-recent-login') {
+        setError('For security reasons, please log out and log back in before deleting your account.');
+      } else {
+        setError(err.message || 'Failed to delete account.');
+      }
+      setShowDeleteConfirm(false);
+    }
+    setDeleting(false);
+  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-12">
       <div>
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <User size={20} className="text-blue-600" />
@@ -90,6 +118,33 @@ export function ProfileTab() {
           {loading ? 'Saving...' : 'Save Changes'}
         </button>
       </form>
+
+      <div className="pt-8 mt-8 border-t border-slate-200 dark:border-slate-800">
+        <h3 className="text-lg font-bold text-red-600 dark:text-red-500 flex items-center gap-2 mb-2">
+          <Trash2 size={20} />
+          Danger Zone
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 max-w-2xl">
+          Once you delete your account, there is no going back. Please be certain. 
+          If you are the last user in your company, this action will also permanently delete all company data, including projects, team members, and allocations.
+        </p>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          disabled={deleting}
+          className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 hover:bg-red-600 hover:text-white font-bold py-2.5 px-6 rounded-xl transition-colors border border-red-600/20 disabled:opacity-50"
+        >
+          {deleting ? 'Deleting...' : 'Delete Account'}
+        </button>
+      </div>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title="Delete Account"
+        message="Are you absolutely sure you want to delete your account? This action cannot be undone."
+        confirmText="Delete Account"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }
