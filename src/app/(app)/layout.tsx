@@ -42,12 +42,12 @@ export default function AppLayoutGroup({
                 {children}
               </UndoProvider>
               <TourOverlay />
+              <WelcomeOverlay />
             </TourProvider>
           </ProtectedRoute>
         </main>
       </div>
       <GlobalToast />
-      <WelcomeOverlay />
     </>
   );
 }
