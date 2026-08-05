@@ -146,7 +146,7 @@ export function CsvManager({ onComplete }: CsvManagerProps) {
       <button 
         onClick={downloadTemplate}
         disabled={loading}
-        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 text-sm"
+        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 text-sm whitespace-nowrap"
       >
         <Download size={16} />
         Template
@@ -155,7 +155,7 @@ export function CsvManager({ onComplete }: CsvManagerProps) {
       <button 
         onClick={downloadFullTeam}
         disabled={loading}
-        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 text-sm"
+        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 text-sm whitespace-nowrap"
       >
         <Download size={16} />
         Export CSV
@@ -172,7 +172,7 @@ export function CsvManager({ onComplete }: CsvManagerProps) {
       <button 
         onClick={() => fileInputRef.current?.click()}
         disabled={loading}
-        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 text-sm"
+        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 text-sm whitespace-nowrap"
       >
         <Upload size={16} />
         {loading ? 'Uploading...' : 'Upload CSV'}

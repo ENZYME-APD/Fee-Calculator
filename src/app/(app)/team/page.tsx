@@ -118,14 +118,14 @@ export default function TeamPage() {
           <p className="text-slate-500 dark:text-slate-400 mt-1">Manage team members, salaries, and rates.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/settings?tab=categories" className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 mr-2">
+          <Link href="/settings?tab=categories" className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 mr-2 whitespace-nowrap">
             <Settings size={18} />
-            Manage Categories
+            Categories
           </Link>
           <CsvManager onComplete={loadMembers} />
           <button 
             onClick={handleAddNew}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 whitespace-nowrap"
           >
             <Plus size={18} />
             Add Member
