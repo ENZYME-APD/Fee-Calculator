@@ -27,14 +27,16 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
   const [areaInput, setAreaInput] = useState(project.area?.toString() || '0');
   const [categories, setCategories] = useState<TeamCategory[]>([]);
 
-  const saveMargin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const margin = parseFloat(marginInput);
-    if (!isNaN(margin) && project.id) {
+  const saveMargin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    let margin = parseFloat(marginInput);
+    if (isNaN(margin)) margin = 0;
+    
+    if (project.id) {
       await updateProject(project.id, { profitMargin: margin });
-      setIsEditingMargin(false);
       onProjectUpdated();
     }
+    setIsEditingMargin(false);
   };
 
   useEffect(() => {
@@ -89,14 +91,6 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
   const totalPercentage = payments.reduce((sum, p) => sum + p.percentage, 0);
   const projectTotalWeeks = phases.reduce((sum, phase) => sum + phase.durationWeeks, 0);
   
-  const handleSaveMargin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseFloat(marginInput) || 0;
-    await updateProject(project.id!, { profitMargin: val });
-    setIsEditingMargin(false);
-    onProjectUpdated();
-  };
-
   const handleSaveArea = async (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseFloat(areaInput) || 0;
@@ -252,17 +246,18 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Profit Margin</span>
                 {isEditingMargin ? (
-                  <form onSubmit={saveMargin} className="flex items-center">
-                    <input
-                      type="number"
-                      autoFocus
-                      value={marginInput}
-                      onChange={e => setMarginInput(e.target.value)}
-                      onBlur={saveMargin}
-                      className="w-16 px-2 py-0.5 text-sm font-bold border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:bg-slate-800 dark:text-white"
-                    />
-                    <span className="text-sm font-bold ml-1 text-slate-500">%</span>
-                  </form>
+                  <form onSubmit={saveMargin} className="flex items-center gap-1">
+                  <input 
+                    type="number" 
+                    step="0.1" 
+                    value={marginInput} 
+                    onChange={e => setMarginInput(e.target.value)}
+                    className="w-16 px-1.5 py-0.5 text-sm border border-slate-300 dark:border-slate-600 rounded text-right font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-blue-500"
+                    autoFocus
+                    onBlur={() => saveMargin()}
+                  />
+                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400">%</span>
+                </form>
                 ) : (
                   <button onClick={() => { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} className="flex items-center gap-2 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors group">
                     <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{profitMarginPercent}%</span>
@@ -319,7 +314,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                       autoFocus
                       value={marginInput}
                       onChange={e => setMarginInput(e.target.value)}
-                      onBlur={saveMargin}
+                      onBlur={() => saveMargin()}
                       className="w-16 px-1 py-0.5 text-right text-sm font-bold text-slate-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                     <span className="text-sm font-bold ml-1 text-emerald-100">%</span>

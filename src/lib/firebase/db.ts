@@ -208,8 +208,8 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
       const newPhaseId = phaseIdMap.get(alloc.phaseId);
       if (newPhaseId) {
         const newAllocRef = doc(collection(db, 'allocations'));
-        const { id: _ignore, phaseId: _ignore2, ...allocData } = alloc;
-        batch.set(newAllocRef, sanitize({ ...allocData, phaseId: newPhaseId, companyId: companyId }));
+        const { id: _ignore, phaseId: _ignore2, projectId: _ignore3, ...allocData } = alloc as any;
+        batch.set(newAllocRef, sanitize({ ...allocData, projectId: newProjectId, phaseId: newPhaseId, companyId: companyId }));
       }
     }
 

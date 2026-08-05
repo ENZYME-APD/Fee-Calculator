@@ -512,9 +512,10 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
             
             <div className="absolute inset-0 overflow-x-hidden overflow-y-auto p-8 z-10">
               {project && (() => {
-                const totalCost = localAllocations.filter(a => a.projectId === project.id).reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
-                  localProjectCosts.filter(c => c.projectId === project.id).reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
-                const profitMarginPercent = project.profitMargin ?? 20;
+                const projectPhaseIds = phases.filter(p => p.projectId === project.id).map(p => p.id);
+                const totalCost = localAllocations.filter(a => projectPhaseIds.includes(a.phaseId)).reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
+                  localProjectCosts.filter(c => projectPhaseIds.includes(c.phaseId)).reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
+                const profitMarginPercent = project.profitMargin ?? 30;
                 const profitMarginAmount = totalCost * (profitMarginPercent / 100);
                 const totalFee = totalCost + profitMarginAmount;
 
