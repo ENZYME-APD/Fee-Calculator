@@ -447,7 +447,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                 onChange={e => setNewProjectName(e.target.value)}
                 className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
               />
-              <button type="submit" disabled={!newProjectName.trim() || isSavingProject} className="h-[42px] px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+              <button type="submit" disabled={isSavingProject} className="h-[42px] px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
                 {isSavingProject ? <span className="animate-pulse">Saving...</span> : <><Plus size={18} /> Add Project</>}
               </button>
             </div>
@@ -578,7 +578,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Duration (Wks)</label>
                     <input type="number" required min="0.5" step="0.5" value={newPhaseDuration} onChange={e => setNewPhaseDuration(e.target.value)} placeholder="e.g. 4" className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-colors" />
                   </div>
-                  <button type="submit" disabled={isSavingPhase || !newPhaseName.trim()} className="h-[42px] px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                  <button type="submit" disabled={isSavingPhase} className="h-[42px] px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
                     {isSavingPhase ? <span className="animate-pulse">Adding...</span> : <><Plus size={18} /> Add Phase</>}
                   </button>
                 </div>
