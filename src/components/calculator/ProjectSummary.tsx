@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Project, Phase, Allocation, TeamMember, ProjectCost, TeamCategory } from '@/lib/firebase/schema';
-import { updateProject, getCategories } from '@/lib/firebase/db';
+import { Project, Phase, Allocation, TeamMember, ProjectCost, TeamCategory, Payment } from '@/lib/firebase/schema';
+import { updateProject, getCategories, updatePayment } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Calculator, Edit3, Check, X, Download } from 'lucide-react';
+import { InlinePercentInput } from '@/components/projects/PaymentScheduleManager';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 interface ProjectSummaryProps {
@@ -12,17 +13,29 @@ interface ProjectSummaryProps {
   allocations: Allocation[];
   members: TeamMember[];
   projectCosts?: ProjectCost[];
+  payments?: Payment[];
   onProjectUpdated: () => void;
+  onPaymentUpdated?: () => void;
   onClose: () => void;
 }
 
-export function ProjectSummary({ project, phases, allocations, members, projectCosts = [], onProjectUpdated, onClose }: ProjectSummaryProps) {
+export function ProjectSummary({ project, phases, allocations, members, projectCosts = [], payments = [], onProjectUpdated, onPaymentUpdated, onClose }: ProjectSummaryProps) {
   const { formatCurrency, areaUnit } = useAppSettings();
   const [isEditingMargin, setIsEditingMargin] = useState(false);
   const [marginInput, setMarginInput] = useState(project.profitMargin?.toString() || '30');
   const [isEditingArea, setIsEditingArea] = useState(false);
   const [areaInput, setAreaInput] = useState(project.area?.toString() || '0');
   const [categories, setCategories] = useState<TeamCategory[]>([]);
+
+  const saveMargin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const margin = parseFloat(marginInput);
+    if (!isNaN(margin) && project.id) {
+      await updateProject(project.id, { profitMargin: margin });
+      setIsEditingMargin(false);
+      onProjectUpdated();
+    }
+  };
 
   useEffect(() => {
     getCategories().then(c => setCategories(c.sort((a, b) => a.order - b.order)));
@@ -200,7 +213,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
         <div className="flex items-center justify-between px-6 py-4 bg-slate-800 dark:bg-slate-900 text-white shrink-0 border-b border-slate-700 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <Calculator size={20} className="text-blue-400" />
-            <h3 className="font-bold tracking-wider text-lg">PROJECT SUMMARY & FEE STRUCTURE</h3>
+            <h3 className="font-bold tracking-wider text-lg uppercase">{project.name} - SUMMARY & PAYMENT SCHEDULE</h3>
             <span className="text-sm font-bold bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30 ml-4 hidden sm:inline-block">
               Total Fee: {formatCurrency(projectTotalFee)}
             </span>
@@ -236,9 +249,24 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Profit Margin</span>
-                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                  <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{profitMarginPercent}%</span>
-                </div>
+                {isEditingMargin ? (
+                  <form onSubmit={saveMargin} className="flex items-center">
+                    <input
+                      type="number"
+                      autoFocus
+                      value={marginInput}
+                      onChange={e => setMarginInput(e.target.value)}
+                      onBlur={saveMargin}
+                      className="w-16 px-2 py-0.5 text-sm font-bold border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:bg-slate-800 dark:text-white"
+                    />
+                    <span className="text-sm font-bold ml-1 text-slate-500">%</span>
+                  </form>
+                ) : (
+                  <button onClick={() => { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} className="flex items-center gap-2 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors group">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{profitMarginPercent}%</span>
+                    <Edit3 size={12} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -280,6 +308,27 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                 <span>Total Cost</span>
                 <span>{formatCurrency(projectTotalCost)}</span>
               </div>
+              <div className="flex justify-between items-center text-emerald-100/90 text-sm py-1 border-t border-emerald-400">
+                <span>Profit Margin</span>
+                {isEditingMargin ? (
+                  <form onSubmit={saveMargin} className="flex items-center">
+                    <input
+                      type="number"
+                      autoFocus
+                      value={marginInput}
+                      onChange={e => setMarginInput(e.target.value)}
+                      onBlur={saveMargin}
+                      className="w-16 px-1 py-0.5 text-right text-sm font-bold text-slate-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    />
+                    <span className="text-sm font-bold ml-1 text-emerald-100">%</span>
+                  </form>
+                ) : (
+                  <button onClick={() => { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} className="flex items-center gap-1 hover:text-white transition-colors group">
+                    <span>{profitMarginPercent}%</span>
+                    <Edit3 size={12} className="opacity-50 group-hover:opacity-100" />
+                  </button>
+                )}
+              </div>
               <div className="flex justify-between py-1 border-t border-emerald-400">
                 <span>Total Weeks</span>
                 <span>{projectTotalWeeks}</span>
@@ -309,10 +358,10 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
           </div>
         </div>
 
-        {/* Fee Structure Table */}
+        {/* Payment Schedule Table */}
         <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col rounded-xl">
           <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
-            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">FEE STRUCTURE</h4>
+            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">PAYMENT SCHEDULE</h4>
             <span className="font-bold text-blue-700 dark:text-blue-900 bg-yellow-300 px-2 py-0.5 rounded shadow-sm text-sm border border-yellow-400">
               {formatCurrency(projectTotalFee)}
             </span>
@@ -320,15 +369,15 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
           
           <div className="overflow-auto flex-1 p-3">
             <div className="space-y-2">
-              {phaseStats.length === 0 ? (
-                <div className="text-center text-slate-400 dark:text-slate-500 py-6 text-sm">No phases to structure.</div>
+              {payments.length === 0 ? (
+                <div className="text-center text-slate-400 dark:text-slate-500 py-6 text-sm">No payment schedule defined.</div>
               ) : (
-                phaseStats.map((stat, i) => {
-                  const feeAmount = stat.totalCost * multiplier;
-                  const percent = projectTotalFee > 0 ? (feeAmount / projectTotalFee) * 100 : 0;
+                payments.sort((a, b) => a.order - b.order).map((payment, i) => {
+                  const feeAmount = (projectTotalFee * payment.percentage) / 100;
                   
-                  // Compute breakdown percentages (relative to phase total cost)
-                  const total = stat.totalCost || 1;
+                  // Find associated phase stats if any
+                  const linkedPhaseStat = phaseStats.find(s => s.phase.id === payment.phaseId);
+                  const total = linkedPhaseStat?.totalCost || 1;
 
                   // Generate alternating pastel colors like the image
                   const colors = ['bg-green-200 border-green-300', 'bg-blue-200 border-blue-300', 'bg-pink-200 border-pink-300', 'bg-purple-200 border-purple-300', 'bg-yellow-200 border-yellow-300'];
@@ -338,35 +387,50 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                   const darkColorClass = darkColors[i % darkColors.length];
 
                   return (
-                    <div key={stat.phase.id} className="flex flex-col text-sm border border-slate-200 dark:border-slate-700 rounded overflow-hidden">
+                    <div key={payment.id} className="flex flex-col text-sm border border-slate-200 dark:border-slate-700 rounded overflow-hidden">
                       <div className="flex">
-                        <div className="flex-1 px-3 py-2 font-semibold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-950">
-                          {stat.phase.name}
+                        <div className="flex-1 px-3 py-2 font-semibold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 flex flex-col justify-center">
+                          <div>{payment.name}</div>
+                          {linkedPhaseStat && (
+                            <div className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mt-0.5">
+                              Phase: {linkedPhaseStat.phase.name}
+                            </div>
+                          )}
                         </div>
-                        <div className={`w-24 px-3 py-2 text-right font-medium text-slate-800 dark:text-slate-200 border-l ${colorClass} ${darkColorClass}`}>
-                          {percent.toFixed(2)}%
+                        <div className={`w-28 px-3 py-2 flex items-center justify-end font-medium text-slate-800 dark:text-slate-200 border-l ${colorClass} ${darkColorClass}`}>
+                          <InlinePercentInput 
+                            value={payment.percentage} 
+                            onChange={async (newVal) => {
+                              if (payment.id) {
+                                await updatePayment(payment.id, { percentage: newVal });
+                                if (onPaymentUpdated) onPaymentUpdated();
+                              }
+                            }} 
+                          />
                         </div>
-                        <div className={`w-36 px-3 py-2 text-right font-bold text-slate-900 dark:text-white border-l ${colorClass} ${darkColorClass}`}>
+                        <div className={`w-36 px-3 py-2 flex items-center justify-end text-right font-bold text-slate-900 dark:text-white border-l ${colorClass} ${darkColorClass}`}>
                           {formatCurrency(feeAmount)}
                         </div>
                       </div>
                       
-                      {/* Breakdown Bar */}
-                      <div className="h-4 w-full flex bg-slate-100 dark:bg-slate-800">
-                        {categories.map((cat, idx) => {
-                          const cost = stat.breakdown[cat.id!] || 0;
-                          if (cost === 0) return null;
-                          const percent = (cost / total) * 100;
-                          const bgColor = cat.color || '#3b82f6';
-                          return <Tooltip key={cat.id} content={`${cat.name}: ${percent.toFixed(1)}%`} className="transition-all hover:opacity-90 h-full" style={{width: `${percent}%`, backgroundColor: bgColor}} children={<></>} />
-                        })}
-                        {(stat.breakdown['uncategorized'] || 0) > 0 && (
-                          <Tooltip content={`Uncategorized: ${(((stat.breakdown['uncategorized'] || 0) / total) * 100).toFixed(1)}%`} className="bg-slate-400 transition-all hover:opacity-90 h-full" style={{width: `${((stat.breakdown['uncategorized'] || 0) / total) * 100}%`}} children={<></>} />
-                        )}
-                        {stat.otherExpenses > 0 && (
-                          <Tooltip content={`Other Expenses: ${((stat.otherExpenses / total) * 100).toFixed(1)}%`} className="transition-all hover:opacity-90 h-full" style={{width: `${(stat.otherExpenses / total) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}} children={<></>} />
-                        )}
-                      </div>
+                      {/* Breakdown Bar if linked to phase */}
+                      {linkedPhaseStat && (
+                        <div className="h-4 w-full flex bg-slate-100 dark:bg-slate-800">
+                          {categories.map((cat, idx) => {
+                            const cost = linkedPhaseStat.breakdown[cat.id!] || 0;
+                            if (cost === 0) return null;
+                            const percent = (cost / total) * 100;
+                            const bgColor = cat.color || '#3b82f6';
+                            return <Tooltip key={cat.id} content={`${cat.name}: ${percent.toFixed(1)}%`} className="transition-all hover:opacity-90 h-full" style={{width: `${percent}%`, backgroundColor: bgColor}} children={<></>} />
+                          })}
+                          {(linkedPhaseStat.breakdown['uncategorized'] || 0) > 0 && (
+                            <Tooltip content={`Uncategorized: ${(((linkedPhaseStat.breakdown['uncategorized'] || 0) / total) * 100).toFixed(1)}%`} className="bg-slate-400 transition-all hover:opacity-90 h-full" style={{width: `${((linkedPhaseStat.breakdown['uncategorized'] || 0) / total) * 100}%`}} children={<></>} />
+                          )}
+                          {linkedPhaseStat.otherExpenses > 0 && (
+                            <Tooltip content={`Other Expenses: ${((linkedPhaseStat.otherExpenses / total) * 100).toFixed(1)}%`} className="transition-all hover:opacity-90 h-full" style={{width: `${(linkedPhaseStat.otherExpenses / total) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}} children={<></>} />
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })

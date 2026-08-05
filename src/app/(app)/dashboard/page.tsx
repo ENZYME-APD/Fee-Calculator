@@ -250,7 +250,9 @@ export default function Home() {
               allocations={allocations} 
               members={members} 
               projectCosts={projectCosts}
-              onProjectUpdated={loadData}
+              payments={payments}
+              onProjectUpdated={handleAllocationAdded}
+              onPaymentUpdated={loadData}
               onClose={() => setIsSummaryOpen(false)}
             />
           )}

@@ -684,7 +684,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
 
       {/* Payment Schedule Manager */}
       {activeProjectId ? (
-        <PaymentScheduleManager projectId={activeProjectId} phases={phases} />
+        <PaymentScheduleManager projectId={activeProjectId} projectName={projects.find(p => p.id === activeProjectId)?.name} phases={phases} />
       ) : (
         <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors items-center justify-center text-slate-400">
            <Folder size={48} className="text-slate-200 dark:text-slate-800 mb-4" />

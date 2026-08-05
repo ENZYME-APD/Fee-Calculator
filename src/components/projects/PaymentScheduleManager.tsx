@@ -7,10 +7,11 @@ import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 interface PaymentScheduleManagerProps {
   projectId: string;
+  projectName?: string;
   phases: Phase[];
 }
 
-const InlinePercentInput = ({ value, onChange }: { value: number, onChange: (val: number) => void }) => {
+export const InlinePercentInput = ({ value, onChange }: { value: number, onChange: (val: number) => void }) => {
   const [val, setVal] = useState(value.toString());
   
   useEffect(() => {
@@ -47,7 +48,7 @@ const InlinePercentInput = ({ value, onChange }: { value: number, onChange: (val
   );
 };
 
-export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleManagerProps) {
+export function PaymentScheduleManager({ projectId, projectName, phases }: PaymentScheduleManagerProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -329,7 +330,18 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
         </div>
       </div>
       
-      <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 transition-colors">
+      <div className="p-5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shrink-0">
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <FileSpreadsheet className="text-blue-600 dark:text-blue-500" size={20} />
+              Payment Schedule
+            </h3>
+            {projectName && (
+              <span className="px-2 py-1 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md">
+                {projectName}
+              </span>
+            )}
+          </div>
         <form onSubmit={handleCreate} className="flex flex-col gap-3">
           <div className="w-full">
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Payment Name</label>
