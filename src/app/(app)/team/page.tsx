@@ -6,7 +6,7 @@ import { TeamMember } from '@/lib/firebase/schema';
 import { TeamTable } from '@/components/resources/TeamTable';
 import { TeamMemberForm } from '@/components/resources/TeamMemberForm';
 import { CsvManager } from '@/components/resources/CsvManager';
-import { Plus } from 'lucide-react';
+import { Plus, Settings } from 'lucide-react';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import Link from 'next/link';
 
