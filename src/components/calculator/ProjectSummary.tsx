@@ -85,6 +85,8 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
 
   const projectTotalCost = phaseStats.reduce((sum, stat) => sum + stat.totalCost, 0);
   const projectTotalFee = projectTotalCost * multiplier;
+  
+  const totalPercentage = payments.reduce((sum, p) => sum + p.percentage, 0);
   const projectTotalWeeks = phases.reduce((sum, phase) => sum + phase.durationWeeks, 0);
   
   const handleSaveMargin = async (e: React.FormEvent) => {
@@ -400,6 +402,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                         <div className={`w-28 px-3 py-2 flex items-center justify-end font-medium text-slate-800 dark:text-slate-200 border-l ${colorClass} ${darkColorClass}`}>
                           <InlinePercentInput 
                             value={payment.percentage} 
+                            maxAllowed={100 - (totalPercentage - payment.percentage)}
                             onChange={async (newVal) => {
                               if (payment.id) {
                                 await updatePayment(payment.id, { percentage: newVal });

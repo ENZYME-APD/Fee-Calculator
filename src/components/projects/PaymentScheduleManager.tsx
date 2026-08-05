@@ -11,7 +11,7 @@ interface PaymentScheduleManagerProps {
   phases: Phase[];
 }
 
-export const InlinePercentInput = ({ value, onChange }: { value: number, onChange: (val: number) => void }) => {
+export const InlinePercentInput = ({ value, onChange, maxAllowed }: { value: number, onChange: (val: number) => void, maxAllowed?: number }) => {
   const [val, setVal] = useState(value.toString());
   
   useEffect(() => {
@@ -19,8 +19,12 @@ export const InlinePercentInput = ({ value, onChange }: { value: number, onChang
   }, [value]);
 
   const handleBlur = () => {
-    const num = parseFloat(val);
+    let num = parseFloat(val);
     if (!isNaN(num) && num !== value) {
+      if (maxAllowed !== undefined && num > maxAllowed) {
+        num = maxAllowed;
+        setVal(num.toString());
+      }
       onChange(num);
     } else {
       setVal(value.toString());
@@ -41,9 +45,9 @@ export const InlinePercentInput = ({ value, onChange }: { value: number, onChang
         onChange={e => setVal(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="w-20 text-right bg-transparent text-sm font-bold text-slate-700 dark:text-slate-300 px-1 py-1 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none m-0"
+        className="w-14 text-right bg-transparent text-sm font-bold text-slate-700 dark:text-slate-300 px-1 py-1 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none m-0"
       />
-      <span className="text-slate-500 text-sm font-bold pr-2">%</span>
+      <span className="text-slate-500 text-sm font-bold pr-2 flex-shrink-0">%</span>
     </div>
   );
 };
@@ -93,11 +97,17 @@ export function PaymentScheduleManager({ projectId, projectName, phases }: Payme
     e.preventDefault();
     if (!newName.trim() || !newPercentage) return;
     
+    const parsedPercentage = parseFloat(newPercentage) || 0;
+    if (totalPercentage + parsedPercentage > 100) {
+      alert("Total percentage cannot exceed 100%");
+      return;
+    }
+    
     await addPayment({
       projectId,
       phaseId: newPhaseId || undefined,
       name: newName.trim(),
-      percentage: parseFloat(newPercentage) || 0,
+      percentage: parsedPercentage,
       order: payments.length > 0 ? Math.max(...payments.map(p => p.order)) + 1 : 1
     });
     
@@ -118,6 +128,15 @@ export function PaymentScheduleManager({ projectId, projectName, phases }: Payme
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId && editName.trim()) {
+      const currentPayment = payments.find(p => p.id === editingId);
+      const parsedPercentage = parseFloat(editPercentage) || 0;
+      const otherTotal = totalPercentage - (currentPayment?.percentage || 0);
+      
+      if (otherTotal + parsedPercentage > 100) {
+        alert("Total percentage cannot exceed 100%");
+        return;
+      }
+      
       await updatePayment(editingId, {
         name: editName.trim(),
         percentage: parseFloat(editPercentage) || 0,
@@ -350,7 +369,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases }: Payme
           <div className="flex gap-3 items-end">
             <div className="w-32">
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">% Value</label>
-              <input type="number" required min="0" step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="10" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors" />
+              <input type="number" required min="0" max={Math.max(0, 100 - totalPercentage)} step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="10" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors" />
             </div>
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Link to Phase</label>
@@ -389,7 +408,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases }: Payme
                     <div className="flex gap-2 items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-500">%:</span>
-                        <input type="number" required min="0" step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className="w-28 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 text-center" />
+                        <input type="number" required min="0" max={Math.max(0, 100 - (totalPercentage - payment.percentage))} step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className="w-28 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 text-center" />
                       </div>
                       <div className="flex-1">
                         <select value={editPhaseId} onChange={e => setEditPhaseId(e.target.value)} className="w-full px-2 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20">
@@ -423,6 +442,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases }: Payme
                 <div className="flex items-center gap-3 shrink-0 relative">
                   <InlinePercentInput 
                     value={payment.percentage} 
+                    maxAllowed={100 - (totalPercentage - payment.percentage)}
                     onChange={async (newVal) => {
                       if (payment.id) {
                         await updatePayment(payment.id, { percentage: newVal });
