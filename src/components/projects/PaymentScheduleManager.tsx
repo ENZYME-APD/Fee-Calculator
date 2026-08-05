@@ -347,7 +347,7 @@ export function PaymentScheduleManager({ projectId, phases }: PaymentScheduleMan
                 {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
-            <button type="submit" className="h-[38px] px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-semibold flex items-center justify-center gap-2"><Plus size={16} /> Add</button>
+            <button type="submit" className="h-[42px] px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"><Plus size={18} /> Add Payment</button>
           </div>
         </form>
       </div>

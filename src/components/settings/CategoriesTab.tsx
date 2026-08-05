@@ -128,13 +128,13 @@ export function CategoriesTab({ company }: { company: Company }) {
                 required
               />
             </div>
-            <div className="w-10 h-10 shrink-0">
+            <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
               <Tooltip content="Category Color" position="top">
                 <input
                   type="color"
                   value={formData.color}
                   onChange={e => setFormData({ ...formData, color: e.target.value })}
-                  className="w-full h-full p-0 border-0 rounded cursor-pointer block"
+                  className="w-[150%] h-[150%] -m-[25%] p-0 border-0 cursor-pointer block [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none [&::-moz-color-swatch]:border-none"
                 />
               </Tooltip>
             </div>
@@ -200,13 +200,13 @@ export function CategoriesTab({ company }: { company: Company }) {
                       required
                     />
                   </div>
-                  <div className="w-8 h-8 shrink-0">
+                  <div className="w-8 h-8 shrink-0 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
                     <Tooltip content="Category Color" position="top">
                       <input
                         type="color"
                         value={formData.color}
                         onChange={e => setFormData({ ...formData, color: e.target.value })}
-                        className="w-full h-full p-0 border-0 rounded cursor-pointer block"
+                        className="w-[150%] h-[150%] -m-[25%] p-0 border-0 cursor-pointer block [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none [&::-moz-color-swatch]:border-none"
                       />
                     </Tooltip>
                   </div>
