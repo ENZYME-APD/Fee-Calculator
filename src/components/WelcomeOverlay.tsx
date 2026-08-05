@@ -28,7 +28,7 @@ export function WelcomeOverlay() {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800 flex flex-col max-h-[calc(100vh-2rem)]">
         <div className="relative h-32 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
           <Sparkles className="absolute text-white/20 w-32 h-32 -right-8 -top-8 rotate-12" />
@@ -41,7 +41,7 @@ export function WelcomeOverlay() {
           </button>
         </div>
         
-        <div className="p-8 pb-6">
+        <div className="p-8 pb-6 overflow-y-auto min-h-0">
           <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-6 text-center">Follow these 5 easy steps to create your first fee proposal:</h3>
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 max-w-lg mx-auto">
