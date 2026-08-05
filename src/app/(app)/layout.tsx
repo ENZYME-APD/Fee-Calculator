@@ -4,6 +4,8 @@ import { Monitor } from "lucide-react";
 import { UndoProvider } from "@/lib/context/UndoContext";
 import { GlobalToast } from "@/components/ui/Toast";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
+import { TourProvider } from "@/lib/context/TourContext";
+import { TourOverlay } from "@/components/ui/TourOverlay";
 
 export default function AppLayoutGroup({
   children,
@@ -35,9 +37,12 @@ export default function AppLayoutGroup({
         <Navigation />
         <main className="flex-1 overflow-hidden h-full relative flex flex-col">
           <ProtectedRoute>
-            <UndoProvider>
-              {children}
-            </UndoProvider>
+            <TourProvider>
+              <UndoProvider>
+                {children}
+              </UndoProvider>
+              <TourOverlay />
+            </TourProvider>
           </ProtectedRoute>
         </main>
       </div>

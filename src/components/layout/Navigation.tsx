@@ -62,6 +62,7 @@ export function Navigation() {
             <Link
               key={item.name}
               href={item.href}
+              id={`tour-${item.href.replace('/', '')}-tab`}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm",
                 isActive 

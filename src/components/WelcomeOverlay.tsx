@@ -2,10 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Users, FolderPlus, UserPlus, BarChart3, FileSpreadsheet, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { useTour } from '@/lib/context/TourContext';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { bootstrapCompanyData } from '@/lib/firebase/db';
 
 export function WelcomeOverlay() {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isLoadingTour, setIsLoadingTour] = useState(false);
+  const { startTour } = useTour();
+  const { user } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -107,18 +113,31 @@ export function WelcomeOverlay() {
             Read Documentation
           </Link>
           
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <button
               onClick={handleDoNotShowAgain}
               className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
             >
-              Don't show again
+              Skip
             </button>
             <button
-              onClick={handleClose}
-              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5"
+              onClick={async () => {
+                if (!user?.companyId) return;
+                setIsLoadingTour(true);
+                try {
+                  await bootstrapCompanyData(user.companyId, user.uid);
+                  localStorage.setItem('hasSeenWelcome', 'true');
+                  setIsOpen(false);
+                  startTour();
+                } catch(e) {
+                  console.error(e);
+                  setIsLoadingTour(false);
+                }
+              }}
+              disabled={isLoadingTour}
+              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
             >
-              Get Started
+              {isLoadingTour ? 'Loading...' : 'Show me around (Tour)'}
             </button>
           </div>
         </div>

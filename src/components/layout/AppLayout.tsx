@@ -412,6 +412,7 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
       <div className="flex h-full font-sans">
         {/* Sidebar */}
         <div 
+          id="tour-team-sidebar"
           className={cn(
             "bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out relative shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 shrink-0 h-full",
             isSidebarOpen ? "w-80" : "w-0 overflow-hidden opacity-0"
@@ -520,7 +521,7 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                 const totalFee = totalCost + profitMarginAmount;
 
                 return (
-                  <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm mb-6">
+                  <div id="tour-title-block" className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm mb-6">
                     <div className="flex items-center gap-4">
                       <div className="flex items-baseline gap-2">
                         <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100">{project.name}</h2>

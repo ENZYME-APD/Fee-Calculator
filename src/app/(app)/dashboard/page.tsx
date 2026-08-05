@@ -196,6 +196,7 @@ export default function Home() {
 
               <Tooltip content="Export to Excel" position="bottom">
                 <button 
+                  id="tour-export-btn"
                   onClick={handleExportExcel}
                   className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors shadow-sm text-xs"
                 >
@@ -214,21 +215,23 @@ export default function Home() {
 
               <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
 
-              <button 
-                onClick={() => setIsScheduleOpen(true)}
-                className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                <FileSpreadsheet size={16} className="text-blue-100" />
-                <span>Payment Schedule</span>
-              </button>
+              <div id="tour-summary-buttons" className="flex gap-3">
+                <button 
+                  onClick={() => setIsScheduleOpen(true)}
+                  className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  <FileSpreadsheet size={16} className="text-blue-100" />
+                  <span>Payment Schedule</span>
+                </button>
 
-              <button 
-                onClick={() => setIsSummaryOpen(true)}
-                className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                <Folder size={16} className="text-blue-100" />
-                <span>Financial Summary</span>
-              </button>
+                <button 
+                  onClick={() => setIsSummaryOpen(true)}
+                  className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  <Folder size={16} className="text-blue-100" />
+                  <span>Financial Summary</span>
+                </button>
+              </div>
             </>
           )}
         </div>
