@@ -29,6 +29,16 @@ export const updateCompany = async (id: string, updates: any) => {
   await updateDoc(docRef, sanitize(updates));
 };
 
+export const getAllCompaniesForSuperadmin = async (): Promise<any[]> => {
+  const snap = await getDocs(collection(db, 'companies'));
+  return snap.docs.map(extractData);
+};
+
+export const getAllUsersForSuperadmin = async (): Promise<User[]> => {
+  const snap = await getDocs(collection(db, 'users'));
+  return snap.docs.map(extractData) as User[];
+};
+
 // --- Invites ---
 export const createInvite = async (invite: Omit<Invite, 'id'>) => {
   const docRef = await addDoc(collection(db, 'invites'), sanitize(invite));

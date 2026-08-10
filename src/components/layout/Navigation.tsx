@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Calculator, Users, FolderKanban, Moon, Sun, LogOut, Settings, BookOpen, LayoutTemplate, CreditCard, PieChart } from 'lucide-react';
+import { Calculator, Users, FolderKanban, Moon, Sun, LogOut, Settings, BookOpen, LayoutTemplate, CreditCard, PieChart, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { auth, db } from '@/lib/firebase/config';
@@ -48,6 +48,10 @@ export function Navigation() {
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Billing', href: '/billing', icon: CreditCard },
   ];
+  
+  if (user?.email?.toLowerCase().endsWith('@weareenzyme.com')) {
+    navItems.push({ name: 'Superadmin', href: '/superadmin', icon: ShieldAlert });
+  }
   
   return (
     <div className="w-64 bg-slate-900 dark:bg-slate-950 text-slate-300 flex flex-col h-screen shrink-0 border-r border-slate-800 z-50 transition-colors duration-300">
