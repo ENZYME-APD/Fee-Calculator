@@ -6,6 +6,7 @@ import { GlobalToast } from "@/components/ui/Toast";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { TourProvider } from "@/lib/context/TourContext";
 import { TourOverlay } from "@/components/ui/TourOverlay";
+import { MobileSignOutButton } from "@/components/layout/MobileSignOutButton";
 
 export default function AppLayoutGroup({
   children,
@@ -31,6 +32,7 @@ export default function AppLayoutGroup({
           <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             Thank You
           </p>
+          <MobileSignOutButton />
         </div>
       </div>
       <div className="hidden md:flex h-full overflow-hidden w-full">
