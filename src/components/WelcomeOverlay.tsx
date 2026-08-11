@@ -11,7 +11,7 @@ export function WelcomeOverlay() {
   const [mounted, setMounted] = useState(false);
   const [isLoadingTour, setIsLoadingTour] = useState(false);
   const { startTour } = useTour();
-  const { user } = useAuth();
+  const { user, dbUser } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -122,10 +122,10 @@ export function WelcomeOverlay() {
             </button>
             <button
               onClick={async () => {
-                if (!user?.companyId) return;
+                if (!dbUser?.companyId || !user?.uid) return;
                 setIsLoadingTour(true);
                 try {
-                  await bootstrapCompanyData(user.companyId, user.uid);
+                  await bootstrapCompanyData(dbUser.companyId, user.uid);
                   localStorage.setItem('hasSeenWelcome', 'true');
                   setIsOpen(false);
                   startTour();
