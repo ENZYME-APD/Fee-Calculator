@@ -118,9 +118,10 @@ export function CategoriesTab({ company }: { company: Company }) {
         {isAdding && (
           <form onSubmit={handleAdd} className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-xl">
             <div className="flex-1">
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Category Name</label>
               <input
                 type="text"
-                placeholder="Category Name (e.g. MANAGEMENT)"
+                placeholder="e.g. MANAGEMENT"
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 outline-none uppercase"
@@ -128,17 +129,19 @@ export function CategoriesTab({ company }: { company: Company }) {
                 required
               />
             </div>
-            <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
-              <Tooltip content="Category Color" position="top">
+            <div className="shrink-0">
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Color</label>
+              <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 relative">
                 <input
                   type="color"
                   value={formData.color}
                   onChange={e => setFormData({ ...formData, color: e.target.value })}
-                  className="w-[150%] h-[150%] -m-[25%] p-0 border-0 cursor-pointer block [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none [&::-moz-color-swatch]:border-none"
+                  className="absolute inset-[-25%] w-[150%] h-[150%] p-0 border-0 cursor-pointer"
                 />
-              </Tooltip>
+              </div>
             </div>
             <div className="w-28 shrink-0">
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Type</label>
               <select
                 value={formData.type}
                 onChange={e => setFormData({ ...formData, type: e.target.value as 'internal' | 'external' })}
@@ -149,16 +152,17 @@ export function CategoriesTab({ company }: { company: Company }) {
               </select>
             </div>
             <div className="w-32">
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Sort Order</label>
               <input
                 type="number"
-                placeholder="Sort Order"
+                placeholder="e.g. 10"
                 value={formData.order}
                 onChange={e => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 outline-none"
                 required
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-5">
               <button type="submit" disabled={isSaving} className="p-2 text-blue-600 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900 rounded-lg transition-colors disabled:opacity-50">
                 <Check size={18} />
               </button>
@@ -191,6 +195,7 @@ export function CategoriesTab({ company }: { company: Company }) {
               {editingId === category.id ? (
                 <form onSubmit={(e) => handleUpdate(category.id!, e)} className="flex items-center gap-4 flex-1">
                   <div className="flex-1">
+                    <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Name</label>
                     <input
                       type="text"
                       value={formData.name}
@@ -200,18 +205,20 @@ export function CategoriesTab({ company }: { company: Company }) {
                       required
                     />
                   </div>
-                  <div className="w-8 h-8 shrink-0 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
-                    <Tooltip content="Category Color" position="top">
+                  <div className="shrink-0">
+                    <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Color</label>
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 relative">
                       <input
                         type="color"
                         value={formData.color}
                         onChange={e => setFormData({ ...formData, color: e.target.value })}
-                        className="w-[150%] h-[150%] -m-[25%] p-0 border-0 cursor-pointer block [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none [&::-moz-color-swatch]:border-none"
+                        className="absolute inset-[-25%] w-[150%] h-[150%] p-0 border-0 cursor-pointer"
                       />
-                    </Tooltip>
+                    </div>
                   </div>
                   {!category.isFixed && (
                     <div className="w-28 shrink-0">
+                      <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Type</label>
                       <select
                         value={formData.type}
                         onChange={e => setFormData({ ...formData, type: e.target.value as 'internal' | 'external' })}
@@ -224,6 +231,7 @@ export function CategoriesTab({ company }: { company: Company }) {
                   )}
                   {!category.isFixed && (
                     <div className="w-24">
+                      <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Sort</label>
                       <input
                         type="number"
                         value={formData.order}
@@ -233,7 +241,7 @@ export function CategoriesTab({ company }: { company: Company }) {
                       />
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 pt-4">
                     <button type="submit" disabled={isSaving} className="p-2 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg transition-colors disabled:opacity-50">
                       <Check size={18} />
                     </button>

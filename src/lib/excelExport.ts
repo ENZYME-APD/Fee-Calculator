@@ -124,7 +124,7 @@ export function exportProposalToExcel(
     const totalCostRow = rowNum;
     rowNum++;
     
-    const marginDec = project.profitMargin / 100;
+    const marginDec = (project.profitMargin || 0) / 100;
     phaseRows.push(['', '', '', { v: 'PHASE FEE:', s: headerStyle }, { f: `E${totalCostRow}/(1-${marginDec})`, t: 'n', z: '#,##0.00', s: headerStyle }]);
     rowNum++;
     
@@ -163,7 +163,7 @@ export function exportProposalToExcel(
       pCost += c.quantity * c.unitCost;
     });
     
-    const marginDec = project.profitMargin / 100;
+    const marginDec = (project.profitMargin || 0) / 100;
     
     summaryRows.push([
       phase.name,

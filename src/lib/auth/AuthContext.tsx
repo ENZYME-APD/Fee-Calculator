@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { User, Company } from '../firebase/schema';
 import { setDbCompanyId } from '../firebase/db';
@@ -27,42 +27,69 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubscribeUser: (() => void) | undefined;
+    let unsubscribeCompany: (() => void) | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
+      
+      if (unsubscribeUser) {
+        unsubscribeUser();
+        unsubscribeUser = undefined;
+      }
+      if (unsubscribeCompany) {
+        unsubscribeCompany();
+        unsubscribeCompany = undefined;
+      }
+
       if (firebaseUser) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        unsubscribeUser = onSnapshot(doc(db, 'users', firebaseUser.uid), (userDoc) => {
           if (userDoc.exists()) {
             const data = userDoc.data();
             setDbUser({ uid: userDoc.id, ...data } as User);
             setDbCompanyId(data.companyId);
             
-            const companyDoc = await getDoc(doc(db, 'companies', data.companyId));
-            if (companyDoc.exists()) {
-              setDbCompany({ id: companyDoc.id, ...companyDoc.data() } as Company);
-            } else {
+            if (unsubscribeCompany) unsubscribeCompany();
+            
+            unsubscribeCompany = onSnapshot(doc(db, 'companies', data.companyId), (companyDoc) => {
+              if (companyDoc.exists()) {
+                setDbCompany({ id: companyDoc.id, ...companyDoc.data() } as Company);
+              } else {
+                setDbCompany(null);
+              }
+              setLoading(false);
+            }, (error) => {
+              console.error("Error fetching company data:", error);
               setDbCompany(null);
-            }
+              setLoading(false);
+            });
+            
           } else {
             setDbUser(null);
             setDbCompanyId(null);
             setDbCompany(null);
+            setLoading(false);
           }
-        } catch (error) {
+        }, (error) => {
           console.error("Error fetching user data:", error);
           setDbUser(null);
           setDbCompanyId(null);
           setDbCompany(null);
-        }
+          setLoading(false);
+        });
       } else {
         setDbUser(null);
         setDbCompanyId(null);
         setDbCompany(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUser) unsubscribeUser();
+      if (unsubscribeCompany) unsubscribeCompany();
+    };
   }, []);
 
   return (
