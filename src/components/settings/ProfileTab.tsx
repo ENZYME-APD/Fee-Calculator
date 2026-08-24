@@ -8,7 +8,7 @@ import { deleteAccountData } from '@/lib/firebase/db';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 export function ProfileTab() {
-  const { dbUser, companyId } = useAuth();
+  const { dbUser } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -42,7 +42,8 @@ export function ProfileTab() {
     setLoading(false);
   };
   const handleDeleteAccount = async () => {
-    if (!auth.currentUser || !dbUser || !companyId) return;
+    if (!auth.currentUser || !dbUser || !dbUser.companyId) return;
+    const companyId = dbUser.companyId;
     
     setDeleting(true);
     setError('');
