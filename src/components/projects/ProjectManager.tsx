@@ -601,7 +601,14 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
           <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 flex items-center justify-between shrink-0 transition-colors">
             <div className="flex flex-col">
               <div className="flex items-center gap-3">
-                <h2 className="font-bold text-xl text-slate-800 dark:text-slate-100">{activeProject.name}</h2>
+                <button 
+                  onClick={() => router.push(`/dashboard?project=${activeProject.id}`)}
+                  className="font-bold text-xl text-slate-800 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left flex items-center gap-2 group"
+                  title="Open Fee Proposal"
+                >
+                  {activeProject.name}
+                  <Calculator size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" />
+                </button>
                 <span className={`px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full ${getStatusColor(activeProject.status || 'Draft')}`}>
                   {activeProject.status || 'Draft'}
                 </span>
