@@ -88,7 +88,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
           await updateProjectCost(id, {
             quantity: oldData.quantity,
             unitCost: oldData.unitCost,
-            details: oldData.details
+            
           });
           if (onUpdated) onUpdated();
         }
@@ -188,7 +188,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
                 <DraggablePhaseAllocationChip
                   key={allocation.id}
                   allocation={allocation as ExtendedAllocation}
-                  hasNextPhase={hasNextPhase}
+                  hasNextPhase={!!hasNextPhase}
                   onDuplicateAllAllocation={onDuplicateAllAllocation}
                   onDuplicateAllocation={onDuplicateAllocation}
                   onEditAllocation={onEditAllocation}
@@ -203,7 +203,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
                     <DraggablePhaseAllocationChip
                       key={allocation.id}
                       allocation={allocation as ExtendedAllocation}
-                      hasNextPhase={hasNextPhase}
+                      hasNextPhase={!!hasNextPhase}
                       onDuplicateAllAllocation={onDuplicateAllAllocation}
                       onDuplicateAllocation={onDuplicateAllocation}
                       onEditAllocation={onEditAllocation}
@@ -223,7 +223,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
               <DraggablePhaseCostChip
                 key={cost.id}
                 cost={cost}
-                hasNextPhase={hasNextPhase}
+                hasNextPhase={!!hasNextPhase}
                 onDuplicateAllCost={onDuplicateAllCost}
                 onDuplicateCost={onDuplicateCost}
                 onEditCost={(c) => setEditingCost(c)}

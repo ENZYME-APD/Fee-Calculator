@@ -4,7 +4,7 @@ import {
   DndContext, DragEndEvent, DragStartEvent, TouchSensor, MouseSensor, useSensor, useSensors, DragOverlay
 } from '@dnd-kit/core';
 import { TeamMember, Phase, Allocation, ProjectCost, Project } from '@/lib/firebase/schema';
-import { addAllocation, addProjectCost, updateAllocation, deleteAllocation, deleteProjectCost, updateProject } from '@/lib/firebase/db';
+import { addAllocation, addProjectCost, updateAllocation, deleteAllocation, deleteProjectCost, updateProjectCost, updateProject } from '@/lib/firebase/db';
 import { useUndo } from '@/lib/context/UndoContext';
 import { DraggablePersonChip } from '../dnd/DraggablePersonChip';
 import { DraggableCostChip } from '../dnd/DraggableCostChip';
@@ -210,8 +210,8 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
           } else {
             // Move
             const id = allocation.id;
-            setLocalAllocations(prev => prev.map(a => a.id === id ? { ...a, phaseId: phase.id } : a));
-            await updateAllocation(id, { phaseId: phase.id });
+            setLocalAllocations(prev => prev.map(a => a.id === id ? { ...a, phaseId: phase.id as string } : a));
+            await updateAllocation(id, { phaseId: phase.id as string });
             pushAction({
               name: 'Move Allocation',
               undo: async () => {
@@ -239,8 +239,8 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
           } else {
             // Move
             const id = cost.id;
-            setLocalProjectCosts(prev => prev.map(c => c.id === id ? { ...c, phaseId: phase.id } : c));
-            await updateProjectCost(id, { phaseId: phase.id });
+            setLocalProjectCosts(prev => prev.map(c => c.id === id ? { ...c, phaseId: phase.id as string } : c));
+            await updateProjectCost(id, { phaseId: phase.id as string });
             pushAction({
               name: 'Move Cost',
               undo: async () => {

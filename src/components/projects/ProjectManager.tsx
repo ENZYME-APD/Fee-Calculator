@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase, getUsersByCompany } from '@/lib/firebase/db';
-import { Project, Phase, User } from '@/lib/firebase/schema';
+import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase, getUsersByCompany, getProjectCosts, getAllocations, getTeamMembers } from '@/lib/firebase/db';
+import { Project, Phase, User, Allocation, ProjectCost, TeamMember } from '@/lib/firebase/schema';
 import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save, FileText, ArrowUp, ArrowDown } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { PaymentScheduleManager } from './PaymentScheduleManager';
-import { useAuth } from '@/lib/auth/AuthContext';
+import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { PromptModal } from '@/components/modals/PromptModal';
 
@@ -31,6 +31,9 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [projectCosts, setProjectCosts] = useState<ProjectCost[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
   // New Project Form
@@ -90,6 +93,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   });
 
   const { dbUser } = useAuth();
+  const { formatCurrency, areaUnit } = useAppSettings();
 
   const loadProjects = async () => {
     const ownerId = dbUser?.role !== 'admin' ? dbUser?.uid : undefined;
@@ -106,6 +110,12 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   };
 
   const loadPhases = async (projectId: string) => {
+    const pAllocations = await getAllocations();
+    const pCosts = await getProjectCosts(projectId);
+    const pMembers = await getTeamMembers();
+    setAllocations(pAllocations.filter(a => a.projectId === projectId));
+    setProjectCosts(pCosts);
+    setTeamMembers(pMembers);
     const data = await getPhases(projectId);
     setPhases(data.sort((a, b) => a.order - b.order));
   };
@@ -374,6 +384,13 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
 
   if (loading) return <div className="p-8 text-slate-500">Loading projects...</div>;
 
+  const activeProject = projects.find(p => p.id === activeProjectId);
+  const totalCost = allocations.reduce((sum, a) => sum + (a.hours * (teamMembers.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
+    projectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
+  const profitMarginPercent = activeProject?.profitMargin ?? 0;
+  const profitMarginAmount = totalCost * (profitMarginPercent / 100);
+  const totalFee = totalCost + profitMarginAmount;
+
   const sortedProjects = [...projects]
     .filter(p => isTemplateMode || showLost || p.status !== 'Lost')
     .sort((a, b) => {
@@ -526,18 +543,20 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
               <div 
                 key={p.id}
                 onClick={() => setActiveProjectId(p.id!)}
-                className={`p-3.5 rounded-xl cursor-pointer flex justify-between items-center group transition-colors ${activeProjectId === p.id ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'}`}
+                className={`p-3.5 pb-2 rounded-xl cursor-pointer flex flex-col group transition-colors ${activeProjectId === p.id ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'}`}
               >
-                <div className="flex items-center gap-3 overflow-hidden pr-2 flex-1">
+                <div className="flex items-center justify-between gap-3 overflow-hidden w-full">
+<div className="flex items-center gap-3 overflow-hidden flex-1">
                   <Folder size={20} className={`shrink-0 ${activeProjectId === p.id ? "text-blue-600 dark:text-blue-400 fill-blue-100 dark:fill-blue-900" : "text-slate-400 dark:text-slate-500"}`} />
                   <span className={`font-semibold text-sm truncate ${activeProjectId === p.id ? "text-blue-900 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"}`}>{p.name}</span>
+                  </div>
                   {!isTemplateMode && (
                     <span className={`shrink-0 px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full ${getStatusColor(p.status || 'Draft')}`}>
                       {p.status || 'Draft'}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex justify-end items-center gap-1 h-7 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
                   {!isTemplateMode && (
                     <Tooltip content="Open Fee Proposal">
                       <button onClick={(e) => { e.stopPropagation(); router.push(`/dashboard?project=${p.id}`); }} className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md transition-colors">
@@ -575,7 +594,44 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
         </div>
       </div>
 
-      {/* Phases Manager */}
+      
+      {/* Right Content */}
+      <div className="flex-[2] flex flex-col gap-6 min-h-0 overflow-hidden">
+        {activeProject && !isTemplateMode && (
+          <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 flex items-center justify-between shrink-0 transition-colors">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <h2 className="font-bold text-xl text-slate-800 dark:text-slate-100">{activeProject.name}</h2>
+                <span className={`px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full ${getStatusColor(activeProject.status || 'Draft')}`}>
+                  {activeProject.status || 'Draft'}
+                </span>
+              </div>
+              {activeProject.area && <span className="text-sm text-slate-500 mt-1">{activeProject.area} {areaUnit}</span>}
+            </div>
+            
+            <div className="flex items-center gap-6">
+              <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Cost</span>
+                <span className="text-xl font-bold text-slate-700 dark:text-slate-300">
+                  {formatCurrency(totalCost)}
+                </span>
+              </div>
+              <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Profit Margin</span>
+                <span className="text-xl font-bold text-slate-700 dark:text-slate-300">{profitMarginPercent}%</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-bold text-emerald-600/70 dark:text-emerald-400/70 uppercase tracking-wider mb-0.5">Total Fee</span>
+                <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {formatCurrency(totalFee)}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
+          {/* Phases Manager */}
       <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors">
         {activeProjectId ? (
           <>
@@ -727,6 +783,9 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
         secondaryAction={confirmConfig.secondaryAction}
         onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
       />
+
+        </div>
+      </div>
     </div>
   );
 }
