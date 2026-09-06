@@ -138,6 +138,13 @@ export function GanttPlanner() {
 
   if (loading) return <div className="p-8 text-slate-500">Loading planner...</div>;
 
+  if (dbCompany?.tier !== 'pro' && dbCompany?.subscriptionStatus !== 'lifetime') {
+    return <ProUpgradePrompt 
+      title="Advanced Project Planning" 
+      description="The Gantt Planner lets you visually allocate team members on a timeline, skip weekends, and sync your planned hours perfectly with your budgeted fee proposal." 
+    />;
+  }
+
   if (!isPro) {
     
   return (
