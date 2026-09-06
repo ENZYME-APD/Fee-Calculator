@@ -1,4 +1,7 @@
+const fs = require('fs');
+const file = 'src/components/planning/GanttGrid.tsx';
 
+let code = `
 "use client";
 import React, { useState, useMemo } from 'react';
 import { Project, Phase, TeamMember, ProjectTask, Allocation } from '@/lib/firebase/schema';
@@ -229,7 +232,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                     <div 
                       key={pt.id} 
                       onClick={() => togglePhase(pt.id!)}
-                      className={`absolute top-1 h-6 rounded-md px-2 flex items-center shadow-sm text-white text-xs font-bold ${getPhaseColor(pt.id!)} cursor-pointer hover:opacity-100 transition-opacity flex justify-between z-10`}
+                      className={\`absolute top-1 h-6 rounded-md px-2 flex items-center shadow-sm text-white text-xs font-bold \${getPhaseColor(pt.id!)} cursor-pointer hover:opacity-100 transition-opacity flex justify-between z-10\`}
                       style={{ left: x + 2, width: Math.max(0, width - 4), opacity: 0.8 }}
                     >
                        {!isCollapsed && <span className="truncate">{pt.name}</span>}
@@ -248,7 +251,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                   if (isCollapsed) {
                     const x = dayCoords[startDay].x;
                     return (
-                      <div key={`col-${pt.id}`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50" style={{ left: x, width: CELL_WIDTH }}>
+                      <div key={\`col-\${pt.id}\`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50" style={{ left: x, width: CELL_WIDTH }}>
                         <span className="text-[10px] text-slate-400 font-bold tracking-widest uppercase overflow-hidden" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{pt.name}</span>
                       </div>
                     )
@@ -259,7 +262,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                       const date = addDays(startDate, dayIdx);
                       const x = dayCoords[dayIdx].x;
                       return (
-                        <div key={`d-${dayIdx}`} className={`absolute h-full border-r border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] box-border ${isWeekend(date) ? 'bg-slate-50 dark:bg-slate-900/50 text-slate-400' : 'text-slate-700 dark:text-slate-300'}`} style={{ left: x, width: CELL_WIDTH }}>
+                        <div key={\`d-\${dayIdx}\`} className={\`absolute h-full border-r border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] box-border \${isWeekend(date) ? 'bg-slate-50 dark:bg-slate-900/50 text-slate-400' : 'text-slate-700 dark:text-slate-300'}\`} style={{ left: x, width: CELL_WIDTH }}>
                           <span className="font-medium opacity-50 uppercase tracking-wider">{format(date, 'EE')}</span>
                           <span className="font-bold text-xs">{format(date, 'd')}</span>
                         </div>
@@ -296,7 +299,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                   if (isCollapsed) {
                     const x = dayCoords[startDay].x;
                     return (
-                      <div key={`bg-col-${pt.id}`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30" style={{ left: x, width: CELL_WIDTH }} />
+                      <div key={\`bg-col-\${pt.id}\`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30" style={{ left: x, width: CELL_WIDTH }} />
                     )
                   } else {
                     return Array.from({ length: pt.durationDays }).map((_, i) => {
@@ -306,9 +309,9 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                       const x = dayCoords[dayIdx].x;
                       return (
                         <div 
-                          key={`bg-d-${dayIdx}`} 
+                          key={\`bg-d-\${dayIdx}\`} 
                           onClick={() => handleCellClick(member.id!, date)}
-                          className={`absolute h-full border-r border-slate-100 dark:border-slate-800/50 cursor-pointer flex items-center justify-center opacity-0 group-hover/row:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all box-border ${isWeekend(date) ? 'bg-slate-50/30 dark:bg-slate-900/20' : ''}`} 
+                          className={\`absolute h-full border-r border-slate-100 dark:border-slate-800/50 cursor-pointer flex items-center justify-center opacity-0 group-hover/row:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all box-border \${isWeekend(date) ? 'bg-slate-50/30 dark:bg-slate-900/20' : ''}\`} 
                           style={{ left: x, width: CELL_WIDTH }}
                         >
                           <Plus size={14} className="text-blue-400" />
@@ -350,10 +353,10 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                   return (
                     <div 
                       key={task.id}
-                      className={`absolute top-2 h-12 rounded-md shadow-sm flex items-center px-2 z-20 ${colorClass} text-white group/task select-none`}
+                      className={\`absolute top-2 h-12 rounded-md shadow-sm flex items-center px-2 z-20 \${colorClass} text-white group/task select-none\`}
                       style={{ 
-                        left: `${displayLeft + 4}px`, 
-                        width: `${displayWidth - 8}px`,
+                        left: \`\${displayLeft + 4}px\`, 
+                        width: \`\${displayWidth - 8}px\`,
                         opacity: isDraggingThis ? 0.7 : 0.9,
                         transition: isDraggingThis ? 'none' : 'left 0.2s, width 0.2s',
                         cursor: 'grab'
@@ -442,3 +445,5 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
     </div>
   );
 }
+`;
+fs.writeFileSync(file, code);

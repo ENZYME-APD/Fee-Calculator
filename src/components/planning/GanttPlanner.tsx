@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Project, Phase, TeamMember, ProjectTask, Allocation, ProjectCost } from '@/lib/firebase/schema';
 import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectTasks, addProjectTask, updateProjectTask, getProjectCosts, deleteProjectTask } from '@/lib/firebase/db';
-import { Folder, CalendarDays, Lock, Calculator } from 'lucide-react';
+import { Folder, CalendarDays, Lock, Calculator, ChevronsRight, ChevronsLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { GanttGrid } from './GanttGrid';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
@@ -18,6 +18,7 @@ export function GanttPlanner() {
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [projectCosts, setProjectCosts] = useState<ProjectCost[]>([]);
+  const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   
   // Checking Premium Tier
@@ -163,7 +164,19 @@ export function GanttPlanner() {
                      <p className="text-sm text-slate-500 mt-1">Resource & Task Planning</p>
                    </div>
                    <div className="flex items-center gap-6">
-                     <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                     
+                     <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6 mr-2">
+                        <button 
+                           onClick={() => {
+                             if (collapsedPhases.size > 0) setCollapsedPhases(new Set());
+                             else setCollapsedPhases(new Set(phases.map(p => p.id!)));
+                           }}
+                           className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors bg-white dark:bg-slate-800 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm"
+                        >
+                           {collapsedPhases.size > 0 ? <><ChevronsRight size={14} /> Expand All</> : <><ChevronsLeft size={14} /> Collapse All</>}
+                        </button>
+                     </div>
+  <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Budgeted Cost</span>
                         <span className="text-lg font-bold text-slate-700 dark:text-slate-300">{formatCurrency(budgetedCost)}</span>
                      </div>
@@ -183,6 +196,9 @@ export function GanttPlanner() {
             })()}
             <div className="flex-1 overflow-hidden relative">
               <GanttGrid 
+                collapsedPhases={collapsedPhases}
+                setCollapsedPhases={setCollapsedPhases}
+
                 project={projects.find(p => p.id === activeProjectId)!}
                 phases={phases}
                 members={members}
