@@ -20,6 +20,7 @@ interface GanttGridProps {
 }
 
 const CELL_WIDTH = 48;
+const COLLAPSED_WIDTH = 64;
 
 export function GanttGrid({ project, phases, members, allocations, tasks, onTaskCreate, onTaskUpdate, onTaskDelete, collapsedPhases, setCollapsedPhases }: GanttGridProps) {
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
@@ -65,7 +66,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
           for (let i = 0; i < phaseDays; i++) {
              coords[currentDay + i] = { x: currentX, w: 0 }; 
           }
-          currentX += CELL_WIDTH;
+          currentX += COLLAPSED_WIDTH;
        } else {
           for (let i = 0; i < phaseDays; i++) {
              coords[currentDay + i] = { x: currentX, w: CELL_WIDTH };
@@ -223,7 +224,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                   
                   const x = dayCoords[startDay].x;
                   const isCollapsed = collapsedPhases.has(pt.id!);
-                  const width = isCollapsed ? CELL_WIDTH : pt.durationDays * CELL_WIDTH;
+                  const width = isCollapsed ? COLLAPSED_WIDTH : pt.durationDays * CELL_WIDTH;
 
                   return (
                     <div 
@@ -248,8 +249,8 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                   if (isCollapsed) {
                     const x = dayCoords[startDay].x;
                     return (
-                      <div key={`col-${pt.id}`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50" style={{ left: x, width: CELL_WIDTH }}>
-                        <span className="text-[10px] text-slate-400 font-bold tracking-widest uppercase overflow-hidden" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{pt.name}</span>
+                      <div key={`col-${pt.id}`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50" style={{ left: x, width: COLLAPSED_WIDTH }}>
+                        <span className="text-[10px] text-slate-400 font-bold tracking-widest uppercase whitespace-nowrap overflow-hidden text-ellipsis px-2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', maxHeight: '100%' }}>{pt.name}</span>
                       </div>
                     )
                   } else {
