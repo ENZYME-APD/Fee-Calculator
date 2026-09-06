@@ -1,18 +1,21 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Project, Phase, TeamMember, ProjectTask, Allocation, ProjectCost } from '@/lib/firebase/schema';
-import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectTasks, addProjectTask, updateProjectTask, getProjectCosts, deleteProjectTask } from '@/lib/firebase/db';
-import { Folder, CalendarDays, Lock, Calculator, ChevronsRight, ChevronsLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectTasks, addProjectTask, updateProjectTask, getProjectCosts, deleteProjectTask, addAllocation, updateAllocation } from '@/lib/firebase/db';
+import { Folder, CalendarDays, Lock, Calculator, ChevronsRight, ChevronsLeft, RefreshCw } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { GanttGrid } from './GanttGrid';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
 
 export function GanttPlanner() {
+  const searchParams = useSearchParams();
+  const initialProjectId = searchParams.get('project');
   const { dbCompany } = useAuth();
   const { formatCurrency } = useAppSettings();
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(initialProjectId || null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
@@ -26,6 +29,12 @@ export function GanttPlanner() {
   // Actually, we don't have dbCompany.tier fully active yet, let's just make it a mocked 'pro' for now or 'basic'
   const isPro = true; // FORCE ENABLED FOR TESTING
 
+  useEffect(() => {
+    if (initialProjectId && initialProjectId !== activeProjectId) {
+      setActiveProjectId(initialProjectId);
+    }
+  }, [initialProjectId]);
+  
   useEffect(() => {
     loadProjects();
     loadCompanyData();
@@ -83,10 +92,55 @@ export function GanttPlanner() {
     await updateProjectTask(id, updates);
   };
 
+  const handleSyncBudget = async () => {
+    if (!activeProjectId || !dbCompany) return;
+    setIsSyncing(true);
+    
+    const plannedAllocations: Record<string, number> = {};
+    tasks.forEach(task => {
+        const key = `${task.phaseId}_${task.memberId}`;
+        plannedAllocations[key] = (plannedAllocations[key] || 0) + task.durationHours;
+    });
+
+    const projectPhases = phases.filter(p => p.projectId === activeProjectId);
+    const phaseIds = projectPhases.map(p => p.id);
+    const projectAllocations = allocations.filter(a => phaseIds.includes(a.phaseId));
+    
+    const promises = [];
+    
+    for (const key in plannedAllocations) {
+        const [phaseId, memberId] = key.split('_');
+        const plannedHours = plannedAllocations[key];
+        
+        const existing = projectAllocations.find(a => a.phaseId === phaseId && a.memberId === memberId);
+        
+        if (existing) {
+            if (existing.hours !== plannedHours) {
+                promises.push(updateAllocation(existing.id!, { hours: plannedHours }));
+            }
+        } else {
+            promises.push(addAllocation({ projectId: activeProjectId, phaseId, memberId, hours: plannedHours, allocationType: 'hours', allocationValue: plannedHours }));
+        }
+    }
+    
+    for (const existing of projectAllocations) {
+        const key = `${existing.phaseId}_${existing.memberId}`;
+        if (!plannedAllocations[key] && existing.hours > 0) {
+            promises.push(updateAllocation(existing.id!, { hours: 0 }));
+        }
+    }
+    
+    await Promise.all(promises);
+    const updatedAllocations = await getAllocations();
+    setAllocations(updatedAllocations);
+    setIsSyncing(false);
+  };
+
   if (loading) return <div className="p-8 text-slate-500">Loading planner...</div>;
 
   if (!isPro) {
-    return (
+    
+  return (
       <div className="flex h-full gap-6 mx-auto w-full p-8 items-center justify-center" style={{ maxWidth: '1600px' }}>
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center max-w-2xl shadow-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-500/10 to-transparent"></div>
@@ -167,6 +221,14 @@ export function GanttPlanner() {
                      
                      <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6 mr-2">
                         <button 
+                           onClick={handleSyncBudget}
+                           disabled={isSyncing}
+                           className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-white hover:bg-emerald-600 transition-colors bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-md border border-emerald-200 dark:border-emerald-800 shadow-sm mr-2"
+                           title="Overwrite budget with planner tasks"
+                        >
+                           <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} /> Sync Budget
+                        </button>
+                        <button
                            onClick={() => {
                              if (collapsedPhases.size > 0) setCollapsedPhases(new Set());
                              else setCollapsedPhases(new Set(phases.map(p => p.id!)));

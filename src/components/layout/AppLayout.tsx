@@ -15,7 +15,8 @@ import { AllocationModal } from '../modals/AllocationModal';
 import { CostModal } from '../modals/CostModal';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import { ProjectSettingsModal } from '../modals/ProjectSettingsModal';
-import { PanelLeftClose, PanelLeftOpen, Users, ChevronDown, ChevronRight, PlusCircle, Menu, Edit3, Check } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Users, ChevronDown, ChevronRight, PlusCircle, Menu, Edit3, Check, CalendarDays } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { getCategories } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
@@ -528,9 +529,18 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                         <button 
                           onClick={() => setIsProjectSettingsOpen(true)}
                           className="text-slate-400 hover:text-blue-500 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+                          title="Edit Project"
                         >
                           <Edit3 size={14} />
                         </button>
+                        <Link href={`/planning?project=${project.id}`}>
+                          <button 
+                            className="text-slate-400 hover:text-emerald-500 p-1 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-full transition-colors"
+                            title="Open in Planner"
+                          >
+                            <CalendarDays size={14} />
+                          </button>
+                        </Link>
                         {project.area && (
                           <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-2">
                             {project.area} {areaUnit}
