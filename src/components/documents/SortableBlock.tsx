@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DocumentBlock, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Project } from '@/lib/firebase/schema';
-import { GripVertical, Trash2 } from 'lucide-react';
+import { GripVertical, Trash2, FileText, Calculator, Users } from 'lucide-react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
@@ -17,9 +17,10 @@ interface SortableBlockProps {
   project: Project;
   onUpdate: (content: string, title: string) => void;
   onDelete: () => void;
+  onInsert: (type: DocumentBlock["type"]) => void;
 }
 
-export function SortableBlock({ block, phases, allocations, costs, members, categories, project, onUpdate, onDelete }: SortableBlockProps) {
+export function SortableBlock({ block, phases, allocations, costs, members, categories, project, onUpdate, onDelete, onInsert }: SortableBlockProps) {
   const {
     attributes,
     listeners,
@@ -140,7 +141,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
               {members.map(member => {
-                const memberAllocations = allocations.filter(a => a.memberId === member.id);
+                const memberAllocations = allocations.filter(a => a.memberId === member.id && a.projectId === project.id);
                 if (memberAllocations.length === 0) return null;
                 
                 const totalHours = memberAllocations.reduce((sum, a) => sum + a.hours, 0);
@@ -201,6 +202,13 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
       />
       
       {renderContent()}
+
+      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 print:hidden flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md rounded-full px-2 py-1">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Add</span>
+        <button onClick={() => onInsert('rich_text')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Text"><FileText size={14} /></button>
+        <button onClick={() => onInsert('financial_summary')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Financials"><Calculator size={14} /></button>
+        <button onClick={() => onInsert('team_breakdown')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Team"><Users size={14} /></button>
+      </div>
     </div>
   );
 }

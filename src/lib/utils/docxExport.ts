@@ -151,7 +151,7 @@ export const exportToDocx = async (
       ];
 
       for (const member of members) {
-        const memberAllocations = allocations.filter(a => a.memberId === member.id);
+        const memberAllocations = allocations.filter(a => a.memberId === member.id && a.projectId === project.id);
         if (memberAllocations.length === 0) continue;
         
         const totalHours = memberAllocations.reduce((sum, a) => sum + a.hours, 0);

@@ -120,6 +120,35 @@ export function DocumentBuilder() {
     setBlocks([...blocks, { ...newBlock, id }]);
   };
 
+  
+  const handleInsertBlock = async (type: DocumentBlock['type'], afterIndex: number) => {
+    if (!activeProjectId || !dbCompany) return;
+    
+    // Create new block
+    const newBlock: Omit<DocumentBlock, 'id'> = {
+      companyId: dbCompany.id!,
+      projectId: activeProjectId,
+      type,
+      title: type === 'rich_text' ? 'New Section' : type === 'financial_summary' ? 'Financial Summary' : 'Project Scope',
+      content: type === 'rich_text' ? '<p>Enter text here...</p>' : '',
+      order: afterIndex
+    };
+    
+    const id = await addDocumentBlock(newBlock);
+    const blockWithId = { ...newBlock, id };
+    
+    // Shift all subsequent blocks order + 1
+    const newBlocks = [...blocks];
+    newBlocks.splice(afterIndex, 0, blockWithId);
+    
+    const updatedBlocks = newBlocks.map((b, i) => ({ ...b, order: i }));
+    setBlocks(updatedBlocks);
+    
+    // Update DB for shifted blocks
+    const promises = updatedBlocks.slice(afterIndex).map(b => updateDocumentBlock(b.id!, { order: b.order }));
+    await Promise.all(promises);
+  };
+
   const handleDeleteBlock = async (id: string) => {
     await deleteDocumentBlock(id);
     setBlocks(blocks.filter(b => b.id !== id));
@@ -227,7 +256,7 @@ export function DocumentBuilder() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 flex justify-center print:p-0 print:bg-white bg-slate-100 dark:bg-slate-950">
+        <div className="flex-1 overflow-y-auto p-8 print:p-0 print:bg-white bg-slate-100 dark:bg-slate-950">
           {!activeProjectId ? (
             <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 h-full">
               <FileText size={48} className="mb-4 opacity-20" />
@@ -246,12 +275,8 @@ export function DocumentBuilder() {
               </button>
             </div>
           ) : (
-            <div className="w-full max-w-[850px] bg-white dark:bg-slate-900 print:shadow-none shadow-xl border border-slate-200 dark:border-slate-800 min-h-[1100px] p-16 print:p-0 relative">
-              <div className="print:hidden absolute -right-20 top-16 flex flex-col gap-3">
-                <button onClick={() => handleAddBlock('rich_text')} className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-sm text-slate-600 hover:text-blue-600 transition-colors" title="Add Text Block">
-                  <Plus size={20} />
-                </button>
-              </div>
+            <div className="w-full max-w-[850px] mx-auto bg-white dark:bg-slate-900 print:shadow-none shadow-xl border border-slate-200 dark:border-slate-800 min-h-[1100px] p-16 print:p-0 relative">
+              
               
               <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-12">
                 Fee Proposal: {projects.find(p => p.id === activeProjectId)?.name}
@@ -267,7 +292,7 @@ export function DocumentBuilder() {
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-6">
-                    {blocks.map(block => (
+                    {blocks.map((block, index) => (
                       <SortableBlock 
                         key={block.id} 
                         block={block} 
@@ -279,6 +304,7 @@ export function DocumentBuilder() {
                         project={projects.find(p => p.id === activeProjectId)!}
                         onUpdate={(content, title) => handleUpdateBlockContent(block.id!, content, title)}
                         onDelete={() => handleDeleteBlock(block.id!)}
+                      onInsert={(type) => handleInsertBlock(type, index + 1)}
                       />
                     ))}
                   </div>
