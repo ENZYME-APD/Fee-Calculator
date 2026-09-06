@@ -1,6 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc } from 'firebase/firestore';
 import { db, auth } from './config';
-import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User } from './schema';
+import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User, ProjectTask } from './schema';
 
 const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
@@ -574,4 +574,30 @@ export const deleteAccountData = async (companyId: string, uid: string) => {
 
   // Always delete the user document
   await deleteDoc(doc(db, 'users', uid));
+};
+
+// --- PROJECT TASKS ---
+export const getProjectTasks = async (projectId: string): Promise<ProjectTask[]> => {
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'projectTasks'), where('companyId', '==', companyId), where('projectId', '==', projectId));
+  const snap = await getDocs(q);
+  return snap.docs.map(extractData) as ProjectTask[];
+};
+
+export const addProjectTask = async (task: Omit<ProjectTask, 'id' | 'companyId'>) => {
+  const companyId = requireCompanyId();
+  const docRef = await addDoc(collection(db, 'projectTasks'), { ...task, companyId });
+  return docRef.id;
+};
+
+export const updateProjectTask = async (id: string, updates: Partial<ProjectTask>) => {
+  requireCompanyId();
+  const docRef = doc(db, 'projectTasks', id);
+  await updateDoc(docRef, updates);
+};
+
+export const deleteProjectTask = async (id: string) => {
+  requireCompanyId();
+  const docRef = doc(db, 'projectTasks', id);
+  await deleteDoc(docRef);
 };
