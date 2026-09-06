@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Calculator, Users, FolderKanban, Moon, Sun, LogOut, Settings, BookOpen, LayoutTemplate, CreditCard, PieChart, ShieldAlert } from 'lucide-react';
+import { Calculator, Users, FolderKanban, Moon, Sun, LogOut, Settings, BookOpen, LayoutTemplate, CreditCard, PieChart, ShieldAlert, CalendarDays, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { auth, db } from '@/lib/firebase/config';
@@ -42,6 +42,8 @@ export function Navigation() {
     { name: 'Overview Dashboard', href: '/overview', icon: PieChart },
     { name: 'Projects & Phases', href: '/projects', icon: FolderKanban },
     { name: 'Fee Proposal', href: '/dashboard', icon: Calculator },
+    { name: 'Project Planning', href: '/planning', icon: CalendarDays },
+    { name: 'Document Builder', href: '/documents', icon: FileText },
     { name: 'Team Resources', href: '/team', icon: Users },
     { name: 'Templates', href: '/templates', icon: LayoutTemplate },
     { name: 'Documentation', href: '/docs', icon: BookOpen },

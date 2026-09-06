@@ -8,6 +8,7 @@ export interface Company {
   stripeSubscriptionId?: string;
   currency?: string;
   areaUnit?: 'sqm' | 'sqft';
+  tier?: 'basic' | 'pro';
   createdAt: number;
 }
 
@@ -107,4 +108,27 @@ export interface Payment {
   name: string;
   percentage: number;
   order: number;
+}
+
+export interface DocumentBlock {
+  id?: string;
+  companyId: string;
+  projectId?: string; // If null, it belongs to the company defaults
+  type: 'rich_text' | 'phase_scope' | 'financial_summary' | 'payment_schedule' | 'team_breakdown';
+  title: string;
+  content: string; // HTML string for rich_text
+  order: number;
+}
+
+export interface ProjectTask {
+  id?: string;
+  companyId: string;
+  projectId: string;
+  phaseId: string;
+  memberId?: string; // If unassigned, it's null
+  name: string;
+  description: string;
+  startDate: number; // timestamp
+  durationHours: number;
+  includeWeekends: boolean;
 }
