@@ -219,11 +219,11 @@ export function GanttPlanner() {
                    </div>
                    <div className="flex items-center gap-6">
                      
-                     <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6 mr-2">
+                     <div className="flex flex-row items-center gap-2 border-r border-slate-200 dark:border-slate-700 pr-6 mr-2">
                         <button 
                            onClick={handleSyncBudget}
                            disabled={isSyncing}
-                           className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-white hover:bg-emerald-600 transition-colors bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-md border border-emerald-200 dark:border-emerald-800 shadow-sm mr-2"
+                           className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-white hover:bg-emerald-600 transition-colors bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-md border border-emerald-200 dark:border-emerald-800 shadow-sm"
                            title="Overwrite budget with planner tasks"
                         >
                            <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} /> Sync Budget
