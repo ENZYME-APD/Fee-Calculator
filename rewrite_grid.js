@@ -1,117 +1,11 @@
-"use client";
-import React, { useState, useMemo } from 'react';
-import { Project, Phase, TeamMember, ProjectTask, Allocation } from '@/lib/firebase/schema';
-import { Plus, Edit2 } from 'lucide-react';
-import { format, addDays, isWeekend, differenceInDays } from 'date-fns';
-import { EditTaskModal } from './EditTaskModal';
+const fs = require('fs');
+const file = 'src/components/planning/GanttGrid.tsx';
+let code = fs.readFileSync(file, 'utf8');
 
-interface GanttGridProps {
-  project: Project;
-  phases: Phase[];
-  members: TeamMember[];
-  allocations: Allocation[];
-  tasks: ProjectTask[];
-  onTaskCreate: (task: Omit<ProjectTask, 'id' | 'companyId'>) => void;
-  onTaskUpdate: (id: string, updates: Partial<ProjectTask>) => void;
-  onTaskDelete: (id: string) => void;
-}
+// Replace the return statement
+const oldReturn = code.substring(code.indexOf('return ('), code.indexOf(';\n}') + 1);
 
-const CELL_WIDTH = 48;
-
-export function GanttGrid({ project, phases, members, allocations, tasks, onTaskCreate, onTaskUpdate, onTaskDelete }: GanttGridProps) {
-  const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
-  
-  const projectMemberIds = Array.from(new Set(allocations.map(a => a.memberId)));
-  const projectMembers = members.filter(m => projectMemberIds.includes(m.id!));
-
-  const startDate = project.startDate ? new Date(project.startDate) : new Date();
-  startDate.setHours(0,0,0,0);
-  
-  const days = 90;
-  const dates = Array.from({ length: days }).map((_, i) => addDays(startDate, i));
-
-  const phaseColors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500'];
-
-  const phaseTimeline = useMemo(() => {
-    let currentStart = startDate;
-    return [...phases].sort((a,b) => a.order - b.order).map(phase => {
-      const start = new Date(currentStart);
-      const durationDays = phase.durationWeeks * 7;
-      const end = addDays(start, durationDays);
-      currentStart = end;
-      return { ...phase, startDate: start, endDate: end, durationDays };
-    });
-  }, [phases, startDate]);
-
-  const [draggingTask, setDraggingTask] = useState<{ id: string; startLeft: number; startWidth: number; initialMouseX: number; type: 'move' | 'resize' } | null>(null);
-  const [dragOffset, setDragOffset] = useState(0);
-
-  const handlePointerDown = (e: React.PointerEvent, task: ProjectTask, type: 'move' | 'resize', currentLeft: number, currentWidth: number) => {
-    e.stopPropagation();
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    setDraggingTask({
-      id: task.id!,
-      startLeft: currentLeft,
-      startWidth: currentWidth,
-      initialMouseX: e.clientX,
-      type
-    });
-    setDragOffset(0);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!draggingTask) return;
-    const deltaX = e.clientX - draggingTask.initialMouseX;
-    setDragOffset(deltaX);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!draggingTask) return;
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    
-    const snapDelta = Math.round(dragOffset / CELL_WIDTH);
-    
-    if (snapDelta !== 0) {
-      if (draggingTask?.type === 'move') {
-        const task = tasks.find(t => t.id === draggingTask.id);
-        if (task) {
-          const newStart = addDays(new Date(task.startDate), snapDelta).getTime();
-          onTaskUpdate(task.id!, { startDate: newStart });
-        }
-      } else if (draggingTask?.type === 'resize') {
-        const task = tasks.find(t => t.id === draggingTask.id);
-        if (task) {
-          const newDuration = Math.max(8, task.durationHours + (snapDelta * 8));
-          onTaskUpdate(task.id!, { durationHours: newDuration });
-        }
-      }
-    }
-    
-    setDraggingTask(null);
-    setDragOffset(0);
-  };
-
-  const getPhaseColor = (phaseId: string) => {
-    const idx = phases.findIndex(p => p.id === phaseId);
-    return phaseColors[idx % phaseColors.length] || 'bg-slate-500';
-  };
-
-  const handleCellClick = (memberId: string, date: Date) => {
-    if (phases.length === 0) return;
-    
-    onTaskCreate({
-      projectId: project.id!,
-      phaseId: phases[0].id!,
-      memberId,
-      name: 'New Task',
-      description: '',
-      startDate: date.getTime(),
-      durationHours: 8,
-      includeWeekends: false
-    });
-  };
-
-  return (
+const newReturn = `return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-950 overflow-hidden relative">
       <div 
         className="flex-1 overflow-auto relative hidden-scrollbar" 
@@ -142,7 +36,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                   return (
                     <div 
                       key={pt.id} 
-                      className={`absolute top-1 h-6 rounded-md px-2 flex items-center shadow-sm text-white text-xs font-bold ${colorClass}`}
+                      className={\`absolute top-1 h-6 rounded-md px-2 flex items-center shadow-sm text-white text-xs font-bold \${colorClass}\`}
                       style={{ left: left + 2, width: width - 4, opacity: 0.8 }}
                     >
                        {pt.name}
@@ -156,7 +50,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                 {dates.map((date, i) => (
                   <div 
                     key={i} 
-                    className={`w-[48px] shrink-0 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] box-border ${isWeekend(date) ? 'bg-slate-50 dark:bg-slate-900/50 text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}
+                    className={\`w-[48px] shrink-0 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] box-border \${isWeekend(date) ? 'bg-slate-50 dark:bg-slate-900/50 text-slate-400' : 'text-slate-700 dark:text-slate-300'}\`}
                   >
                     <span className="font-medium opacity-50 uppercase tracking-wider">{format(date, 'EE')}</span>
                     <span className="font-bold text-xs">{format(date, 'd')}</span>
@@ -188,7 +82,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                   <div 
                     key={i} 
                     onClick={() => handleCellClick(member.id!, date)}
-                    className={`w-[48px] shrink-0 border-r border-slate-100 dark:border-slate-800/50 cursor-pointer flex items-center justify-center opacity-0 group-hover/row:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all box-border ${isWeekend(date) ? 'bg-slate-50/30 dark:bg-slate-900/20' : ''}`}
+                    className={\`w-[48px] shrink-0 border-r border-slate-100 dark:border-slate-800/50 cursor-pointer flex items-center justify-center opacity-0 group-hover/row:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all box-border \${isWeekend(date) ? 'bg-slate-50/30 dark:bg-slate-900/20' : ''}\`}
                   >
                     <Plus size={14} className="text-blue-400" />
                   </div>
@@ -219,10 +113,10 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                   return (
                     <div 
                       key={task.id}
-                      className={`absolute top-2 h-12 rounded-md shadow-sm flex items-center px-2 z-10 ${colorClass} text-white group/task select-none`}
+                      className={\`absolute top-2 h-12 rounded-md shadow-sm flex items-center px-2 z-10 \${colorClass} text-white group/task select-none\`}
                       style={{ 
-                        left: `${displayLeft + 4}px`, 
-                        width: `${displayWidth - 8}px`,
+                        left: \`\${displayLeft + 4}px\`, 
+                        width: \`\${displayWidth - 8}px\`,
                         opacity: isDraggingThis ? 0.7 : 0.9,
                         transition: isDraggingThis ? 'none' : 'left 0.2s, width 0.2s',
                         cursor: 'grab'
@@ -239,16 +133,6 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                       >
                         <div className="w-1 h-4 bg-white/50 rounded-full pointer-events-none" />
                       </div>
-
-                      {/* Edit Button */}
-                      {!isDraggingThis && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setEditingTask(task); }}
-                          className="absolute -top-3 -right-3 w-6 h-6 bg-white dark:bg-slate-800 rounded-full shadow-md text-slate-600 dark:text-slate-300 opacity-0 group-hover/task:opacity-100 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700 z-50 cursor-pointer"
-                        >
-                          <Edit2 size={12} />
-                        </button>
-                      )}
                     </div>
                   );
                 })}
@@ -257,23 +141,8 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
           ))}
         </div>
       </div>
-      
-      {editingTask && (
-        <EditTaskModal 
-          task={editingTask}
-          phases={phases}
-          members={members}
-          onClose={() => setEditingTask(null)}
-          onSave={(id, updates) => {
-            onTaskUpdate(id, updates);
-            setEditingTask(null);
-          }}
-          onDelete={(id) => {
-            onTaskDelete(id);
-            setEditingTask(null);
-          }}
-        />
-      )}
     </div>
-  );
-}
+  );`;
+
+code = code.replace(oldReturn, newReturn);
+fs.writeFileSync(file, code);

@@ -1,14 +1,15 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Project, Phase, TeamMember, ProjectTask, Allocation } from '@/lib/firebase/schema';
-import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectTasks, addProjectTask, updateProjectTask } from '@/lib/firebase/db';
+import { Project, Phase, TeamMember, ProjectTask, Allocation, ProjectCost } from '@/lib/firebase/schema';
+import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectTasks, addProjectTask, updateProjectTask, getProjectCosts, deleteProjectTask } from '@/lib/firebase/db';
 import { Folder, CalendarDays, Lock, Calculator } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { GanttGrid } from './GanttGrid';
-import { useAuth } from '@/lib/auth/AuthContext';
+import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
 
 export function GanttPlanner() {
   const { dbCompany } = useAuth();
+  const { formatCurrency } = useAppSettings();
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
@@ -16,6 +17,7 @@ export function GanttPlanner() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
+  const [projectCosts, setProjectCosts] = useState<ProjectCost[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Checking Premium Tier
@@ -52,12 +54,14 @@ export function GanttPlanner() {
   }, [activeProjectId]);
 
   const loadProjectData = async (projectId: string) => {
-    const [pPhases, pTasks] = await Promise.all([
+    const [pPhases, pCosts, pTasks] = await Promise.all([
       getPhases(projectId),
+      getProjectCosts(projectId),
       getProjectTasks(projectId)
     ]);
     setPhases(pPhases.sort((a,b) => a.order - b.order));
     setTasks(pTasks);
+    setProjectCosts(pCosts);
   };
 
   const handleTaskCreate = async (task: Omit<ProjectTask, 'id' | 'companyId'>) => {
@@ -65,6 +69,12 @@ export function GanttPlanner() {
     setTasks(prev => [...prev, tempTask as ProjectTask]);
     const id = await addProjectTask(task);
     setTasks(prev => prev.map(t => t.id === tempTask.id ? { ...t, id } : t));
+  };
+
+  
+  const handleTaskDelete = async (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    await deleteProjectTask(id);
   };
 
   const handleTaskUpdate = async (id: string, updates: Partial<ProjectTask>) => {
@@ -132,15 +142,58 @@ export function GanttPlanner() {
       {/* Grid Area */}
       <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors">
         {activeProjectId ? (
-           <GanttGrid 
-             project={projects.find(p => p.id === activeProjectId)!}
-             phases={phases}
-             members={members}
-             allocations={allocations.filter(a => a.projectId === activeProjectId)}
-             tasks={tasks}
-             onTaskCreate={handleTaskCreate}
-             onTaskUpdate={handleTaskUpdate}
-           />
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* Summary Header */}
+            {(() => {
+               const project = projects.find(p => p.id === activeProjectId)!;
+               const projectAllocs = allocations.filter(a => a.projectId === activeProjectId);
+               
+               const budgetedCost = projectAllocs.reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
+                  projectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
+               
+               const plannedCost = tasks.reduce((sum, t) => sum + (t.durationHours * (members.find(m => m.id === t.memberId)?.costPerHour || 0)), 0);
+               
+               const diff = budgetedCost - plannedCost;
+               const isOverBudget = diff < 0;
+
+               return (
+                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+                   <div>
+                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{project.name}</h2>
+                     <p className="text-sm text-slate-500 mt-1">Resource & Task Planning</p>
+                   </div>
+                   <div className="flex items-center gap-6">
+                     <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Budgeted Cost</span>
+                        <span className="text-lg font-bold text-slate-700 dark:text-slate-300">{formatCurrency(budgetedCost)}</span>
+                     </div>
+                     <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Planned Cost</span>
+                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(plannedCost)}</span>
+                     </div>
+                     <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Variance</span>
+                        <span className={`text-lg font-bold ${isOverBudget ? 'text-rose-500' : 'text-emerald-500'}`}>
+                          {isOverBudget ? '-' : '+'}{formatCurrency(Math.abs(diff))}
+                        </span>
+                     </div>
+                   </div>
+                 </div>
+               );
+            })()}
+            <div className="flex-1 overflow-hidden relative">
+              <GanttGrid 
+                project={projects.find(p => p.id === activeProjectId)!}
+                phases={phases}
+                members={members}
+                allocations={allocations.filter(a => a.projectId === activeProjectId)}
+                tasks={tasks}
+                onTaskCreate={handleTaskCreate}
+                onTaskUpdate={handleTaskUpdate}
+                onTaskDelete={handleTaskDelete}
+              />
+            </div>
+          </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 gap-4 transition-colors">
             <CalendarDays size={48} className="text-slate-200 dark:text-slate-800" />
