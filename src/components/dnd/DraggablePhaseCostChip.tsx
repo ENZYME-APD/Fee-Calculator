@@ -50,7 +50,7 @@ export function DraggablePhaseCostChip({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center group hover:shadow-md transition-shadow relative cursor-grab active:cursor-grabbing",
+        "bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center group hover:shadow-md transition-shadow relative hover:z-50 cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50 ring-2 ring-blue-500 shadow-lg scale-105"
       )}
       {...listeners}
