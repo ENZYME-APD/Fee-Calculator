@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { Project, Phase, DocumentBlock, Allocation, ProjectCost, TeamMember, TeamCategory } from '@/lib/firebase/schema';
 import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts } from '@/lib/firebase/db';
