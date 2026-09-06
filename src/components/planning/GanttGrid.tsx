@@ -276,7 +276,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
             <div key={member.id} className="flex h-16 border-b border-slate-100 dark:border-slate-800/50 group/row hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors box-border relative">
               
               {/* Left Column Member (Sticky) */}
-              <div className="w-64 shrink-0 sticky left-0 z-30 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex items-center px-4 gap-3 group-hover/row:bg-slate-50/50 dark:group-hover/row:bg-slate-900/20 transition-colors box-border shadow-[1px_0_2px_rgba(0,0,0,0.02)]">
+              <div className="w-64 shrink-0 sticky left-0 z-30 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex items-center px-4 gap-3 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-900 transition-colors box-border shadow-[1px_0_2px_rgba(0,0,0,0.02)]">
                 <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold shrink-0">
                   {member.name.charAt(0)}
                 </div>
@@ -296,7 +296,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                   if (isCollapsed) {
                     const x = dayCoords[startDay].x;
                     return (
-                      <div key={`bg-col-${pt.id}`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30" style={{ left: x, width: CELL_WIDTH }} />
+                      <div key={`bg-col-${pt.id}`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900" style={{ left: x, width: CELL_WIDTH }} />
                     )
                   } else {
                     return Array.from({ length: pt.durationDays }).map((_, i) => {
@@ -374,6 +374,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                       {/* Edit Button */}
                       {!isDraggingThis && (
                         <button 
+                          onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => { e.stopPropagation(); setEditingTask(task); }}
                           className="w-5 h-5 ml-auto bg-black/10 rounded flex items-center justify-center opacity-0 group-hover/task:opacity-100 hover:bg-black/20 transition-all cursor-pointer shrink-0 pointer-events-auto"
                         >
