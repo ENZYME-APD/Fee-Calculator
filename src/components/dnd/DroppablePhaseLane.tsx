@@ -172,7 +172,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
         </div>
       </div>
       
-      <div className="flex flex-col gap-3 flex-1 overflow-y-auto overflow-x-hidden min-h-[300px]">
+      <div className="flex flex-col gap-3 flex-1 overflow-visible min-h-[300px]">
         {(() => {
           const sorted = allocations.slice().sort((a, b) => {
             const orderA = categories.find(c => c.id === a.member.category)?.order ?? 99;
