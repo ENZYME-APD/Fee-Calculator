@@ -76,17 +76,19 @@ export const exportToDocx = async (
       }
     }
     else if (block.type === 'financial_summary') {
+      const profitMultiplier = 1 + ((project.profitMargin || 30) / 100);
+      
       const tableRows = [
         new TableRow({
           children: [
             new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Phase", bold: true })] })], shading: { fill: "f1f5f9" } }),
             new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Duration", bold: true })] })], shading: { fill: "f1f5f9" } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Cost", bold: true })] })], shading: { fill: "f1f5f9" } })
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Fee", bold: true })] })], shading: { fill: "f1f5f9" } })
           ]
         })
       ];
 
-      let totalProjectCost = 0;
+      let totalProjectFee = 0;
 
       for (const phase of phases) {
         let phaseCost = 0;
@@ -98,27 +100,25 @@ export const exportToDocx = async (
           phaseCost += c.quantity * c.unitCost;
         });
 
-        totalProjectCost += phaseCost;
+        const phaseFee = phaseCost * profitMultiplier;
+        totalProjectFee += phaseFee;
 
         tableRows.push(
           new TableRow({
             children: [
               new TableCell({ children: [new Paragraph(phase.name)] }),
               new TableCell({ children: [new Paragraph(`${phase.durationWeeks} Weeks`)] }),
-              new TableCell({ children: [new Paragraph(`$${phaseCost.toLocaleString()}`)] })
+              new TableCell({ children: [new Paragraph(`${phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}`)] })
             ]
           })
         );
       }
 
-      const profit = totalProjectCost * ((project.profitMargin || 30) / 100);
-      const totalFee = totalProjectCost + profit;
-
       tableRows.push(
         new TableRow({
           children: [
             new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Fee", bold: true })] })], columnSpan: 2, shading: { fill: "e2e8f0" } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${totalFee.toLocaleString()}`, bold: true })] })], shading: { fill: "e2e8f0" } })
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, bold: true })] })], shading: { fill: "e2e8f0" } })
           ]
         })
       );

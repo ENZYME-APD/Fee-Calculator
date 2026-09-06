@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { DocumentBlock, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Project } from '@/lib/firebase/schema';
 import { GripVertical, Trash2, FileText, Calculator, Users } from 'lucide-react';
 import { EditorContent, useEditor } from '@tiptap/react';
+import { Bold, Italic, List, ListOrdered } from 'lucide-react';
 import StarterKit from '@tiptap/starter-kit';
 
 interface SortableBlockProps {
@@ -60,9 +61,32 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
   const renderContent = () => {
     if (block.type === 'rich_text') {
       return (
-        <div className="prose-wrapper">
+        
+        <div className="prose-wrapper relative group/editor">
+          {editor && (
+            <div className="opacity-0 group-hover/editor:opacity-100 transition-opacity flex items-center gap-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-lg p-1 shadow-sm border border-slate-200 dark:border-slate-700 absolute -top-10 left-0 z-20">
+              <button
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${editor.isActive('bold') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}`}
+              ><Bold size={14} /></button>
+              <button
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${editor.isActive('italic') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}`}
+              ><Italic size={14} /></button>
+              <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+              <button
+                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${editor.isActive('bulletList') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}`}
+              ><List size={14} /></button>
+              <button
+                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${editor.isActive('orderedList') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}`}
+              ><ListOrdered size={14} /></button>
+            </div>
+          )}
           <EditorContent editor={editor} />
         </div>
+
       );
     }
     
@@ -81,7 +105,9 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
     }
 
     if (block.type === 'financial_summary') {
-      let totalProjectCost = 0;
+      let totalProjectFee = 0;
+      const profitMultiplier = 1 + ((project.profitMargin || 30) / 100);
+
       return (
         <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
           <table className="w-full text-left text-sm">
@@ -89,7 +115,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
               <tr>
                 <th className="px-4 py-3 font-bold">Phase</th>
                 <th className="px-4 py-3 font-bold">Duration</th>
-                <th className="px-4 py-3 font-bold text-right">Cost</th>
+                <th className="px-4 py-3 font-bold text-right">Fee</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -102,24 +128,23 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
                 costs.filter(c => c.phaseId === phase.id).forEach(c => {
                   phaseCost += c.quantity * c.unitCost;
                 });
-                totalProjectCost += phaseCost;
+                
+                const phaseFee = phaseCost * profitMultiplier;
+                totalProjectFee += phaseFee;
+                
                 return (
                   <tr key={phase.id}>
                     <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{phase.name}</td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{phase.durationWeeks} Weeks</td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">${phaseCost.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">$\{phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                   </tr>
                 );
               })}
             </tbody>
             <tfoot className="bg-slate-50 dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-700">
               <tr>
-                <td colSpan={2} className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200 text-right">Total Cost</td>
-                <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200 text-right">${totalProjectCost.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td colSpan={2} className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">Total Fee (incl. {project.profitMargin || 30}% Profit)</td>
-                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">${(totalProjectCost * (1 + (project.profitMargin || 30)/100)).toLocaleString()}</td>
+                <td colSpan={2} className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">Total Fee</td>
+                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">$\{totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
               </tr>
             </tfoot>
           </table>
