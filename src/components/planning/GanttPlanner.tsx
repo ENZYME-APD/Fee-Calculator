@@ -19,7 +19,7 @@ export function GanttPlanner() {
   // Checking Premium Tier
   // For now, let's assume 'pro' tier is required. If dbCompany.tier is not 'pro', we show upgrade.
   // Actually, we don't have dbCompany.tier fully active yet, let's just make it a mocked 'pro' for now or 'basic'
-  const isPro = dbCompany?.tier === 'pro';
+  const isPro = true; // FORCE ENABLED FOR TESTING
 
   useEffect(() => {
     loadProjects();
