@@ -24,8 +24,7 @@ export const exportToDocx = async (
   // Document Title
   docElements.push(
     new Paragraph({
-      text: `Fee Proposal: ${project.name}`,
-      heading: HeadingLevel.TITLE,
+      children: [new TextRun({ text: `Fee Proposal: ${project.name}`, bold: true, size: 48 })],
       spacing: { after: 400 }
     })
   );
@@ -34,8 +33,7 @@ export const exportToDocx = async (
     if (block.title) {
       docElements.push(
         new Paragraph({
-          text: block.title,
-          heading: HeadingLevel.HEADING_1,
+          children: [new TextRun({ text: block.title, bold: true, size: 32 })],
           spacing: { before: 400, after: 200 }
         })
       );
@@ -60,8 +58,7 @@ export const exportToDocx = async (
       for (const phase of phases) {
         docElements.push(
           new Paragraph({
-            text: phase.name,
-            heading: HeadingLevel.HEADING_2,
+            children: [new TextRun({ text: phase.name, bold: true, size: 28 })],
             spacing: { before: 200, after: 100 }
           }),
           new Paragraph({
@@ -72,7 +69,7 @@ export const exportToDocx = async (
             spacing: { after: 200 }
           }),
           new Paragraph({
-            text: phase.description || "No description provided.",
+            children: [new TextRun({ text: phase.description || "No description provided." })],
             spacing: { after: 300 }
           })
         );
@@ -121,10 +118,54 @@ export const exportToDocx = async (
         new TableRow({
           children: [
             new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Fee", bold: true })] })], columnSpan: 2, shading: { fill: "e2e8f0" } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "$1", bold: true })] })], shading: { fill: "e2e8f0" } })
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${totalFee.toLocaleString()}`, bold: true })] })], shading: { fill: "e2e8f0" } })
           ]
         })
       );
+
+      docElements.push(
+        new Table({
+          rows: tableRows,
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: {
+            top: { style: BorderStyle.SINGLE, size: 1, color: "e2e8f0" },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: "e2e8f0" },
+            left: { style: BorderStyle.SINGLE, size: 1, color: "e2e8f0" },
+            right: { style: BorderStyle.SINGLE, size: 1, color: "e2e8f0" },
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "e2e8f0" },
+            insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "e2e8f0" },
+          }
+        })
+      );
+      docElements.push(new Paragraph({ spacing: { after: 400 } }));
+    }
+    else if (block.type === 'team_breakdown') {
+      const tableRows = [
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Team Member", bold: true })] })], shading: { fill: "f1f5f9" } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Role", bold: true })] })], shading: { fill: "f1f5f9" } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Allocated Hours", bold: true })] })], shading: { fill: "f1f5f9" } })
+          ]
+        })
+      ];
+
+      for (const member of members) {
+        const memberAllocations = allocations.filter(a => a.memberId === member.id);
+        if (memberAllocations.length === 0) continue;
+        
+        const totalHours = memberAllocations.reduce((sum, a) => sum + a.hours, 0);
+        
+        tableRows.push(
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph(member.name)] }),
+              new TableCell({ children: [new Paragraph(member.position)] }),
+              new TableCell({ children: [new Paragraph(`${totalHours} hrs`)] })
+            ]
+          })
+        );
+      }
 
       docElements.push(
         new Table({

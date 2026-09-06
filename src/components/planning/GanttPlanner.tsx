@@ -1,3 +1,4 @@
+import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Project, Phase, TeamMember, ProjectTask, Allocation, ProjectCost } from '@/lib/firebase/schema';
