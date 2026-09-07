@@ -69,14 +69,53 @@ export function GanttPlanner() {
   }, [activeProjectId]);
 
   const loadProjectData = async (projectId: string) => {
-    const [pPhases, pCosts, pTasks] = await Promise.all([
+    const [pPhases, pCosts, pTasks, pAllocations] = await Promise.all([
       getPhases(projectId),
       getProjectCosts(projectId),
-      getProjectTasks(projectId)
+      getProjectTasks(projectId),
+      getAllocations()
     ]);
-    setPhases(pPhases.sort((a,b) => a.order - b.order));
-    setTasks(pTasks);
+    
+    const sortedPhases = pPhases.sort((a,b) => a.order - b.order);
+    setPhases(sortedPhases);
     setProjectCosts(pCosts);
+    
+    // Auto-generate initial tasks if none exist but allocations do
+    if (pTasks.length === 0 && pAllocations.length > 0) {
+      const phaseIds = sortedPhases.map(p => p.id);
+      const projectAllocations = pAllocations.filter(a => phaseIds.includes(a.phaseId) && a.hours > 0);
+      
+      if (projectAllocations.length > 0) {
+        setIsResetting(true);
+        try {
+          const createPromises = projectAllocations.map(a => {
+            const newTask = {
+              projectId: projectId,
+              phaseId: a.phaseId,
+              memberId: a.memberId,
+              name: 'Planned Task',
+              startDate: Date.now(),
+              description: '',
+              includeWeekends: false,
+              durationHours: a.hours,
+              order: 0
+            };
+            return addProjectTask(newTask);
+          });
+          await Promise.all(createPromises);
+          const newTasks = await getProjectTasks(projectId);
+          setTasks(newTasks);
+        } catch (error) {
+          console.error("Auto generation failed:", error);
+          setTasks([]);
+        } finally {
+          setIsResetting(false);
+        }
+        return;
+      }
+    }
+    
+    setTasks(pTasks);
   };
 
   
