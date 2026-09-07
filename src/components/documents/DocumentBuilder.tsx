@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableBlock } from './SortableBlock';
-import { FileText, Download, Printer, Plus, LayoutTemplate, Folder } from 'lucide-react';
+import { FileText, Download, Printer, Plus, LayoutTemplate, Folder, Bookmark, Trash2 } from 'lucide-react';
 import { exportToDocx } from '@/lib/utils/docxExport';
 import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -255,46 +255,72 @@ export function DocumentBuilder() {
       
       {/* Project Sidebar */}
       <div className="w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 h-full print:hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <FileText size={20} className="text-blue-500" />
-            Documents
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Select a project proposal</p>
+        {/* Project Selector (Top Half) */}
+        <div className="flex flex-col h-1/2 border-b border-slate-200 dark:border-slate-800">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <Folder size={18} className="text-blue-500" />
+              Proposals
+            </h3>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {projects.filter(p => !p.isTemplate).map(project => (
+              <button
+                key={project.id}
+                onClick={() => setActiveProjectId(project.id!)}
+                className={`w-full text-left px-4 py-3 rounded-xl transition-all ${activeProjectId === project.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium shadow-sm border border-blue-100 dark:border-blue-800' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="truncate">{project.name}</span>
+                  {activeProjectId === project.id && (
+                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {projects.filter(p => !p.isTemplate).map(p => (
-            <div 
-              key={p.id}
-              onClick={() => setActiveProjectId(p.id!)}
-              className={`p-3 rounded-xl cursor-pointer border transition-all ${
-                activeProjectId === p.id 
-                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 shadow-sm' 
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg shrink-0 ${activeProjectId === p.id ? 'bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
-                  <Folder size={16} />
-                </div>
-                <div>
-                  <h4 className={`font-bold text-sm ${activeProjectId === p.id ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300'}`}>
-                    {p.name}
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{p.description}</p>
-                </div>
+
+        {/* Templates Library (Bottom Half) */}
+        <div className="flex flex-col h-1/2 bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <Bookmark size={18} className="text-emerald-500" />
+              Saved Templates
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">Click to append to document</p>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {savedBlocks.length === 0 ? (
+              <div className="text-center p-4 text-sm text-slate-400">
+                No templates saved yet. Click the bookmark icon on any block to save it.
               </div>
-            </div>
-          ))}
-          {projects.filter(p => !p.isTemplate).length === 0 && (
-            <div className="text-center p-4 text-slate-500 text-sm">
-              No projects found. Create one first!
-            </div>
-          )}
+            ) : (
+              savedBlocks.map(template => (
+                <div
+                  key={template.id}
+                  onClick={() => handleInsertTemplate(template)}
+                  className="w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all cursor-pointer group flex items-start justify-between"
+                >
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{template.templateName}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-slate-400 mt-1">{template.type.replace('_', ' ')}</span>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="p-1.5 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-md transition-colors" title="Insert Template">
+                      <Plus size={14} />
+                    </div>
+                    <div onClick={(e) => handleDeleteTemplate(template.id!, e)} className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-md transition-colors" title="Delete Template">
+                      <Trash2 size={14} />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
-
-      <div className="flex-1 flex flex-col h-full relative">
+<div className="flex-1 flex flex-col h-full relative">
         <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 print:hidden">
           <div className="flex items-center gap-6">
             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">

@@ -9,6 +9,7 @@ import { PaymentScheduleManager } from './PaymentScheduleManager';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { PromptModal } from '@/components/modals/PromptModal';
+import { PhaseSettingsModal } from '@/components/modals/PhaseSettingsModal';
 
 export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: boolean }) {
   const router = useRouter();
@@ -53,6 +54,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   
   // Edit Phase
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
+  const [settingsPhaseId, setSettingsPhaseId] = useState<string | null>(null);
   const [editingPhaseName, setEditingPhaseName] = useState('');
   const [editingPhaseDuration, setEditingPhaseDuration] = useState('');
   
@@ -311,6 +313,12 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
     } finally {
       setIsSavingPhase(false);
     }
+  };
+
+  
+  const handleSavePhaseSettings = async (id: string, updates: Partial<Phase>) => {
+    await updatePhase(id, updates);
+    await loadPhases(activeProjectId!);
   };
 
   const handleEditPhaseStart = (p: Phase) => {
@@ -736,7 +744,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                             </button>
                           </Tooltip>
                           <Tooltip content="Edit Phase Name/Duration">
-                            <button onClick={() => handleEditPhaseStart(phase)} className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                            <button onClick={() => setSettingsPhaseId(phase.id!)} className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
                               <Pencil size={16} />
                             </button>
                           </Tooltip>
@@ -781,6 +789,14 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
         onCancel={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
       />
       
+
+        <PhaseSettingsModal 
+          isOpen={!!settingsPhaseId}
+          onClose={() => setSettingsPhaseId(null)}
+          phase={phases.find(p => p.id === settingsPhaseId) || null}
+          onSave={handleSavePhaseSettings}
+        />
+
       <ConfirmModal
         isOpen={confirmConfig.isOpen}
         title={confirmConfig.title}

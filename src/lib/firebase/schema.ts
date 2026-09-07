@@ -74,6 +74,10 @@ export interface Phase {
   projectId: string;
   name: string;
   description: string;
+  tasks?: string;
+  inclusions?: string;
+  omissions?: string;
+  deliverables?: string;
   durationWeeks: number;
   order: number;
 }
