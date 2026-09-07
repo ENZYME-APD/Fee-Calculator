@@ -56,7 +56,7 @@ export function Navigation() {
   }
   
   return (
-    <div className="w-64 bg-slate-900 dark:bg-slate-950 text-slate-300 flex flex-col h-screen shrink-0 border-r border-slate-800 z-50 transition-colors duration-300">
+    <div className="w-64 bg-slate-900 dark:bg-slate-950 text-slate-300 flex flex-col h-screen shrink-0 border-r border-slate-800 z-50 transition-colors duration-300 print:hidden">
       <div className="p-6 pb-2">
         <img src="/logo-light.png" alt="Enzyme APD" className="h-10 w-auto mb-1" />
         <h1 className="text-sm font-black tracking-widest text-slate-200 uppercase bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Fee Calculator</h1>

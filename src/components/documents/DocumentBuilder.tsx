@@ -278,7 +278,7 @@ export function DocumentBuilder() {
               </button>
             </div>
           ) : (
-            <div className="w-full max-w-[850px] mx-auto bg-white dark:bg-slate-900 print:shadow-none shadow-xl border border-slate-200 dark:border-slate-800 min-h-[1100px] p-16 print:p-0 relative">
+            <div className="w-full max-w-[850px] mx-auto bg-white dark:bg-slate-900 print:shadow-none shadow-xl border border-slate-200 dark:border-slate-800 print:border-none min-h-[1100px] p-16 print:p-0 relative">
               
               
               <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-12">
