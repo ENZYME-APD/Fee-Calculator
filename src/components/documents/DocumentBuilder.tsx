@@ -67,18 +67,20 @@ export function DocumentBuilder() {
 
   const loadData = async () => {
     setLoading(true);
-    const [projs, m, c, a, pCosts] = await Promise.all([
+    const [projs, m, c, a, pCosts, saved] = await Promise.all([
       getProjects(),
       getTeamMembers(),
       getCategories(),
       getAllocations(),
-      getProjectCosts()
+      getProjectCosts(),
+      getSavedBlocks(dbCompany!.id!)
     ]);
     setProjects(projs);
     setMembers(m);
     setCategories(c);
     setAllocations(a);
     setCosts(pCosts);
+    setSavedBlocks(saved);
     setLoading(false);
   };
 
