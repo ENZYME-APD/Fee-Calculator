@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ShieldAlert,
+import { ShieldAlert, Bookmark,
   FileText,
   Download, 
   Book, 
@@ -333,9 +333,11 @@ export function WikiContent() {
               
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">Generating Tasks</h3>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">Generating Tasks</h3>
                   <p className="text-slate-600 dark:text-slate-400 mb-3">
-                    When you first open a project in the Planner, you can click <strong className="text-blue-600 dark:text-blue-400">Auto-Generate Timeline</strong> to instantly create tasks for every team member allocated in the Fee Calculator, distributed across the correct phases.
+                    When you first open a project in the Planner, you can click <strong className="text-blue-600 dark:text-blue-400">Sync Budget</strong> to instantly create tasks for every team member allocated in the Fee Calculator, distributed across the correct phases.
+                    <br /><br />
+                    If you manually change task durations and want to reset your schedule to match your budget perfectly, click the new <strong className="text-rose-600 dark:text-rose-400">Reset to Budget</strong> button next to the Sync button.
                   </p>
                 </div>
                 
@@ -425,12 +427,21 @@ export function WikiContent() {
                     </p>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm flex items-center gap-2">
-                      <Download size={14} className="text-slate-400" />
-                      Export to Word
+                                        <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm flex items-center gap-2">
+                      <Bookmark size={14} className="text-emerald-500" />
+                      Saved Templates
                     </h4>
                     <p className="text-xs text-slate-600 dark:text-slate-400">
-                      Export your assembled blocks directly to a native Microsoft Word (.docx) file. This gives you ultimate control to make pixel-perfect tweaks before sending to clients.
+                      Save any text block as a template by clicking its bookmark icon. Your templates appear in the left sidebar and can be dragged and dropped directly into your proposals!
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-2 text-sm flex items-center gap-2">
+                      <Download size={14} className="text-slate-400" />
+                      Export to Word & PDF
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Download a native Microsoft Word <code>.docx</code> document or a beautiful multi-page PDF to send directly to your clients.
                     </p>
                   </div>
                 </div>
