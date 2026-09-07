@@ -57,6 +57,7 @@ export async function POST(req: Request) {
             stripeCustomerId: session.customer,
             stripeSubscriptionId: session.subscription,
             subscriptionStatus: 'active',
+            tier: 'pro',
           });
         }
         break;
@@ -73,6 +74,7 @@ export async function POST(req: Request) {
           const companyDoc = snapshot.docs[0];
           await companyDoc.ref.update({
             subscriptionStatus: subscription.status, // 'active', 'past_due', 'canceled', etc
+            tier: subscription.status === 'active' || subscription.status === 'trialing' ? 'pro' : 'basic',
           });
         }
         break;
@@ -88,6 +90,7 @@ export async function POST(req: Request) {
           const companyDoc = snapshot.docs[0];
           await companyDoc.ref.update({
             subscriptionStatus: 'canceled',
+            tier: 'basic',
           });
         }
         break;
