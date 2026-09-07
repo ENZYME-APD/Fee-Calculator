@@ -138,7 +138,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
                   <tr key={phase.id}>
                     <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{phase.name}</td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{phase.durationWeeks} Weeks</td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">$\{phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">${phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                   </tr>
                 );
               })}
@@ -146,7 +146,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
             <tfoot className="bg-slate-50 dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-700">
               <tr>
                 <td colSpan={2} className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">Total Fee</td>
-                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">$\{totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
               </tr>
             </tfoot>
           </table>
@@ -228,7 +228,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
                   <tr key={payment.id}>
                     <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{payment.name}</td>
                     <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{payment.percentage}%</td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">$\{amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                   </tr>
                 );
               })}
@@ -236,7 +236,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
             <tfoot className="bg-slate-50 dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-700">
               <tr>
                 <td colSpan={2} className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">Total Fee</td>
-                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">$\{totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
               </tr>
             </tfoot>
           </table>

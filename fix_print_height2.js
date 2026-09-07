@@ -1,8 +1,9 @@
-@import "tailwindcss";
-@plugin "@tailwindcss/typography";
-@custom-variant dark (&:where(.dark, .dark *));
+const fs = require('fs');
 
+const cssFile = 'src/app/globals.css';
+let cssCode = fs.readFileSync(cssFile, 'utf8');
 
+cssCode = cssCode.replace(/@media print \{[\s\S]*?\}/, `
 @media print {
   html, body {
     height: auto !important;
@@ -17,11 +18,6 @@
     overflow: visible !important;
   }
 }
-  
-  /* Force all height/scroll containers to expand fully in print mode */
-  div, main, section {
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-  }
-}
+`.trim());
+
+fs.writeFileSync(cssFile, cssCode);
