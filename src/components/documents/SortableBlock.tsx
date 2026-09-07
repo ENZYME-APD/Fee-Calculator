@@ -285,12 +285,14 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
       
       {renderContent()}
 
-      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 print:hidden flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md rounded-full px-2 py-1">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Add</span>
-        <button onClick={() => onInsert('rich_text')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Text"><FileText size={14} /></button>
-        <button onClick={() => onInsert('financial_summary')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Financials"><Calculator size={14} /></button>
-        <button onClick={() => onInsert('team_breakdown')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Team"><Users size={14} /></button>
-        <button onClick={() => onInsert('payment_schedule')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Payments"><CreditCard size={14} /></button>
+      <div className="absolute -bottom-6 left-0 right-0 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 focus-within:opacity-100 transition-opacity z-50 print:hidden cursor-default">
+        <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md rounded-full px-2 py-1">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Add</span>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('rich_text'); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Text"><FileText size={14} /></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('financial_summary'); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Financials"><Calculator size={14} /></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('team_breakdown'); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Team"><Users size={14} /></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('payment_schedule'); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 transition-colors" title="Add Payments"><CreditCard size={14} /></button>
+        </div>
       </div>
     </div>
   );
