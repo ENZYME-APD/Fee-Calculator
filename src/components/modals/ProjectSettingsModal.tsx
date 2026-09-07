@@ -81,9 +81,10 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave }: Proje
                   className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none text-slate-900 dark:text-white transition-all shadow-sm font-semibold appearance-none"
                 >
                   <option value="Draft">Draft</option>
+                  <option value="Proposed">Proposed</option>
                   <option value="Active">Active</option>
                   <option value="Completed">Completed</option>
-                  <option value="Archived">Archived</option>
+                  <option value="Lost">Lost</option>
                 </select>
               </div>
               <div>
