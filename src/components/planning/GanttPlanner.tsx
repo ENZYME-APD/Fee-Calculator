@@ -7,6 +7,7 @@ import { Folder, CalendarDays, Lock, Calculator, ChevronsRight, ChevronsLeft, Re
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GanttGrid } from './GanttGrid';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 export function GanttPlanner() {
   const searchParams = useSearchParams();
@@ -18,6 +19,7 @@ export function GanttPlanner() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(initialProjectId || null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
@@ -77,9 +79,13 @@ export function GanttPlanner() {
   };
 
   
-  const handleResetToBudget = async () => {
+  const handleResetToBudget = () => {
+    setShowResetConfirm(true);
+  };
+
+  const executeResetToBudget = async () => {
+    setShowResetConfirm(false);
     if (!activeProjectId || !dbCompany) return;
-    if (!window.confirm('Are you sure you want to reset all tasks? This will delete all current tasks in the Gantt chart and recreate them to match the original budget allocations. This cannot be undone.')) return;
     
     setIsResetting(true);
     
@@ -336,6 +342,14 @@ export function GanttPlanner() {
           </div>
         )}
       </div>
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        title="Reset to Budget"
+        message="Are you sure you want to reset all tasks? This will delete all current tasks in the Gantt chart and recreate them to match the original budget allocations. This cannot be undone."
+        confirmText="Reset Timeline"
+        onConfirm={executeResetToBudget}
+        onCancel={() => setShowResetConfirm(false)}
+      />
     </div>
   );
 }
