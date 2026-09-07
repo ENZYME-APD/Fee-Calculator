@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Project, Phase, DocumentBlock, Allocation, ProjectCost, TeamMember, TeamCategory, Payment } from '@/lib/firebase/schema';
-import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts, getPayments } from '@/lib/firebase/db';
+
+import { Project, Phase, DocumentBlock, Allocation, ProjectCost, TeamMember, TeamCategory, Payment, SavedBlock } from '@/lib/firebase/schema';
+import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts, getPayments, getSavedBlocks, addSavedBlock, deleteSavedBlock } from '@/lib/firebase/db';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -23,6 +24,7 @@ export function DocumentBuilder() {
   const [phases, setPhases] = useState<Phase[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [savedBlocks, setSavedBlocks] = useState<SavedBlock[]>([]);
   const [costs, setCosts] = useState<ProjectCost[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [categories, setCategories] = useState<TeamCategory[]>([]);
@@ -123,6 +125,66 @@ export function DocumentBuilder() {
     setBlocks([...blocks, { ...newBlock, id }]);
   };
 
+  
+  
+  const handleSaveTemplate = async (block: DocumentBlock, currentContent: string, currentTitle: string) => {
+    if (!dbCompany?.id) return;
+    const name = window.prompt("Enter a name for this template:", currentTitle);
+    if (!name) return;
+    
+    const newTemplate: Omit<SavedBlock, 'id'> = {
+      companyId: dbCompany.id,
+      templateName: name,
+      type: block.type,
+      title: currentTitle,
+      content: currentContent
+    };
+    
+    try {
+      const id = await addSavedBlock(newTemplate);
+      setSavedBlocks([...savedBlocks, { ...newTemplate, id }]);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Template saved successfully!' } }));
+    } catch (error) {
+      console.error(error);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to save template' } }));
+    }
+  };
+
+  const handleInsertTemplate = async (template: SavedBlock) => {
+    if (!dbCompany?.id || !activeProjectId) return;
+    
+    const maxOrder = blocks.reduce((max, b) => Math.max(max, b.order), -1);
+    
+    const newBlock: Partial<DocumentBlock> = {
+      projectId: activeProjectId,
+      type: template.type,
+      title: template.title,
+      content: template.content,
+      order: maxOrder + 1
+    };
+    
+    try {
+      const id = await addDocumentBlock(newBlock as Omit<DocumentBlock, 'id'>);
+      setBlocks([...blocks, { ...newBlock, id } as DocumentBlock]);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Template inserted!' } }));
+    } catch (error) {
+      console.error(error);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to insert template' } }));
+    }
+  };
+
+  const handleDeleteTemplate = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this template?")) {
+      try {
+        await deleteSavedBlock(id);
+        setSavedBlocks(savedBlocks.filter(b => b.id !== id));
+      } catch (error) {
+        console.error(error);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to delete template' } }));
+      }
+    }
+  };
   
   const handleInsertBlock = async (type: DocumentBlock['type'], afterIndex: number) => {
     if (!activeProjectId || !dbCompany) return;
@@ -297,6 +359,7 @@ export function DocumentBuilder() {
                   <div className="space-y-6">
                     {blocks.map((block, index) => (
                       <SortableBlock 
+                        onSaveTemplate={handleSaveTemplate}
                         key={block.id} 
                         block={block} 
                         phases={phases}

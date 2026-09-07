@@ -1,6 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc } from 'firebase/firestore';
 import { db, auth } from './config';
-import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User, ProjectTask, DocumentBlock } from './schema';
+import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User, ProjectTask, DocumentBlock , SavedBlock } from './schema';
 
 const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
@@ -643,4 +643,24 @@ export const initializeDefaultBlocks = async (companyId: string, projectId: stri
   
   const promises = defaultBlocks.map(block => addDocumentBlock(block));
   await Promise.all(promises);
+};
+
+
+// ==========================================
+// SAVED BLOCKS (TEMPLATES)
+// ==========================================
+
+export const getSavedBlocks = async (companyId: string): Promise<SavedBlock[]> => {
+  const q = query(collection(db, 'saved_blocks'), where('companyId', '==', companyId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedBlock));
+};
+
+export const addSavedBlock = async (block: Omit<SavedBlock, 'id'>): Promise<string> => {
+  const docRef = await addDoc(collection(db, 'saved_blocks'), block);
+  return docRef.id;
+};
+
+export const deleteSavedBlock = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, 'saved_blocks', id));
 };

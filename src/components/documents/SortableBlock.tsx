@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DocumentBlock, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Project, Payment } from '@/lib/firebase/schema';
-import { GripVertical, Trash2, FileText, Calculator, Users, CreditCard } from 'lucide-react';
+import { GripVertical, Trash2, FileText, Calculator, Users, CreditCard, BookmarkPlus } from 'lucide-react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Bold, Italic, List, ListOrdered } from 'lucide-react';
 import StarterKit from '@tiptap/starter-kit';
@@ -21,9 +21,10 @@ interface SortableBlockProps {
   onUpdate: (content: string, title: string) => void;
   onDelete: () => void;
   onInsert: (type: DocumentBlock['type']) => void;
+  onSaveTemplate: (block: DocumentBlock, currentContent: string, currentTitle: string) => void;
 }
 
-export function SortableBlock({ block, phases, allocations, costs, members, categories, payments, project, onUpdate, onDelete, onInsert }: SortableBlockProps) {
+export function SortableBlock({ block, phases, allocations, costs, members, categories, payments, project, onUpdate, onDelete, onInsert, onSaveTemplate }: SortableBlockProps) {
   const [title, setTitle] = useState(block.title);
   
   const editor = useEditor({
@@ -264,8 +265,11 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
         <GripVertical size={20} />
       </div>
       
-      <div className="absolute right-0 top-4 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-        <button onClick={onDelete} className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-md transition-colors">
+      <div className="absolute right-0 top-4 opacity-0 group-hover:opacity-100 transition-opacity print:hidden flex gap-1">
+        <button onClick={() => onSaveTemplate(block, editor ? editor.getHTML() : block.content, title)} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors" title="Save as Template">
+          <BookmarkPlus size={16} />
+        </button>
+        <button onClick={onDelete} className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-md transition-colors" title="Delete Block">
           <Trash2 size={16} />
         </button>
       </div>

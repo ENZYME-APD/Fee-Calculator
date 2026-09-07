@@ -132,3 +132,13 @@ export interface ProjectTask {
   durationHours: number;
   includeWeekends: boolean;
 }
+
+
+export interface SavedBlock {
+  id?: string;
+  companyId: string;
+  templateName: string;
+  type: DocumentBlock['type'];
+  title: string;
+  content: string;
+}
