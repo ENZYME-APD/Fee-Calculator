@@ -10,6 +10,7 @@ import { SortableBlock } from './SortableBlock';
 import { FileText, Download, Printer, Plus, LayoutTemplate, Folder, Bookmark, Trash2 } from 'lucide-react';
 import { exportToDocx } from '@/lib/utils/docxExport';
 import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
+import { PromptModal } from '@/components/modals/PromptModal';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 export function DocumentBuilder() {
@@ -17,6 +18,21 @@ export function DocumentBuilder() {
   const searchParams = useSearchParams();
   const initialProjectId = searchParams.get('project');
   
+
+  const [promptConfig, setPromptConfig] = useState<{
+    isOpen: boolean;
+    defaultValue: string;
+    block: DocumentBlock | null;
+    currentContent: string;
+    currentTitle: string;
+  }>({
+    isOpen: false,
+    defaultValue: '',
+    block: null,
+    currentContent: '',
+    currentTitle: ''
+  });
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(initialProjectId || null);
   
@@ -127,17 +143,26 @@ export function DocumentBuilder() {
 
   
   
-  const handleSaveTemplate = async (block: DocumentBlock, currentContent: string, currentTitle: string) => {
-    if (!dbCompany?.id) return;
-    const name = window.prompt("Enter a name for this template:", currentTitle);
-    if (!name) return;
+  const handleSaveTemplate = (block: DocumentBlock, currentContent: string, currentTitle: string) => {
+    setPromptConfig({
+      isOpen: true,
+      defaultValue: currentTitle,
+      block,
+      currentContent,
+      currentTitle
+    });
+  };
+
+  const executeSaveTemplate = async (name: string) => {
+    setPromptConfig(prev => ({ ...prev, isOpen: false }));
+    if (!name.trim() || !promptConfig.block || !dbCompany?.id) return;
     
     const newTemplate: Omit<SavedBlock, 'id'> = {
       companyId: dbCompany.id,
-      templateName: name,
-      type: block.type,
-      title: currentTitle,
-      content: currentContent
+      templateName: name.trim(),
+      type: promptConfig.block.type,
+      title: promptConfig.currentTitle,
+      content: promptConfig.currentContent
     };
     
     try {
@@ -407,6 +432,17 @@ export function DocumentBuilder() {
           )}
         </div>
       </div>
+
+      <PromptModal
+        isOpen={promptConfig.isOpen}
+        title="Save Template"
+        message="Enter a name for this template so you can easily identify it in your library."
+        defaultValue={promptConfig.defaultValue}
+        placeholder="e.g. Standard Section"
+        confirmText="Save"
+        onConfirm={executeSaveTemplate}
+        onCancel={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
