@@ -2,7 +2,6 @@
 @plugin "@tailwindcss/typography";
 @custom-variant dark (&:where(.dark, .dark *));
 
-
 @media print {
   html, body {
     height: auto !important;
@@ -13,14 +12,6 @@
   .h-full, .h-screen, .max-h-full, .max-h-screen, .overflow-hidden, .overflow-y-auto, .overflow-y-scroll {
     height: auto !important;
     min-height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-  }
-}
-  
-  /* Force all height/scroll containers to expand fully in print mode */
-  div, main, section {
-    height: auto !important;
     max-height: none !important;
     overflow: visible !important;
   }
