@@ -636,8 +636,9 @@ export const initializeDefaultBlocks = async (companyId: string, projectId: stri
     { companyId, projectId, type: 'rich_text', title: 'Introduction', content: '<p>Welcome to the fee proposal.</p>', order: 0 },
     { companyId, projectId, type: 'phase_scope', title: 'Project Scope', content: '', order: 1 },
     { companyId, projectId, type: 'financial_summary', title: 'Financial Summary', content: '', order: 2 },
-    { companyId, projectId, type: 'team_breakdown', title: 'Team Allocation', content: '', order: 3 },
-    { companyId, projectId, type: 'rich_text', title: 'Terms & Conditions', content: '<p>Standard terms apply.</p>', order: 4 }
+    { companyId, projectId, type: 'payment_schedule', title: 'Payment Schedule', content: '', order: 3 },
+    { companyId, projectId, type: 'team_breakdown', title: 'Team Allocation', content: '', order: 4 },
+    { companyId, projectId, type: 'rich_text', title: 'Terms & Conditions', content: '<p>Standard terms apply.</p>', order: 5 }
   ];
   
   const promises = defaultBlocks.map(block => addDocumentBlock(block));

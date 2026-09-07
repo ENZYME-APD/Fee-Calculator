@@ -132,7 +132,7 @@ export function DocumentBuilder() {
       companyId: dbCompany.id!,
       projectId: activeProjectId,
       type,
-      title: type === 'rich_text' ? 'New Section' : type === 'financial_summary' ? 'Financial Summary' : 'Project Scope',
+      title: type === 'rich_text' ? 'New Section' : type === 'financial_summary' ? 'Financial Summary' : type === 'payment_schedule' ? 'Payment Schedule' : 'Project Scope',
       content: type === 'rich_text' ? '<p>Enter text here...</p>' : '',
       order: afterIndex
     };
@@ -266,7 +266,7 @@ export function DocumentBuilder() {
               <p className="text-lg font-medium">Select a project to build its proposal document</p>
             </div>
           ) : blocks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 h-full max-w-md text-center">
+            <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 h-[60vh] max-w-md mx-auto text-center">
               <LayoutTemplate size={48} className="mb-4 text-blue-500 opacity-50" />
               <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">No Document Blocks</h3>
               <p className="text-sm mb-6">Generate a default proposal layout automatically pulling data from your fee estimates.</p>
