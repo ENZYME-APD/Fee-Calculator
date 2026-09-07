@@ -3,7 +3,7 @@ import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import React, { useState, useEffect } from 'react';
 import { Project, Phase, TeamMember, ProjectTask, Allocation, ProjectCost } from '@/lib/firebase/schema';
 import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectTasks, addProjectTask, updateProjectTask, getProjectCosts, deleteProjectTask, addAllocation, updateAllocation } from '@/lib/firebase/db';
-import { Folder, CalendarDays, Lock, Calculator, ChevronsRight, ChevronsLeft, RefreshCw, Undo2 } from 'lucide-react';
+import { Folder, Eye, EyeOff, CalendarDays, Lock, Calculator, ChevronsRight, ChevronsLeft, RefreshCw, Undo2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GanttGrid } from './GanttGrid';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
@@ -17,6 +17,7 @@ export function GanttPlanner() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(initialProjectId || null);
+  const [showLost, setShowLost] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -229,10 +230,21 @@ export function GanttPlanner() {
             <CalendarDays size={20} className="text-blue-600 dark:text-blue-400" />
             Planning
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Select a project to plan tasks</p>
+          
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Select a project</p>
+            <button 
+              onClick={() => setShowLost(!showLost)} 
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1"
+            >
+              {showLost ? <EyeOff size={12} /> : <Eye size={12} />}
+              {showLost ? 'Hide Lost' : 'Show Lost'}
+            </button>
+          </div>
+    
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {projects.filter(p => !p.isTemplate).map(p => (
+          {projects.filter(p => !p.isTemplate && (showLost || p.status !== "Lost")).map(p => (
             <div 
               key={p.id}
               onClick={() => setActiveProjectId(p.id!)}

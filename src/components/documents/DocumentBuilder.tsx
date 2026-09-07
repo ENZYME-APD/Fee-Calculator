@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDraggable, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableBlock } from './SortableBlock';
-import { FileText, Download, Printer, Plus, LayoutTemplate, Folder, Bookmark, Trash2 } from 'lucide-react';
+import { FileText, Download, Printer, Plus, LayoutTemplate, Folder, Eye, EyeOff, Bookmark, Trash2 } from 'lucide-react';
 import { exportToDocx } from '@/lib/utils/docxExport';
 import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import { PromptModal } from '@/components/modals/PromptModal';
@@ -67,6 +67,7 @@ export function DocumentBuilder() {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(initialProjectId || null);
+  const [showLost, setShowLost] = useState(false);
   
   const [blocks, setBlocks] = useState<DocumentBlock[]>([]);
   const [phases, setPhases] = useState<Phase[]>([]);
@@ -373,9 +374,20 @@ export function DocumentBuilder() {
               <Folder size={18} className="text-blue-500" />
               Proposals
             </h3>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Select a project</p>
+            <button 
+              onClick={() => setShowLost(!showLost)} 
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1"
+            >
+              {showLost ? <EyeOff size={12} /> : <Eye size={12} />}
+              {showLost ? 'Hide Lost' : 'Show Lost'}
+            </button>
+          </div>
+    
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {projects.filter(p => !p.isTemplate).map(project => (
+            {projects.filter(p => !p.isTemplate && (showLost || p.status !== "Lost")).map(project => (
               <button
                 key={project.id}
                 onClick={() => setActiveProjectId(project.id!)}
