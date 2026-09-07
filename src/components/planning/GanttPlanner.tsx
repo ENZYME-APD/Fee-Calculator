@@ -3,7 +3,7 @@ import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import React, { useState, useEffect } from 'react';
 import { Project, Phase, TeamMember, ProjectTask, Allocation, ProjectCost } from '@/lib/firebase/schema';
 import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectTasks, addProjectTask, updateProjectTask, getProjectCosts, deleteProjectTask, addAllocation, updateAllocation } from '@/lib/firebase/db';
-import { Folder, CalendarDays, Lock, Calculator, ChevronsRight, ChevronsLeft, RefreshCw } from 'lucide-react';
+import { Folder, CalendarDays, Lock, Calculator, ChevronsRight, ChevronsLeft, RefreshCw, Undo2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GanttGrid } from './GanttGrid';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
@@ -17,6 +17,7 @@ export function GanttPlanner() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(initialProjectId || null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
@@ -73,6 +74,51 @@ export function GanttPlanner() {
     setPhases(pPhases.sort((a,b) => a.order - b.order));
     setTasks(pTasks);
     setProjectCosts(pCosts);
+  };
+
+  
+  const handleResetToBudget = async () => {
+    if (!activeProjectId || !dbCompany) return;
+    if (!window.confirm('Are you sure you want to reset all tasks? This will delete all current tasks in the Gantt chart and recreate them to match the original budget allocations. This cannot be undone.')) return;
+    
+    setIsResetting(true);
+    
+    const projectPhases = phases.filter(p => p.projectId === activeProjectId);
+    const phaseIds = projectPhases.map(p => p.id);
+    const projectAllocations = allocations.filter(a => phaseIds.includes(a.phaseId) && a.hours > 0);
+    const currentTasks = tasks.filter(t => t.projectId === activeProjectId);
+    
+    try {
+      // 1. Delete all current tasks
+      const deletePromises = currentTasks.map(t => deleteProjectTask(t.id!));
+      await Promise.all(deletePromises);
+      
+      // 2. Create new tasks from allocations
+      const createPromises = projectAllocations.map(a => {
+        const phase = projectPhases.find(p => p.id === a.phaseId);
+        const newTask = {
+          projectId: activeProjectId,
+          phaseId: a.phaseId,
+          memberId: a.memberId,
+          name: 'Planned Task',
+          startDate: Date.now(),
+          description: '',
+          includeWeekends: false,
+          durationHours: a.hours,
+          order: 0
+        };
+        return addProjectTask(newTask);
+      });
+      await Promise.all(createPromises);
+      
+      // 3. Reload
+      const pTasks = await getProjectTasks(activeProjectId);
+      setTasks(pTasks);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const handleTaskCreate = async (task: Omit<ProjectTask, 'id' | 'companyId'>) => {
@@ -235,6 +281,9 @@ export function GanttPlanner() {
                            title="Overwrite budget with planner tasks"
                         >
                            <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} /> Sync Budget
+                        </button>
+                        <button onClick={handleResetToBudget} disabled={isResetting || loading} className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:opacity-50">
+                          <Undo2 size={14} className={isResetting ? "animate-spin" : ""} /> Reset to Budget
                         </button>
                         <button
                            onClick={() => {
