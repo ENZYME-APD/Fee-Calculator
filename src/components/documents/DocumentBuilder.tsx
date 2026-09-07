@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Project, Phase, DocumentBlock, Allocation, ProjectCost, TeamMember, TeamCategory, Payment, SavedBlock } from '@/lib/firebase/schema';
 import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts, getPayments, getSavedBlocks, addSavedBlock, deleteSavedBlock } from '@/lib/firebase/db';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDraggable, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableBlock } from './SortableBlock';
 import { FileText, Download, Printer, Plus, LayoutTemplate, Folder, Bookmark, Trash2 } from 'lucide-react';
@@ -12,6 +12,37 @@ import { exportToDocx } from '@/lib/utils/docxExport';
 import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import { PromptModal } from '@/components/modals/PromptModal';
 import { useSearchParams, useRouter } from 'next/navigation';
+
+
+function SidebarTemplateItem({ template, onInsert, onDelete }: { template: SavedBlock, onInsert: () => void, onDelete: (e: React.MouseEvent) => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `template-${template.id}`,
+    data: { type: 'template', template }
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      onClick={onInsert}
+      className={`w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all cursor-grab active:cursor-grabbing group flex items-start justify-between ${isDragging ? 'opacity-50 ring-2 ring-emerald-500' : ''}`}
+    >
+      <div className="flex flex-col overflow-hidden pointer-events-none">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{template.templateName}</span>
+        <span className="text-[10px] uppercase tracking-wider text-slate-400 mt-1">{template.type.replace('_', ' ')}</span>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="p-1.5 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-md transition-colors" title="Drag or Click to Insert">
+          <Plus size={14} />
+        </div>
+        <div onPointerDown={(e) => e.stopPropagation()} onClick={onDelete} className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-md transition-colors" title="Delete Template">
+          <Trash2 size={14} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function DocumentBuilder() {
   const { dbCompany } = useAuth();
@@ -40,6 +71,7 @@ export function DocumentBuilder() {
   const [phases, setPhases] = useState<Phase[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [savedBlocks, setSavedBlocks] = useState<SavedBlock[]>([]);
   const [costs, setCosts] = useState<ProjectCost[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -110,8 +142,50 @@ export function DocumentBuilder() {
     setLoading(false);
   };
 
+  
+  const handleDragStart = (event: any) => {
+    setActiveDragId(event.active.id);
+  };
+
   const handleDragEnd = async (event: any) => {
+    setActiveDragId(null);
     const { active, over } = event;
+    if (!over || !activeProjectId || !dbCompany) return;
+
+    if (active.data.current?.type === 'template') {
+      const template = active.data.current.template as SavedBlock;
+      let targetIndex = blocks.findIndex((b) => b.id === over.id);
+      if (targetIndex === -1) targetIndex = blocks.length;
+      
+      const newBlock: Partial<DocumentBlock> = {
+        companyId: dbCompany.id!,
+        projectId: activeProjectId,
+        type: template.type,
+        title: template.title,
+        content: template.content,
+        order: targetIndex
+      };
+      
+      // Shift other blocks down
+      const newBlocks = [...blocks];
+      newBlocks.splice(targetIndex, 0, newBlock as DocumentBlock);
+      const orderedBlocks = newBlocks.map((b, i) => ({ ...b, order: i }));
+      
+      try {
+        const id = await addDocumentBlock(newBlock as Omit<DocumentBlock, 'id'>);
+        const savedBlock = { ...orderedBlocks[targetIndex], id };
+        orderedBlocks[targetIndex] = savedBlock;
+        setBlocks(orderedBlocks as DocumentBlock[]);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Template inserted!' } }));
+        
+        const promises = orderedBlocks.map(b => updateDocumentBlock(b.id!, { order: b.order }));
+        await Promise.all(promises);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
     if (active.id !== over.id) {
       const oldIndex = blocks.findIndex((b) => b.id === active.id);
       const newIndex = blocks.findIndex((b) => b.id === over.id);
@@ -123,11 +197,11 @@ export function DocumentBuilder() {
       
       setBlocks(newBlocks);
       
-      // Update in DB
       const promises = newBlocks.map((b) => updateDocumentBlock(b.id!, { order: b.order }));
       await Promise.all(promises);
     }
   };
+
 
   const handleAddBlock = async (type: DocumentBlock['type']) => {
     if (!activeProjectId || !dbCompany) return;
@@ -279,6 +353,7 @@ export function DocumentBuilder() {
   }
 
   return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950">
       
       {/* Project Sidebar */}
@@ -325,24 +400,12 @@ export function DocumentBuilder() {
               </div>
             ) : (
               savedBlocks.map(template => (
-                <div
+                <SidebarTemplateItem
                   key={template.id}
-                  onClick={() => handleInsertTemplate(template)}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all cursor-pointer group flex items-start justify-between"
-                >
-                  <div className="flex flex-col overflow-hidden">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{template.templateName}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-slate-400 mt-1">{template.type.replace('_', ' ')}</span>
-                  </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="p-1.5 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-md transition-colors" title="Insert Template">
-                      <Plus size={14} />
-                    </div>
-                    <div onClick={(e) => handleDeleteTemplate(template.id!, e)} className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-md transition-colors" title="Delete Template">
-                      <Trash2 size={14} />
-                    </div>
-                  </div>
-                </div>
+                  template={template}
+                  onInsert={() => handleInsertTemplate(template)}
+                  onDelete={(e) => handleDeleteTemplate(template.id!, e)}
+                />
               ))
             )}
           </div>
@@ -401,11 +464,7 @@ export function DocumentBuilder() {
                 Fee Proposal: {projects.find(p => p.id === activeProjectId)?.name}
               </h1>
 
-              <DndContext 
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
+              
                 <SortableContext 
                   items={blocks.map(b => b.id!)}
                   strategy={verticalListSortingStrategy}
@@ -430,7 +489,7 @@ export function DocumentBuilder() {
                     ))}
                   </div>
                 </SortableContext>
-              </DndContext>
+              
             </div>
           )}
         </div>
@@ -447,5 +506,15 @@ export function DocumentBuilder() {
         onCancel={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
+    <DragOverlay>
+      {activeDragId && activeDragId.toString().startsWith('template-') ? (
+        <div className="w-64 px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-emerald-500 shadow-2xl opacity-90 cursor-grabbing">
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">Dragging Template...</span>
+          </div>
+        </div>
+      ) : null}
+    </DragOverlay>
+    </DndContext>
   );
 }
