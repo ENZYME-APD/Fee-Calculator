@@ -4,6 +4,7 @@ import { Company, TeamCategory } from '@/lib/firebase/schema';
 import { getCategories, addCategory, updateCategory, deleteCategory } from '@/lib/firebase/db';
 import { Plus, Trash2, Edit2, Check, X, GripVertical } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 export function CategoriesTab({ company }: { company: Company }) {
   const [categories, setCategories] = useState<TeamCategory[]>([]);
@@ -12,6 +13,7 @@ export function CategoriesTab({ company }: { company: Company }) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<{name: string, order: number, color: string, type: 'internal' | 'external'}>({ name: '', order: 10, color: '#3b82f6', type: 'internal' });
 
@@ -78,10 +80,15 @@ export function CategoriesTab({ company }: { company: Company }) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category? Team members with this category will show as uncategorized until updated.')) return;
-    await deleteCategory(id);
+  const handleDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const executeDelete = async () => {
+    if (!confirmDeleteId) return;
+    await deleteCategory(confirmDeleteId);
     await loadCategories();
+    setConfirmDeleteId(null);
   };
 
   const startEditing = (category: TeamCategory) => {
@@ -295,6 +302,14 @@ export function CategoriesTab({ company }: { company: Company }) {
           )})
         )}
       </div>
+      <ConfirmModal
+        isOpen={!!confirmDeleteId}
+        title="Delete Category"
+        message="Are you sure you want to delete this category? Team members with this category will show as uncategorized until updated."
+        confirmText="Delete Category"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }
