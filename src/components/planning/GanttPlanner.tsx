@@ -272,9 +272,9 @@ export function GanttPlanner() {
                const isOverBudget = diff < 0;
 
                return (
-                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
-                   <div>
-                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{project.name}</h2>
+                 <div className="flex items-start md:items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0 gap-6 flex-wrap md:flex-nowrap">
+                   <div className="min-w-[200px] flex-1">
+                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 line-clamp-2">{project.name}</h2>
                      <p className="text-sm text-slate-500 mt-1">Resource & Task Planning</p>
                    </div>
                    <div className="flex items-center gap-6">
@@ -283,12 +283,12 @@ export function GanttPlanner() {
                         <button 
                            onClick={handleSyncBudget}
                            disabled={isSyncing}
-                           className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:text-white hover:bg-emerald-600 transition-colors bg-emerald-50 dark:bg-emerald-900/30 px-4 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap"
+                           className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-white hover:bg-emerald-600 transition-colors bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-md border border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap"
                            title="Overwrite budget with planner tasks"
                         >
                            <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} /> Update
                         </button>
-                        <button onClick={handleResetToBudget} disabled={isResetting || loading} className="flex items-center gap-2 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-900/50 bg-rose-50 dark:bg-rose-900/30 px-4 py-2 rounded-lg transition-all shadow-sm disabled:opacity-50 whitespace-nowrap">
+                        <button onClick={handleResetToBudget} disabled={isResetting || loading} className="flex items-center gap-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-900/50 bg-rose-50 dark:bg-rose-900/30 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:opacity-50 whitespace-nowrap">
                           <Undo2 size={16} className={isResetting ? "animate-spin" : ""} /> Reset
                         </button>
                         <button
@@ -296,11 +296,12 @@ export function GanttPlanner() {
                              if (collapsedPhases.size > 0) setCollapsedPhases(new Set());
                              else setCollapsedPhases(new Set(phases.map(p => p.id!)));
                            }}
-                           className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm whitespace-nowrap"
+                           className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm whitespace-nowrap"
                         >
                            {collapsedPhases.size > 0 ? <><ChevronsRight size={16}/> Expand</> : <><ChevronsLeft size={16} /> Collapse</>}
                         </button>
-                     </div>\n                     <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                     </div>
+                     <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Budgeted Cost</span>
                         <span className="text-lg font-bold text-slate-700 dark:text-slate-300">{formatCurrency(budgetedCost)}</span>
                      </div>
