@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Project, Phase, DocumentBlock, Allocation, ProjectCost, TeamMember, TeamCategory } from '@/lib/firebase/schema';
-import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts } from '@/lib/firebase/db';
+import { Project, Phase, DocumentBlock, Allocation, ProjectCost, TeamMember, TeamCategory, Payment } from '@/lib/firebase/schema';
+import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts, getPayments } from '@/lib/firebase/db';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -22,6 +22,7 @@ export function DocumentBuilder() {
   const [blocks, setBlocks] = useState<DocumentBlock[]>([]);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [costs, setCosts] = useState<ProjectCost[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [categories, setCategories] = useState<TeamCategory[]>([]);
@@ -77,6 +78,8 @@ export function DocumentBuilder() {
     setPhases(p.sort((a, b) => a.order - b.order));
     const b = await getDocumentBlocks(dbCompany!.id!, projectId);
     setBlocks(b);
+    const pay = await getPayments(projectId);
+    setPayments(pay.sort((a, b) => a.order - b.order));
   };
 
   const handleGenerateDefaults = async () => {
@@ -112,7 +115,7 @@ export function DocumentBuilder() {
       companyId: dbCompany.id!,
       projectId: activeProjectId,
       type,
-      title: type === 'rich_text' ? 'New Section' : type === 'financial_summary' ? 'Financial Summary' : 'Project Scope',
+      title: type === 'rich_text' ? 'New Section' : type === 'financial_summary' ? 'Financial Summary' : type === 'payment_schedule' ? 'Payment Schedule' : 'Project Scope',
       content: type === 'rich_text' ? '<p>Enter text here...</p>' : '',
       order: blocks.length
     };
@@ -164,7 +167,7 @@ export function DocumentBuilder() {
     if (!project) return;
     setIsExporting(true);
     try {
-      await exportToDocx(project, blocks, phases, allocations, costs, members, categories);
+      await exportToDocx(project, blocks, phases, allocations, costs, members, categories, payments);
     } catch (e) {
       console.error(e);
       alert('Error exporting document.');
@@ -302,6 +305,7 @@ export function DocumentBuilder() {
                         members={members}
                         categories={categories}
                         project={projects.find(p => p.id === activeProjectId)!}
+                        payments={payments}
                         onUpdate={(content, title) => handleUpdateBlockContent(block.id!, content, title)}
                         onDelete={() => handleDeleteBlock(block.id!)}
                       onInsert={(type) => handleInsertBlock(type, index + 1)}

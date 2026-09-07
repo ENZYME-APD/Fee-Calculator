@@ -1,4 +1,6 @@
+const fs = require('fs');
 
+const docxCode = `
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType } from 'docx';
 import { saveAs } from 'file-saver';
 import { DocumentBlock, Project, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Payment } from '@/lib/firebase/schema';
@@ -26,7 +28,7 @@ export const exportToDocx = async (
   // Document Title
   docElements.push(
     new Paragraph({
-      children: [new TextRun({ text: `Fee Proposal: ${project.name}`, bold: true, size: 48 })],
+      children: [new TextRun({ text: \`Fee Proposal: \${project.name}\`, bold: true, size: 48 })],
       spacing: { after: 400 }
     })
   );
@@ -65,7 +67,7 @@ export const exportToDocx = async (
           new Paragraph({
             children: [
               new TextRun({ text: "Duration: ", bold: true }),
-              new TextRun(`${phase.durationWeeks} Weeks`)
+              new TextRun(\`\${phase.durationWeeks} Weeks\`)
             ],
             spacing: { after: 200 }
           }),
@@ -108,8 +110,8 @@ export const exportToDocx = async (
           new TableRow({
             children: [
               new TableCell({ children: [new Paragraph(phase.name)] }),
-              new TableCell({ children: [new Paragraph(`${phase.durationWeeks} Weeks`)] }),
-              new TableCell({ children: [new Paragraph(`$${phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}`)] })
+              new TableCell({ children: [new Paragraph(\`\${phase.durationWeeks} Weeks\`)] }),
+              new TableCell({ children: [new Paragraph(\`$\${phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}\`)] })
             ]
           })
         );
@@ -119,7 +121,7 @@ export const exportToDocx = async (
         new TableRow({
           children: [
             new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Fee", bold: true })] })], columnSpan: 2, shading: { fill: "e2e8f0" } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, bold: true })] })], shading: { fill: "e2e8f0" } })
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: \`$\${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}\`, bold: true })] })], shading: { fill: "e2e8f0" } })
           ]
         })
       );
@@ -162,7 +164,7 @@ export const exportToDocx = async (
             children: [
               new TableCell({ children: [new Paragraph(member.name)] }),
               new TableCell({ children: [new Paragraph(member.position)] }),
-              new TableCell({ children: [new Paragraph(`${totalHours} hrs`)] })
+              new TableCell({ children: [new Paragraph(\`\${totalHours} hrs\`)] })
             ]
           })
         );
@@ -217,8 +219,8 @@ export const exportToDocx = async (
           new TableRow({
             children: [
               new TableCell({ children: [new Paragraph(payment.name)] }),
-              new TableCell({ children: [new Paragraph(`${payment.percentage}%`)] }),
-              new TableCell({ children: [new Paragraph(`$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`)] })
+              new TableCell({ children: [new Paragraph(\`\${payment.percentage}%\`)] }),
+              new TableCell({ children: [new Paragraph(\`$\${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}\`)] })
             ]
           })
         );
@@ -228,7 +230,7 @@ export const exportToDocx = async (
         new TableRow({
           children: [
             new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Fee", bold: true })] })], columnSpan: 2, shading: { fill: "e2e8f0" } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, bold: true })] })], shading: { fill: "e2e8f0" } })
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: \`$\${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}\`, bold: true })] })], shading: { fill: "e2e8f0" } })
           ]
         })
       );
@@ -259,5 +261,8 @@ export const exportToDocx = async (
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, `${project.name} - Fee Proposal.docx`);
+  saveAs(blob, \`\${project.name} - Fee Proposal.docx\`);
 };
+`;
+
+fs.writeFileSync('src/lib/utils/docxExport.ts', docxCode);

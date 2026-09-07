@@ -1,4 +1,6 @@
+const fs = require('fs');
 
+const blockCode = `
 "use client";
 import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
@@ -68,20 +70,20 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
             <div className="opacity-0 group-hover/editor:opacity-100 transition-opacity flex items-center gap-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-lg p-1 shadow-sm border border-slate-200 dark:border-slate-700 absolute -top-10 left-0 z-20 print:hidden">
               <button
                 onClick={() => editor.chain().focus().toggleBold().run()}
-                className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${editor.isActive('bold') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}`}
+                className={\`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 \${editor.isActive('bold') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}\`}
               ><Bold size={14} /></button>
               <button
                 onClick={() => editor.chain().focus().toggleItalic().run()}
-                className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${editor.isActive('italic') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}`}
+                className={\`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 \${editor.isActive('italic') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}\`}
               ><Italic size={14} /></button>
               <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
               <button
                 onClick={() => editor.chain().focus().toggleBulletList().run()}
-                className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${editor.isActive('bulletList') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}`}
+                className={\`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 \${editor.isActive('bulletList') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}\`}
               ><List size={14} /></button>
               <button
                 onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${editor.isActive('orderedList') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}`}
+                className={\`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 \${editor.isActive('orderedList') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}\`}
               ><ListOrdered size={14} /></button>
             </div>
           )}
@@ -138,7 +140,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
                   <tr key={phase.id}>
                     <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{phase.name}</td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{phase.durationWeeks} Weeks</td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">$\{phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">$\\{phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                   </tr>
                 );
               })}
@@ -146,7 +148,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
             <tfoot className="bg-slate-50 dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-700">
               <tr>
                 <td colSpan={2} className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">Total Fee</td>
-                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">$\{totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">$\\{totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
               </tr>
             </tfoot>
           </table>
@@ -228,7 +230,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
                   <tr key={payment.id}>
                     <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{payment.name}</td>
                     <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{payment.percentage}%</td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">$\{amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-medium text-slate-800 dark:text-slate-200">$\\{amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                   </tr>
                 );
               })}
@@ -236,7 +238,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
             <tfoot className="bg-slate-50 dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-700">
               <tr>
                 <td colSpan={2} className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">Total Fee</td>
-                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">$\{totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 text-right">$\\{totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
               </tr>
             </tfoot>
           </table>
@@ -291,3 +293,6 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/components/documents/SortableBlock.tsx', blockCode);
