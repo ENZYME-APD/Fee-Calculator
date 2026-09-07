@@ -181,6 +181,7 @@ export function DocumentBuilder() {
     const maxOrder = blocks.reduce((max, b) => Math.max(max, b.order), -1);
     
     const newBlock: Partial<DocumentBlock> = {
+      companyId: dbCompany.id,
       projectId: activeProjectId,
       type: template.type,
       title: template.title,
