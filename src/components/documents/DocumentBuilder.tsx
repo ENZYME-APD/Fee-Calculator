@@ -11,6 +11,7 @@ import { FileText, Download, Printer, Plus, LayoutTemplate, Folder, Bookmark, Tr
 import { exportToDocx } from '@/lib/utils/docxExport';
 import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import { PromptModal } from '@/components/modals/PromptModal';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 
@@ -72,6 +73,9 @@ export function DocumentBuilder() {
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const [confirmDeleteTemplateId, setConfirmDeleteTemplateId] = useState<string | null>(null);
+
   const [savedBlocks, setSavedBlocks] = useState<SavedBlock[]>([]);
   const [costs, setCosts] = useState<ProjectCost[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -275,16 +279,20 @@ export function DocumentBuilder() {
     }
   };
 
-  const handleDeleteTemplate = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteTemplate = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this template?")) {
-      try {
-        await deleteSavedBlock(id);
-        setSavedBlocks(savedBlocks.filter(b => b.id !== id));
-      } catch (error) {
-        console.error(error);
-        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to delete template' } }));
-      }
+    setConfirmDeleteTemplateId(id);
+  };
+
+  const executeDeleteTemplate = async () => {
+    if (!confirmDeleteTemplateId) return;
+    try {
+      await deleteSavedBlock(confirmDeleteTemplateId);
+      setSavedBlocks(savedBlocks.filter(b => b.id !== confirmDeleteTemplateId));
+      setConfirmDeleteTemplateId(null);
+    } catch (error) {
+      console.error(error);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to delete template' } }));
     }
   };
   
@@ -504,6 +512,14 @@ export function DocumentBuilder() {
         confirmText="Save"
         onConfirm={executeSaveTemplate}
         onCancel={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
+      />
+      <ConfirmModal
+        isOpen={!!confirmDeleteTemplateId}
+        title="Delete Template"
+        message="Are you sure you want to delete this template? This cannot be undone."
+        confirmText="Delete"
+        onConfirm={executeDeleteTemplate}
+        onCancel={() => setConfirmDeleteTemplateId(null)}
       />
     </div>
     <DragOverlay>
