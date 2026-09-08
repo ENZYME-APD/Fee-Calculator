@@ -98,7 +98,7 @@ export function TourOverlay() {
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none transition-opacity duration-300">
       {/* SVG Mask */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-auto" style={{ zIndex: 1 }}>
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
         <defs>
           <mask id="tour-mask">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
@@ -135,6 +135,12 @@ export function TourOverlay() {
           className="transition-all duration-500 ease-in-out animate-[spin_4s_linear_infinite]"
         />
       </svg>
+      {/* 4 Blocker Divs to prevent clicks outside the highlighted area */}
+      <div className="absolute top-0 left-0 right-0 pointer-events-auto" style={{ height: Math.max(0, y), zIndex: 1 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} onMouseDownCapture={(e) => { e.preventDefault(); e.stopPropagation(); }} />
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-auto" style={{ top: y + height, bottom: 0, zIndex: 1 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} onMouseDownCapture={(e) => { e.preventDefault(); e.stopPropagation(); }} />
+      <div className="absolute left-0 pointer-events-auto" style={{ top: Math.max(0, y), height, width: Math.max(0, x), zIndex: 1 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} onMouseDownCapture={(e) => { e.preventDefault(); e.stopPropagation(); }} />
+      <div className="absolute right-0 pointer-events-auto" style={{ top: Math.max(0, y), height, left: x + width, right: 0, zIndex: 1 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} onMouseDownCapture={(e) => { e.preventDefault(); e.stopPropagation(); }} />
+
 
       {/* Bubble */}
       <div 
