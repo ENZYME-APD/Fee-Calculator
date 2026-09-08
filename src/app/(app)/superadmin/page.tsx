@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getAllCompaniesForSuperadmin, getAllUsersForSuperadmin } from '@/lib/firebase/db';
+import { getAllCompaniesForSuperadmin, getAllUsersForSuperadmin, updateCompany } from '@/lib/firebase/db';
 import { ShieldAlert, Building2, Users as UsersIcon, Calendar, Activity } from 'lucide-react';
 import { Company, User } from '@/lib/firebase/schema';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
 export default function SuperadminPage() {
   const { user, loading } = useAuth();
@@ -14,6 +15,61 @@ export default function SuperadminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState('');
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, onConfirm: () => void}>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  const handleExtendTrial = async (companyId: string) => {
+    setIsUpdating(companyId);
+    try {
+      const newEndsAt = Date.now() + 14 * 24 * 60 * 60 * 1000;
+      await updateCompany(companyId, { subscriptionStatus: 'trialing', trialEndsAt: newEndsAt, tier: 'pro' });
+      setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, subscriptionStatus: 'trialing', trialEndsAt: newEndsAt, tier: 'pro' } : c));
+    } catch (err: any) {
+      setError("Failed to extend trial: " + err.message);
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const handleSetLifetime = async (companyId: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Grant Lifetime Access',
+      message: 'Are you sure you want to grant lifetime PRO access to this company?',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        setIsUpdating(companyId);
+        try {
+          await updateCompany(companyId, { subscriptionStatus: 'lifetime', tier: 'pro' });
+          setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, subscriptionStatus: 'lifetime', tier: 'pro' } : c));
+        } catch (err: any) {
+          setError("Failed to set lifetime: " + err.message);
+        } finally {
+          setIsUpdating(null);
+        }
+      }
+    });
+  };
+
+  const handleRevoke = async (companyId: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Revoke Access',
+      message: 'Are you sure you want to revoke access? This will lock the company out of PRO features.',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        setIsUpdating(companyId);
+        try {
+          await updateCompany(companyId, { subscriptionStatus: 'canceled', tier: 'free' });
+          setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, subscriptionStatus: 'canceled', tier: 'free' as any } : c));
+        } catch (err: any) {
+          setError("Failed to revoke access: " + err.message);
+        } finally {
+          setIsUpdating(null);
+        }
+      }
+    });
+  };
 
   const isSuperadmin = user?.email?.toLowerCase().endsWith('@weareenzyme.com');
 
@@ -163,12 +219,40 @@ export default function SuperadminPage() {
                           {companyUsers.length === 0 && <span className="text-slate-400 italic">No users found</span>}
                         </div>
                       </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleExtendTrial(company.id!)}
+                            disabled={isUpdating === company.id}
+                            className="text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded font-medium disabled:opacity-50 transition-colors"
+                            title="Add 14 days"
+                          >
+                            +14d Trial
+                          </button>
+                          <button
+                            onClick={() => handleSetLifetime(company.id!)}
+                            disabled={isUpdating === company.id}
+                            className="text-xs px-2 py-1 bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded font-medium disabled:opacity-50 transition-colors"
+                            title="Grant Lifetime Access"
+                          >
+                            Lifetime
+                          </button>
+                          <button
+                            onClick={() => handleRevoke(company.id!)}
+                            disabled={isUpdating === company.id}
+                            className="text-xs px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-900/40 rounded font-medium disabled:opacity-50 transition-colors"
+                            title="Revoke License"
+                          >
+                            Revoke
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
                 {companies.length === 0 && !error && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
                       No companies found.
                     </td>
                   </tr>
@@ -177,7 +261,14 @@ export default function SuperadminPage() {
             </table>
           </div>
         </div>
-
+        
+        <ConfirmModal
+          isOpen={confirmConfig.isOpen}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          onConfirm={confirmConfig.onConfirm}
+          onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        />
       </div>
     </div>
   );
