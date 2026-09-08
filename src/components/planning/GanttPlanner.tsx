@@ -312,10 +312,13 @@ export function GanttPlanner() {
             {/* Summary Header */}
             {(() => {
                const project = projects.find(p => p.id === activeProjectId)!;
-               const projectAllocs = allocations.filter(a => a.projectId === activeProjectId);
+               const projectPhases = phases.filter(p => p.projectId === activeProjectId);
+               const phaseIds = projectPhases.map(p => p.id);
+               const projectAllocs = allocations.filter(a => phaseIds.includes(a.phaseId) && a.hours > 0);
+               const validProjectCosts = projectCosts.filter(c => phaseIds.includes(c.phaseId));
                
                const budgetedCost = projectAllocs.reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
-                  projectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
+                  validProjectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
                
                const plannedCost = tasks.reduce((sum, t) => sum + (t.durationHours * (members.find(m => m.id === t.memberId)?.costPerHour || 0)), 0);
                

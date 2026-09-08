@@ -393,8 +393,11 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   if (loading) return <div className="p-8 text-slate-500">Loading projects...</div>;
 
   const activeProject = projects.find(p => p.id === activeProjectId);
-  const totalCost = allocations.reduce((sum, a) => sum + (a.hours * (teamMembers.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
-    projectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
+  const phaseIds = phases.map(p => p.id);
+  const validAllocations = allocations.filter(a => phaseIds.includes(a.phaseId));
+  const validProjectCosts = projectCosts.filter(c => phaseIds.includes(c.phaseId));
+  const totalCost = validAllocations.reduce((sum, a) => sum + (a.hours * (teamMembers.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
+    validProjectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
   const profitMarginPercent = activeProject?.profitMargin ?? 0;
   const profitMarginAmount = totalCost * (profitMarginPercent / 100);
   const totalFee = totalCost + profitMarginAmount;
