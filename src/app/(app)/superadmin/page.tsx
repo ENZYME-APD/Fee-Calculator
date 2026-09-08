@@ -175,6 +175,7 @@ export default function SuperadminPage() {
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Created Date</th>
                   <th className="px-6 py-4">Users</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -183,13 +184,13 @@ export default function SuperadminPage() {
                   const isTrialExpired = company.subscriptionStatus === 'trialing' && company.trialEndsAt && company.trialEndsAt < Date.now();
                   
                   return (
-                    <tr key={company.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <tr key={company.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-bold text-slate-800 dark:text-slate-200">{company.name}</div>
                         <div className="text-xs text-slate-400 font-mono mt-0.5">{company.id}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider
+                        <span className={`inline-flex items-center justify-center text-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest min-w-[100px]
                           ${company.subscriptionStatus === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : 
                             company.subscriptionStatus === 'trialing' ? (isTrialExpired ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400') :
                             company.subscriptionStatus === 'lifetime' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
