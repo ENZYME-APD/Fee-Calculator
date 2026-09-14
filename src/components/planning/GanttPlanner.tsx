@@ -286,7 +286,14 @@ export function GanttPlanner() {
           {projects.filter(p => !p.isTemplate && (showLost || p.status !== "Lost")).map(p => (
             <div 
               key={p.id}
-              onClick={() => setActiveProjectId(p.id!)}
+              onClick={() => {
+                setActiveProjectId(p.id!);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('project', p.id!);
+                  window.history.replaceState({}, '', url.toString());
+                }
+              }}
               className={`p-3.5 pb-2 rounded-xl cursor-pointer flex flex-col group transition-colors min-h-[64px] ${activeProjectId === p.id ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'}`}
             >
               <div className="flex items-center justify-between gap-3 overflow-hidden w-full">

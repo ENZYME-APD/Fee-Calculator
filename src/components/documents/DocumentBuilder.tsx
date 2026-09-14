@@ -390,7 +390,14 @@ export function DocumentBuilder() {
             {projects.filter(p => !p.isTemplate && (showLost || p.status !== "Lost")).map(project => (
               <button
                 key={project.id}
-                onClick={() => setActiveProjectId(project.id!)}
+                onClick={() => {
+                  setActiveProjectId(project.id!);
+                  if (typeof window !== 'undefined') {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('project', project.id!);
+                    window.history.replaceState({}, '', url.toString());
+                  }
+                }}
                 className={`w-full text-left px-4 py-3 rounded-xl transition-all ${activeProjectId === project.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium shadow-sm border border-blue-100 dark:border-blue-800' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'}`}
               >
                 <div className="flex items-center justify-between">

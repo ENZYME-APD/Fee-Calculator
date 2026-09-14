@@ -163,7 +163,19 @@ export default function Home() {
           <select 
             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors"
             value={activeProject?.id || ''}
-            onChange={(e) => setActiveProject(projects.find(p => p.id === e.target.value) || null)}
+            onChange={(e) => {
+              const p = projects.find(proj => proj.id === e.target.value) || null;
+              setActiveProject(p);
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href);
+                if (p) {
+                  url.searchParams.set('project', p.id!);
+                } else {
+                  url.searchParams.delete('project');
+                }
+                window.history.replaceState({}, '', url.toString());
+              }
+            }}
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
