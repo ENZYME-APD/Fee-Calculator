@@ -88,13 +88,22 @@ export function GanttPlanner() {
       if (projectAllocations.length > 0) {
         setIsResetting(true);
         try {
+          // Precalculate phase start dates
+          const proj = projects.find(p => p.id === projectId);
+          let currentDate = proj?.startDate || Date.now();
+          const phaseStartDates: Record<string, number> = {};
+          for (const p of sortedPhases) {
+            phaseStartDates[p.id!] = currentDate;
+            currentDate += p.durationWeeks * 7 * 24 * 60 * 60 * 1000;
+          }
+
           const createPromises = projectAllocations.map(a => {
             const newTask = {
               projectId: projectId,
               phaseId: a.phaseId,
               memberId: a.memberId,
               name: 'Planned Task',
-              startDate: Date.now(),
+              startDate: phaseStartDates[a.phaseId] || Date.now(),
               description: '',
               includeWeekends: false,
               durationHours: a.hours,
@@ -140,14 +149,22 @@ export function GanttPlanner() {
       await Promise.all(deletePromises);
       
       // 2. Create new tasks from allocations
+      const proj = projects.find(p => p.id === activeProjectId);
+      let currentDate = proj?.startDate || Date.now();
+      const phaseStartDates: Record<string, number> = {};
+      const sortedPhases = [...projectPhases].sort((a,b) => a.order - b.order);
+      for (const p of sortedPhases) {
+        phaseStartDates[p.id!] = currentDate;
+        currentDate += p.durationWeeks * 7 * 24 * 60 * 60 * 1000;
+      }
+
       const createPromises = projectAllocations.map(a => {
-        const phase = projectPhases.find(p => p.id === a.phaseId);
         const newTask = {
           projectId: activeProjectId,
           phaseId: a.phaseId,
           memberId: a.memberId,
           name: 'Planned Task',
-          startDate: Date.now(),
+          startDate: phaseStartDates[a.phaseId] || Date.now(),
           description: '',
           includeWeekends: false,
           durationHours: a.hours,
