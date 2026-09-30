@@ -3,8 +3,8 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Building, Plus, Trash2, Info, RefreshCw, CheckCircle2, ChevronDown, ChevronRight, Upload, Download } from 'lucide-react';
-import { getTeamMembers, getOverheadsProfile, updateOverheadsProfile, updateTeamMember } from '@/lib/firebase/db';
-import { TeamMember, OverheadsProfile, OverheadCategory, OverheadItem } from '@/lib/firebase/schema';
+import { getTeamMembers, getOverheadsProfile, updateOverheadsProfile, updateTeamMember, getCategories } from '@/lib/firebase/db';
+import { TeamMember, OverheadsProfile, OverheadCategory, OverheadItem, TeamCategory } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -27,6 +27,7 @@ export default function OverheadsPage() {
   const [yearlyIncomeTarget, setYearlyIncomeTarget] = useState(1000000);
   const [workingHoursPerYear, setWorkingHoursPerYear] = useState(1832);
   const [categories, setCategories] = useState<OverheadCategory[]>(DEFAULT_CATEGORIES);
+  const [teamCategories, setTeamCategories] = useState<TeamCategory[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,11 +42,13 @@ export default function OverheadsPage() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [mems, prof] = await Promise.all([
+        const [mems, tCats, prof] = await Promise.all([
           getTeamMembers(),
+          getCategories(),
           getOverheadsProfile()
         ]);
         setMembers(mems);
+        setTeamCategories(tCats);
         if (prof) {
           setProfile(prof);
           setYearlyIncomeTarget(prof.yearlyIncomeTarget || 1000000);
