@@ -109,9 +109,10 @@ export default function OverheadsPage() {
 
     members.forEach(m => {
       const cat = m.category || 'UNCATEGORIZED';
-      const categoryName = teamCategories.find(c => c.id === cat)?.name || 'Uncategorized';
-      if (!showConsultants && categoryName.toLowerCase().includes('consultant')) {
-        return; // skip external consultants from non-billable overheads if hidden
+      const categoryObj = teamCategories.find(c => c.id === cat);
+      const isExternal = categoryObj?.type === 'external';
+      if (!showConsultants && isExternal) {
+        return; // skip external team members from non-billable overheads if hidden
       }
 
       const pct = (m.nonBillablePercentage || 0) / 100;
@@ -200,8 +201,8 @@ export default function OverheadsPage() {
       const monthlyOverheadTotal = totalYearlyOverhead / 12;
       
       const coreMembers = members.filter(m => {
-        const catName = teamCategories.find(c => c.id === m.category)?.name || '';
-        return !catName.toLowerCase().includes('consultant');
+        const categoryObj = teamCategories.find(c => c.id === m.category);
+        return categoryObj?.type !== 'external';
       });
 
       const activeMembers = coreMembers.filter(m => !m.isOverheadsManuallyOverridden);
@@ -529,8 +530,10 @@ export default function OverheadsPage() {
                         return orderA - orderB;
                       })
                       .map(([categoryId, catMembers]) => {
-                        const categoryName = teamCategories.find(c => c.id === categoryId)?.name || 'Uncategorized';
-                        if (!showConsultants && categoryName.toLowerCase().includes('consultant')) {
+                        const categoryObj = teamCategories.find(c => c.id === categoryId);
+                        const categoryName = categoryObj?.name || 'Uncategorized';
+                        const isExternal = categoryObj?.type === 'external';
+                        if (!showConsultants && isExternal) {
                           return null;
                         }
                         return (
