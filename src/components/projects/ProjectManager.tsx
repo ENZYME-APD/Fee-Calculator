@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase, getUsersByCompany, getProjectCosts, getAllocations, getTeamMembers } from '@/lib/firebase/db';
 import { Project, Phase, User, Allocation, ProjectCost, TeamMember } from '@/lib/firebase/schema';
-import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save, FileText, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save, FileText, ArrowUp, ArrowDown, Search, CalendarDays } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { PaymentScheduleManager } from './PaymentScheduleManager';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
@@ -604,6 +604,11 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                       </button>
                     </Tooltip>
                   )}
+                  <Tooltip content="Project Planning">
+                    <button onClick={(e) => { e.stopPropagation(); router.push('/planning?project=' + p.id); }} className="text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-1.5 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-md transition-colors">
+                      <CalendarDays size={14} />
+                    </button>
+                  </Tooltip>
                   <Tooltip content="Edit Name">
                     <button onClick={(e) => handleEditProjectStart(p, e)} className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md transition-colors">
                       <Pencil size={14} />
