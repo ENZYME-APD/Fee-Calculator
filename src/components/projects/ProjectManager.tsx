@@ -348,6 +348,9 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
       confirmText: 'Delete Phase',
       onConfirm: async () => {
         await deletePhase(id);
+        // Fix orders for remaining
+        const remaining = phases.filter(p => p.id !== id);
+        await Promise.all(remaining.map((p, i) => updatePhase(p.id!, { order: i + 1 })));
         loadPhases(activeProjectId!);
         setConfirmConfig(prev => ({ ...prev, isOpen: false }));
       }
@@ -379,16 +382,14 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
     newPhases[index] = newPhases[targetIndex];
     newPhases[targetIndex] = temp;
     
-    // Update orders
-    newPhases[index].order = index + 1;
-    newPhases[targetIndex].order = targetIndex + 1;
+    // Update orders for all to ensure consistency
+    newPhases.forEach((p, i) => { p.order = i + 1; });
 
     // Optimistic update
     setPhases([...newPhases]);
 
-    // DB update
-    if (newPhases[index].id) await updatePhase(newPhases[index].id!, { order: newPhases[index].order });
-    if (newPhases[targetIndex].id) await updatePhase(newPhases[targetIndex].id!, { order: newPhases[targetIndex].order });
+    // DB update for all to fix any gaps
+    await Promise.all(newPhases.map(p => updatePhase(p.id!, { order: p.order })));
   };
 
   if (loading) return <div className="p-8 text-slate-500">Loading projects...</div>;
