@@ -492,14 +492,14 @@ export default function OverheadsPage() {
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
               <button 
                 onClick={() => setIsNonBillableCollapsed(!isNonBillableCollapsed)}
-                className="w-full p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
+                className={`w-full p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left ${!isNonBillableCollapsed ? 'border-b border-slate-100 dark:border-slate-800' : ''}`}
               >
-                <div className="flex items-center gap-3">
-                  {isNonBillableCollapsed ? <ChevronRight size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
-                  <h2 className="font-bold text-lg">1. Non-Billable Time (Salaries)</h2>
+                <div className="flex items-center gap-2">
+                  {isNonBillableCollapsed ? <ChevronRight size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+                  <h2 className="font-bold text-base">1. Non-Billable Time (Salaries)</h2>
                 </div>
-                <div className="text-sm text-slate-500">
-                  Total Burden: <strong className="text-slate-800 dark:text-slate-200">${computedStats.nonBillableSalaries.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>/yr
+                <div className="text-sm font-bold text-slate-500">
+                  ${computedStats.nonBillableSalaries.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               </button>
               
@@ -599,7 +599,7 @@ export default function OverheadsPage() {
                     >
                       <div className="flex items-center gap-2">
                         {isCollapsed ? <ChevronRight size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
-                        <h2 className="font-bold text-md">{catIdx + 2}. {cat.name}</h2>
+                        <h2 className="font-bold text-base">{catIdx + 2}. {cat.name}</h2>
                       </div>
                       <div className="text-sm font-bold text-slate-500">
                         ${catTotal.toLocaleString()}
