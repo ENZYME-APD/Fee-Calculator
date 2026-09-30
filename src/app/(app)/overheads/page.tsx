@@ -374,26 +374,26 @@ export default function OverheadsPage() {
   if (loading) return <div className="p-8 text-white">Loading...</div>;
 
   return (
-    <div className="h-full w-full overflow-y-auto pb-24 text-slate-900 dark:text-white">
+    <div className="h-full w-full overflow-y-auto p-8 pb-24 text-slate-900 dark:text-white">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <Building size={32} className="text-blue-500" />
-            <h1 className="text-xl font-bold tracking-tight">Overheads Calculator</h1>
+            <Building size={28} className="text-blue-500" />
+            <h1 className="text-2xl font-bold tracking-tight">Overheads Calculator</h1>
           </div>
           <div className="flex items-center gap-3">
             
-            {user?.email === 'j.beneitez@weareenzyme.com' && (
+            {user?.email?.toLowerCase() === 'j.beneitez@weareenzyme.com' && (
               <button 
                 onClick={handleSeedMyData}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-all"
               >
                 Seed My Excel Data
               </button>
             )}
 <button 
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl transition-all"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl transition-all"
             >
               <Upload size={16} />
               Import CSV
@@ -401,7 +401,7 @@ export default function OverheadsPage() {
             <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCSV} className="hidden" />
             <button 
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl transition-all"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl transition-all"
             >
               <Download size={16} />
               Export
@@ -409,7 +409,7 @@ export default function OverheadsPage() {
             <button 
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all"
+              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all"
             >
               {saving ? 'Saving...' : 'Save Profile'}
             </button>
@@ -539,10 +539,10 @@ export default function OverheadsPage() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-500 uppercase">
-                        <th className="p-4 border-b border-slate-100 dark:border-slate-800">Team Member</th>
-                        <th className="p-4 border-b border-slate-100 dark:border-slate-800">Yearly Salary</th>
-                        <th className="p-4 border-b border-slate-100 dark:border-slate-800">% Non-Billable</th>
-                        <th className="p-4 border-b border-slate-100 dark:border-slate-800 text-right">Burden ($/yr)</th>
+                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">Team Member</th>
+                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">Yearly Salary</th>
+                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">% Non-Billable</th>
+                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-right">Burden ($/yr)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -552,9 +552,9 @@ export default function OverheadsPage() {
                         const burden = yearly * (pct / 100);
                         return (
                           <tr key={m.id} className="border-b border-slate-50 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/20">
-                            <td className="p-4 font-medium">{m.name}</td>
-                            <td className="p-4 text-slate-500">${yearly.toLocaleString()}</td>
-                            <td className="p-4">
+                            <td className="px-4 py-2 text-sm font-medium">{m.name}</td>
+                            <td className="px-4 py-2 text-sm text-slate-500">${yearly.toLocaleString()}</td>
+                            <td className="px-4 py-2 text-sm">
                               <div className="flex items-center gap-2">
                                 <input 
                                   type="range" 
@@ -566,7 +566,7 @@ export default function OverheadsPage() {
                                 <span className="text-sm font-bold w-10">{pct}%</span>
                               </div>
                             </td>
-                            <td className="p-4 text-right font-bold text-rose-500/80">${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                            <td className="px-4 py-2 text-sm text-right font-bold text-rose-500/80">${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                           </tr>
                         );
                       })}
@@ -603,7 +603,14 @@ export default function OverheadsPage() {
                           <div className="text-sm text-slate-400 italic mb-4">No items yet.</div>
                         ) : (
                           <div className="space-y-3 mb-4">
-                            {cat.items.map(item => (
+                            
+                          <div className="flex items-center gap-3 px-1 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <div className="w-3"></div>
+                            <div className="flex-1 min-w-0 pl-1">Expense</div>
+                            <div className="w-[84px] text-right pr-6">Yearly Cost</div>
+                          </div>
+                          {cat.items.map(item => (
+
                               <div key={item.id} className={`flex items-center gap-3 ${!item.isActive ? 'opacity-50' : ''}`}>
                                 <input 
                                   type="checkbox" 
