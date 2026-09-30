@@ -413,9 +413,9 @@ export default function OverheadsPage() {
   if (loading) return <div className="p-8 text-white">Loading...</div>;
 
   return (
-    <div className="h-full w-full overflow-y-auto p-8 pb-24 text-slate-900 dark:text-white">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+    <div className="flex flex-col h-full w-full p-8 text-slate-900 dark:text-white">
+      <div className="max-w-7xl mx-auto w-full flex flex-col h-full min-h-0">
+        <div className="flex items-center justify-between mb-8 shrink-0">
           <div className="flex items-center gap-3">
             <Building size={28} className="text-blue-500" />
             <h1 className="text-2xl font-bold tracking-tight">Overheads Calculator</h1>
@@ -463,9 +463,9 @@ export default function OverheadsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 min-h-0">
           {/* LEFT: Stats */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 h-full overflow-y-auto pr-2 pb-8 custom-scrollbar">
             <div className="space-y-4 lg:mt-[52px]">
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Global Metrics</h3>
@@ -555,8 +555,8 @@ export default function OverheadsPage() {
 
           {/* RIGHT: Data Entry */}
           </div>
-          <div className="lg:col-span-3 space-y-6">
-            <div className="flex justify-between items-center bg-transparent">
+          <div className="lg:col-span-3 flex flex-col h-full min-h-0">
+            <div className="flex justify-between items-center bg-transparent shrink-0 mb-6">
               <h2 className="text-xl font-bold">Expense Categories</h2>
               <div className="flex items-center gap-2">
                 <button onClick={handleExpandAll} className="text-sm text-blue-500 hover:text-blue-600 font-bold px-3 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg">Expand All</button>
@@ -564,6 +564,7 @@ export default function OverheadsPage() {
               </div>
             </div>
             
+            <div className="flex-1 overflow-y-auto pr-4 pb-24 space-y-6 custom-scrollbar">
             {/* Non Billable Roster */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
               <button 
@@ -738,6 +739,7 @@ export default function OverheadsPage() {
                   </div>
                 );
               })}
+            </div>
             </div>
 
           </div>
