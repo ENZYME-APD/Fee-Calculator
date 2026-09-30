@@ -465,7 +465,8 @@ export default function OverheadsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* LEFT: Stats */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="lg:col-span-1">
+            <div className="space-y-4 lg:mt-[52px]">
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Global Metrics</h3>
               <div className="space-y-3 mb-6">
@@ -553,6 +554,7 @@ export default function OverheadsPage() {
           </div>
 
           {/* RIGHT: Data Entry */}
+          </div>
           <div className="lg:col-span-3 space-y-6">
             <div className="flex justify-between items-center bg-transparent">
               <h2 className="text-xl font-bold">Expense Categories</h2>
