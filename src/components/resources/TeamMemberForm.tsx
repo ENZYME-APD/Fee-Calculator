@@ -119,7 +119,7 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monthly Salary ({currencyCode})</label>
-              <input required type="number" min="0" value={formData.salary === 0 ? '' : formData.salary} onChange={e => handleFinancialChange('salary', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              <input required type="number" min="0" value={formData.salary} onChange={e => handleFinancialChange('salary', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
             </div>
 
             <div>
@@ -138,12 +138,12 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
                   </button>
                 )}
               </div>
-              <input required type="number" min="0" value={formData.overheads === 0 ? '' : formData.overheads} onChange={e => handleFinancialChange('overheads', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              <input required type="number" min="0" value={formData.overheads} onChange={e => handleFinancialChange('overheads', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cost / Hour ({currencyCode})</label>
-              <input readOnly type="number" step="0.01" value={formData.costPerHour === 0 ? '' : formData.costPerHour} className="w-full px-3 py-2 border border-rose-200 dark:border-rose-900/30 bg-rose-50/70 dark:bg-rose-950/70 text-rose-700 dark:text-rose-400 rounded-xl focus:outline-none cursor-not-allowed opacity-80" />
+              <input readOnly type="number" step="0.01" value={formData.costPerHour} className="w-full px-3 py-2 border border-rose-200 dark:border-rose-900/30 bg-rose-50/70 dark:bg-rose-950/70 text-rose-700 dark:text-rose-400 rounded-xl focus:outline-none cursor-not-allowed opacity-80" />
             </div>
           </div>
           

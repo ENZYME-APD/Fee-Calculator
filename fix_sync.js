@@ -1,15 +1,26 @@
 const fs = require('fs');
-const file = 'src/components/planning/GanttPlanner.tsx';
+const file = 'src/app/(app)/overheads/page.tsx';
 let code = fs.readFileSync(file, 'utf8');
 
-// Replace dbUser with dbCompany
-code = code.replace(/dbUser/g, 'dbCompany');
-// Replace dbCompany.companyId with dbCompany.id
-code = code.replace(/dbCompany\.companyId/g, 'dbCompany.id');
-// Remove companyId from addAllocation since it's omitted
-code = code.replace(/companyId: dbCompany\.id, /g, '');
-// Add ! to existing.id
-code = code.replace(/updateAllocation\(existing.id,/g, 'updateAllocation(existing.id!,');
+const oldSync = `      const totalYearlyOverhead = computedStats.totalOverheadsYearly;
+      const monthlyOverheadTotal = totalYearlyOverhead / 12;
+      const activeMembers = members.filter(m => !m.isOverheadsManuallyOverridden);
+      
+      if (activeMembers.length > 0) {
+        const overheadPerPerson = monthlyOverheadTotal / members.length;`;
 
-// getAllocations might not exist or takes no arguments?
-// Let's check getAllocations signature in db.ts
+const newSync = `      const totalYearlyOverhead = computedStats.totalOverheadsYearly;
+      const monthlyOverheadTotal = totalYearlyOverhead / 12;
+      
+      const coreMembers = members.filter(m => {
+        const catName = teamCategories.find(c => c.id === m.category)?.name || '';
+        return !catName.toLowerCase().includes('consultant');
+      });
+
+      const activeMembers = coreMembers.filter(m => !m.isOverheadsManuallyOverridden);
+      
+      if (activeMembers.length > 0) {
+        const overheadPerPerson = monthlyOverheadTotal / coreMembers.length;`;
+
+code = code.replace(oldSync, newSync);
+fs.writeFileSync(file, code);

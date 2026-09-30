@@ -198,10 +198,16 @@ export default function OverheadsPage() {
     try {
       const totalYearlyOverhead = computedStats.totalOverheadsYearly;
       const monthlyOverheadTotal = totalYearlyOverhead / 12;
-      const activeMembers = members.filter(m => !m.isOverheadsManuallyOverridden);
+      
+      const coreMembers = members.filter(m => {
+        const catName = teamCategories.find(c => c.id === m.category)?.name || '';
+        return !catName.toLowerCase().includes('consultant');
+      });
+
+      const activeMembers = coreMembers.filter(m => !m.isOverheadsManuallyOverridden);
       
       if (activeMembers.length > 0) {
-        const overheadPerPerson = monthlyOverheadTotal / members.length;
+        const overheadPerPerson = monthlyOverheadTotal / coreMembers.length;
         
         await Promise.all(activeMembers.map(m => {
           const baseCost = (m.salary + Math.round(overheadPerPerson)) / 160;
