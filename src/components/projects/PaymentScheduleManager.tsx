@@ -367,12 +367,12 @@ export function PaymentScheduleManager({ projectId, projectName, phases }: Payme
             <input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Phase 1 Completion" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors" />
           </div>
           <div className="flex gap-3 items-end">
-            <div className="w-32">
+            <div className="w-24">
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">% Value</label>
               <input type="number" required min="0" max={Math.max(0, 100 - totalPercentage)} step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="10" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors" />
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Link to Phase</label>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Phase</label>
               <select value={newPhaseId} onChange={e => setNewPhaseId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 text-sm transition-colors">
                 <option value="">(None)</option>
                 {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
