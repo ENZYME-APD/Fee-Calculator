@@ -1,6 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc } from 'firebase/firestore';
 import { db, auth } from './config';
-import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User, ProjectTask, DocumentBlock , SavedBlock } from './schema';
+import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User, ProjectTask, DocumentBlock , SavedBlock, OverheadsProfile } from './schema';
 
 const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
@@ -600,6 +600,7 @@ export const deleteAccountData = async (companyId: string, uid: string) => {
       deleteCompanyCollection('projectCosts'),
       deleteCompanyCollection('payments'),
       deleteCompanyCollection('teamCategories'),
+      deleteCompanyCollection('overheadsProfile'),
       deleteCompanyCollection('invites')
     ]);
 
@@ -698,4 +699,35 @@ export const addSavedBlock = async (block: Omit<SavedBlock, 'id'>): Promise<stri
 
 export const deleteSavedBlock = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'saved_blocks', id));
+};
+
+// --- Overheads Profile ---
+export const getOverheadsProfile = async (): Promise<OverheadsProfile | null> => {
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'overheadsProfile'), where('companyId', '==', companyId));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return extractData(snap.docs[0]) as OverheadsProfile;
+};
+
+export const updateOverheadsProfile = async (profile: Partial<OverheadsProfile>) => {
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'overheadsProfile'), where('companyId', '==', companyId));
+  const snap = await getDocs(q);
+  
+  if (snap.empty) {
+    const docRef = await addDoc(collection(db, 'overheadsProfile'), sanitize({ 
+      ...profile, 
+      companyId,
+      updatedAt: Date.now()
+    }));
+    return docRef.id;
+  } else {
+    const docRef = snap.docs[0].ref;
+    await updateDoc(docRef, sanitize({
+      ...profile,
+      updatedAt: Date.now()
+    }) as any);
+    return snap.docs[0].id;
+  }
 };

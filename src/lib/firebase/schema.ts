@@ -50,6 +50,8 @@ export interface TeamMember {
   costPerHour: number;
   currency: string;
   category?: string;
+  nonBillablePercentage?: number;
+  isOverheadsManuallyOverridden?: boolean;
   avatarUrl?: string;
   role?: string;
 }
@@ -145,4 +147,27 @@ export interface SavedBlock {
   type: DocumentBlock['type'];
   title: string;
   content: string;
+}
+
+export interface OverheadItem {
+  id: string;
+  name: string;
+  yearlyCost: number;
+  isActive: boolean;
+}
+
+export interface OverheadCategory {
+  id: string;
+  name: string;
+  items: OverheadItem[];
+}
+
+export interface OverheadsProfile {
+  id?: string;
+  companyId: string;
+  yearlyIncomeTarget: number;
+  workingHoursPerYear: number;
+  categories: OverheadCategory[];
+  calculatedOverheadPerPerson?: number;
+  updatedAt: number;
 }

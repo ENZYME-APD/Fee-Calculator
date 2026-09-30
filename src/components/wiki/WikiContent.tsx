@@ -556,6 +556,13 @@ export function WikiContent() {
             </div>
             
             <div className="prose prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-400">
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800/50 mt-6 mb-6">
+                <h5 className="font-bold text-emerald-900 dark:text-emerald-300 mb-2">Automate this with our Overheads Calculator!</h5>
+                <p className="text-sm text-emerald-800 dark:text-emerald-400 mb-0">
+                  Head to the <strong>Overheads Calculator</strong> tab in the sidebar. You can input all your non-billable time and expenses, and the app will automatically calculate your total running costs and sync the overhead rates directly to your Team Members!
+                </p>
+              </div>
+
               <p>
                 To accurately set your team's <strong>Internal Rate</strong>, you must calculate your true cost of doing business. Your internal rate is not just a person's raw salary; it must include their share of the company's overhead expenses.
               </p>
@@ -564,7 +571,11 @@ export function WikiContent() {
               <p>When calculating total annual overhead, ensure you include these often-missed categories:</p>
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Office & Facilities:</strong> Rent, utilities, cleaning services, maintenance, and physical security.</li>
-                <li><strong>Technology & IT:</strong> Software subscriptions (e.g., BIM, Adobe, Microsoft 365, Enzyme APD), cloud storage, hardware depreciation, and IT support services.</li>
+                <li><strong>Technology & IT:</strong> Software subscriptions (e.g., BIM, Adobe, Microsoft 365, Enzyme APD), cloud storage, and IT support services.</li>
+                <li>
+                  <strong>Hardware & Depreciation:</strong> When you buy expensive equipment like workstations or servers, don't account for the entire cost in a single month! Instead, calculate its <em>depreciation</em>. 
+                  For example, if a $3,000 laptop is expected to last 3 years, its yearly cost burden is $1,000/year. Add this $1,000 as a yearly expense in your Overheads Calculator rather than a one-time lump sum to keep your rates stable.
+                </li>
                 <li><strong>Professional Expenses:</strong> Professional liability insurance, business insurance, industry memberships, certifications, and accounting/legal fees.</li>
                 <li><strong>Business Development:</strong> Marketing budgets, travel for BD trips, conference tickets, client entertainment, and website hosting.</li>
                 <li><strong>Employee Benefits:</strong> Health insurance, retirement contributions, training budgets, and team building events.</li>

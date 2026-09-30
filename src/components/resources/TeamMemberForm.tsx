@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
 import { TeamMember, TeamCategory } from '@/lib/firebase/schema';
-import { addTeamMember, updateTeamMember, getCategories } from '@/lib/firebase/db';
+import { addTeamMember, updateTeamMember, getCategories, getOverheadsProfile } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { X, Save, UserCircle2, Briefcase, Calculator, Building, Tag } from 'lucide-react';
 
@@ -28,6 +28,7 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
   const [loading, setLoading] = useState(false);
 
   const [categories, setCategories] = useState<TeamCategory[]>([]);
+  const [calculatedOverhead, setCalculatedOverhead] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -56,7 +57,8 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
     setFormData({
       ...formData,
       [field]: value,
-      costPerHour: baseCost
+      costPerHour: baseCost,
+      ...(field === 'overheads' ? { isOverheadsManuallyOverridden: true } : {})
     });
   };
 
@@ -121,7 +123,21 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monthly Overheads ({currencyCode})</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Overheads ({currencyCode})</label>
+                {formData.isOverheadsManuallyOverridden && calculatedOverhead !== null && (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const baseCost = (formData.salary! + calculatedOverhead) / 160;
+                      setFormData({ ...formData, overheads: calculatedOverhead, isOverheadsManuallyOverridden: false, costPerHour: baseCost });
+                    }}
+                    className="text-xs font-bold text-blue-500 hover:text-blue-600 transition-colors"
+                  >
+                    Reset to Sync
+                  </button>
+                )}
+              </div>
               <input required type="number" min="0" value={formData.overheads === 0 ? '' : formData.overheads} onChange={e => handleFinancialChange('overheads', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
             </div>
 

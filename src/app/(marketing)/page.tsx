@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Calculator, CheckCircle2, FileSpreadsheet, FolderKanban, Users, Share2, BarChart3, Database } from 'lucide-react';
+import { ArrowRight, Calculator, Building, CheckCircle2, FileSpreadsheet, FolderKanban, Users, Share2, BarChart3, Database } from 'lucide-react';
 import { AuthRedirect } from '@/components/marketing/AuthRedirect';
 
 export default function LandingPage() {
@@ -46,6 +46,13 @@ export default function LandingPage() {
             >
               View Pricing
             </Link>
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+              <div className="h-12 w-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-6">
+                <Building size={24} className="text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">Overhead Automation</h3>
+              <p className="text-slate-500 dark:text-slate-400">Stop guessing your running costs. Our built-in Overheads Calculator tracks software, rent, and non-billable time, and automatically syncs it to your team's hourly rates.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -58,7 +65,7 @@ export default function LandingPage() {
             <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">Built by architects, for architects. Stop guessing your fees and start calculating them with precision.</p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-6">
                 <Calculator size={24} className="text-blue-600 dark:text-blue-400" />
