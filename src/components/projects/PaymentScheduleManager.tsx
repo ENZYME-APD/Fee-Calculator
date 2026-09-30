@@ -458,10 +458,12 @@ export function PaymentScheduleManager({ projectId, projectName, phases }: Payme
                     <MoreVertical size={16} />
                   </button>
 
-                  {menuOpenId === payment.id && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)} />
-                      <div className="absolute right-0 top-10 mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-20">
+                  {menuOpenId === payment.id && (() => {
+                    const isLastItems = index >= Math.max(0, payments.length - 2);
+                    return (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)} />
+                        <div className={`absolute right-0 ${isLastItems ? 'bottom-10 mb-1' : 'top-10 mt-1'} w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-20`}>
                         <button onClick={() => handleEditStart(payment)} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
                           <Pencil size={14} /> Edit Payment
                         </button>
@@ -476,8 +478,9 @@ export function PaymentScheduleManager({ projectId, projectName, phases }: Payme
                           <Trash2 size={14} /> Delete Payment
                         </button>
                       </div>
-                    </>
-                  )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             );
