@@ -147,6 +147,9 @@ export default function OverheadsPage() {
     const totalYearlyBaseSalaries = totalMonthlyBase * 12;
     const multiplier = totalYearlyBaseSalaries > 0 ? (totalYearlyBaseSalaries + totalOverheadsYearly) / totalYearlyBaseSalaries : 1;
 
+    const coreTeamCount = members.filter(m => teamCategories.find(c => c.id === m.category)?.type !== 'external').length;
+    const monthlyOverheadPerPerson = coreTeamCount > 0 ? (totalOverheadsYearly / 12) / coreTeamCount : 0;
+
     return {
       nonBillableSalaries,
       otherExpenses,
@@ -154,7 +157,9 @@ export default function OverheadsPage() {
       overheadPercentVsIncome,
       multiplier,
       billableHoursTotal,
-      chartData: chartData.filter(d => d.value > 0)
+      chartData: chartData.filter(d => d.value > 0),
+      coreTeamCount,
+      monthlyOverheadPerPerson
     };
   }, [members, categories, workingHoursPerYear, yearlyIncomeTarget, showConsultants, teamCategories]);
 
@@ -431,6 +436,14 @@ export default function OverheadsPage() {
                 <div>
                   <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">% of Income</div>
                   <div className="text-xl font-bold">{(computedStats.overheadPercentVsIncome * 100).toFixed(1)}%</div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Core Staff</div>
+                  <div className="text-xl font-bold">{computedStats.coreTeamCount}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mthly / Staff</div>
+                  <div className="text-xl font-bold text-emerald-500">${computedStats.monthlyOverheadPerPerson.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
               </div>
             </div>
