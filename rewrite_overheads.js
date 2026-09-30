@@ -1,4 +1,6 @@
+const fs = require('fs');
 
+const code = `
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -206,10 +208,10 @@ export default function OverheadsPage() {
   };
 
   const handleExportCSV = () => {
-    let csv = "Category,Expense Name,Yearly Cost,Is Active\n";
+    let csv = "Category,Expense Name,Yearly Cost,Is Active\\n";
     categories.forEach(cat => {
       cat.items.forEach(item => {
-        csv += `"${cat.name.replace(/"/g, '""')}","${item.name.replace(/"/g, '""')}",${item.yearlyCost},${item.isActive}\n`;
+        csv += \`"\${cat.name.replace(/"/g, '""')}","\${item.name.replace(/"/g, '""')}",\${item.yearlyCost},\${item.isActive}\\n\`;
       });
     });
     
@@ -227,7 +229,7 @@ export default function OverheadsPage() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      const lines = text.split('\n');
+      const lines = text.split('\\n');
       
       const newCats = [...categories];
       
@@ -236,7 +238,7 @@ export default function OverheadsPage() {
         if (!line) continue;
         
         // Simple CSV parse handling quotes
-        const match = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+        const match = line.match(/(".*?"|[^",\\s]+)(?=\\s*,|\\s*$)/g);
         if (!match || match.length < 4) continue;
         
         const catName = match[0].replace(/^"|"$/g, '').replace(/""/g, '"');
@@ -308,12 +310,12 @@ export default function OverheadsPage() {
               
               <div className="mb-6">
                 <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Yearly Overheads</div>
-                <div className="text-3xl font-bold text-rose-500">${computedStats.totalOverheadsYearly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                <div className="text-3xl font-bold text-rose-500">\${computedStats.totalOverheadsYearly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
               </div>
 
               <div className="mb-6">
                 <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">Monthly Burn Rate</div>
-                <div className="text-xl font-bold">${(computedStats.totalOverheadsYearly / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                <div className="text-xl font-bold">\${(computedStats.totalOverheadsYearly / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
               </div>
               
               <div className="mb-6">
@@ -329,7 +331,7 @@ export default function OverheadsPage() {
               <button 
                 onClick={handleSyncToTeam}
                 disabled={syncing}
-                className="flex items-center justify-center gap-2 px-4 py-2 mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all"
               >
                 <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
                 {syncing ? 'Syncing...' : 'Sync to Team'}
@@ -351,11 +353,11 @@ export default function OverheadsPage() {
                       dataKey="value"
                     >
                       {computedStats.chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={\`cell-\${index}\`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <RechartsTooltip 
-                      formatter={(value: any) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                      formatter={(value: number) => \`\$\${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}\`}
                       contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '8px', color: '#fff' }}
                     />
                   </PieChart>
@@ -368,7 +370,7 @@ export default function OverheadsPage() {
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="text-slate-600 dark:text-slate-400 truncate max-w-[100px]">{d.name}</span>
                     </div>
-                    <span className="font-bold">${d.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    <span className="font-bold">\${d.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                   </div>
                 ))}
               </div>
@@ -414,7 +416,7 @@ export default function OverheadsPage() {
                   <h2 className="font-bold text-lg">1. Non-Billable Time (Salaries)</h2>
                 </div>
                 <div className="text-sm text-slate-500">
-                  Total Burden: <strong className="text-slate-800 dark:text-slate-200">${computedStats.nonBillableSalaries.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>/yr
+                  Total Burden: <strong className="text-slate-800 dark:text-slate-200">\${computedStats.nonBillableSalaries.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>/yr
                 </div>
               </button>
               
@@ -437,7 +439,7 @@ export default function OverheadsPage() {
                         return (
                           <tr key={m.id} className="border-b border-slate-50 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/20">
                             <td className="p-4 font-medium">{m.name}</td>
-                            <td className="p-4 text-slate-500">${yearly.toLocaleString()}</td>
+                            <td className="p-4 text-slate-500">\${yearly.toLocaleString()}</td>
                             <td className="p-4">
                               <div className="flex items-center gap-2">
                                 <input 
@@ -450,7 +452,7 @@ export default function OverheadsPage() {
                                 <span className="text-sm font-bold w-10">{pct}%</span>
                               </div>
                             </td>
-                            <td className="p-4 text-right font-bold text-rose-500/80">${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                            <td className="p-4 text-right font-bold text-rose-500/80">\${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                           </tr>
                         );
                       })}
@@ -477,7 +479,7 @@ export default function OverheadsPage() {
                         <h2 className="font-bold text-md">{catIdx + 2}. {cat.name}</h2>
                       </div>
                       <div className="text-sm font-bold text-slate-500">
-                        ${catTotal.toLocaleString()}
+                        \${catTotal.toLocaleString()}
                       </div>
                     </button>
                     
@@ -488,7 +490,7 @@ export default function OverheadsPage() {
                         ) : (
                           <div className="space-y-3 mb-4">
                             {cat.items.map(item => (
-                              <div key={item.id} className={`flex items-center gap-3 ${!item.isActive ? 'opacity-50' : ''}`}>
+                              <div key={item.id} className={\`flex items-center gap-3 \${!item.isActive ? 'opacity-50' : ''}\`}>
                                 <input 
                                   type="checkbox" 
                                   checked={item.isActive}
@@ -538,3 +540,5 @@ export default function OverheadsPage() {
     </div>
   );
 }
+`;
+fs.writeFileSync('src/app/(app)/overheads/page.tsx', code);
