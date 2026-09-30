@@ -67,6 +67,7 @@ export default function OverheadsPage() {
   const [syncing, setSyncing] = useState(false);
   
   const [isNonBillableCollapsed, setIsNonBillableCollapsed] = useState(false);
+  const [showConsultants, setShowConsultants] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, action: () => void}>({ isOpen: false, title: '', message: '', action: () => {} });
 
@@ -107,6 +108,12 @@ export default function OverheadsPage() {
     let totalMonthlyBase = 0;
 
     members.forEach(m => {
+      const cat = m.category || 'UNCATEGORIZED';
+      const categoryName = teamCategories.find(c => c.id === cat)?.name || 'Uncategorized';
+      if (!showConsultants && categoryName.toLowerCase().includes('consultant')) {
+        return; // skip external consultants from non-billable overheads if hidden
+      }
+
       const pct = (m.nonBillablePercentage || 0) / 100;
       const yearlySalary = (m.salary * 12);
       nonBillableSalaries += yearlySalary * pct;
@@ -148,7 +155,7 @@ export default function OverheadsPage() {
       billableHoursTotal,
       chartData: chartData.filter(d => d.value > 0)
     };
-  }, [members, categories, workingHoursPerYear, yearlyIncomeTarget]);
+  }, [members, categories, workingHoursPerYear, yearlyIncomeTarget, showConsultants, teamCategories]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -446,29 +453,48 @@ export default function OverheadsPage() {
           {/* LEFT: Stats */}
           <div className="lg:col-span-1 space-y-4">
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Summary</h3>
+              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Global Metrics</h3>
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Target Income</label>
+                  <input 
+                    type="number" 
+                    value={yearlyIncomeTarget}
+                    onChange={e => setYearlyIncomeTarget(Number(e.target.value))}
+                    className="w-24 bg-transparent text-right outline-none font-bold text-sm"
+                  />
+                </div>
+                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Work Hrs/Yr</label>
+                  <input 
+                    type="number" 
+                    value={workingHoursPerYear}
+                    onChange={e => setWorkingHoursPerYear(Number(e.target.value))}
+                    className="w-20 bg-transparent text-right outline-none font-bold text-sm"
+                  />
+                </div>
+              </div>
+
+              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Summary</h3>
               
-              <div className="mb-3">
-                <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Yearly Overheads</div>
-                <div className="text-xl font-bold text-rose-500">${computedStats.totalOverheadsYearly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+              <div className="grid grid-cols-2 gap-4 mb-2">
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total/Yr</div>
+                  <div className="text-xl font-bold text-rose-500">\${computedStats.totalOverheadsYearly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Monthly Burn</div>
+                  <div className="text-xl font-bold">\${(computedStats.totalOverheadsYearly / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Multiplier</div>
+                  <div className="text-xl font-bold text-blue-500">{computedStats.multiplier.toFixed(2)}x</div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">% of Income</div>
+                  <div className="text-xl font-bold">{(computedStats.overheadPercentVsIncome * 100).toFixed(1)}%</div>
+                </div>
               </div>
-
-              <div className="mb-3">
-                <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">Monthly Burn Rate</div>
-                <div className="text-lg font-bold">${(computedStats.totalOverheadsYearly / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-              </div>
-              
-              <div className="mb-3">
-                <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">Overhead Multiplier</div>
-                <div className="text-xl font-bold text-blue-500">{computedStats.multiplier.toFixed(2)}x</div>
-              </div>
-
-              <div className="mb-3">
-                <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">% of Income</div>
-                <div className="text-lg font-bold">{(computedStats.overheadPercentVsIncome * 100).toFixed(1)}%</div>
-              </div>
-
-
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -557,6 +583,9 @@ export default function OverheadsPage() {
                       })
                       .map(([categoryId, catMembers]) => {
                         const categoryName = teamCategories.find(c => c.id === categoryId)?.name || 'Uncategorized';
+                        if (!showConsultants && categoryName.toLowerCase().includes('consultant')) {
+                          return null;
+                        }
                         return (
                           <React.Fragment key={categoryId}>
                             <tr className="bg-slate-100/50 dark:bg-slate-800/50">
