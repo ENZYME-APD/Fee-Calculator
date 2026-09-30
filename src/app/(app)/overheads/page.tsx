@@ -157,6 +157,20 @@ export default function OverheadsPage() {
     };
   }, [members, categories, workingHoursPerYear, yearlyIncomeTarget, showConsultants, teamCategories]);
 
+    const handleExpandAll = () => {
+    setIsNonBillableCollapsed(false);
+    const newCols: Record<string, boolean> = {};
+    categories.forEach(c => newCols[c.id] = false);
+    setCollapsedCategories(newCols);
+  };
+  
+  const handleCollapseAll = () => {
+    setIsNonBillableCollapsed(true);
+    const newCols: Record<string, boolean> = {};
+    categories.forEach(c => newCols[c.id] = true);
+    setCollapsedCategories(newCols);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -480,11 +494,11 @@ export default function OverheadsPage() {
               <div className="grid grid-cols-2 gap-4 mb-2">
                 <div>
                   <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total/Yr</div>
-                  <div className="text-xl font-bold text-rose-500">\${computedStats.totalOverheadsYearly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                  <div className="text-xl font-bold text-rose-500">${computedStats.totalOverheadsYearly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
                 <div>
                   <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Monthly Burn</div>
-                  <div className="text-xl font-bold">\${(computedStats.totalOverheadsYearly / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                  <div className="text-xl font-bold">${(computedStats.totalOverheadsYearly / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
                 <div>
                   <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Multiplier</div>
@@ -540,6 +554,13 @@ export default function OverheadsPage() {
 
           {/* RIGHT: Data Entry */}
           <div className="lg:col-span-3 space-y-6">
+            <div className="flex justify-between items-center bg-transparent">
+              <h2 className="text-xl font-bold">Expense Categories</h2>
+              <div className="flex items-center gap-2">
+                <button onClick={handleExpandAll} className="text-sm text-blue-500 hover:text-blue-600 font-bold px-3 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg">Expand All</button>
+                <button onClick={handleCollapseAll} className="text-sm text-slate-500 hover:text-slate-600 font-bold px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">Collapse All</button>
+              </div>
+            </div>
             
             {/* Non Billable Roster */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -600,7 +621,7 @@ export default function OverheadsPage() {
                               return (
                                 <tr key={m.id} className="border-b border-slate-50 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/20">
                                   <td className="px-4 py-2 text-sm font-medium pl-8">{m.name}</td>
-                                  <td className="px-4 py-2 text-sm text-slate-500">\${yearly.toLocaleString()}</td>
+                                  <td className="px-4 py-2 text-sm text-slate-500">${yearly.toLocaleString()}</td>
                                   <td className="px-4 py-2 text-sm">
                                     <div className="flex items-center gap-2">
                                       <input 
@@ -613,7 +634,7 @@ export default function OverheadsPage() {
                                       <span className="text-sm font-bold text-slate-500">%</span>
                                     </div>
                                   </td>
-                                  <td className="px-4 py-2 text-sm text-right font-bold text-rose-500/80">\${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                  <td className="px-4 py-2 text-sm text-right font-bold text-rose-500/80">${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                                 </tr>
                               );
                             })}
@@ -627,7 +648,7 @@ export default function OverheadsPage() {
             </div>
 
             {/* Other Categories */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col space-y-6">
               {categories.map((cat, catIdx) => {
                 const catTotal = cat.items.filter(i => i.isActive).reduce((sum, i) => sum + i.yearlyCost, 0);
                 const isCollapsed = collapsedCategories[cat.id];
@@ -657,7 +678,8 @@ export default function OverheadsPage() {
                           <div className="flex items-center gap-3 px-1 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             <div className="w-3"></div>
                             <div className="flex-1 min-w-0 pl-1">Expense</div>
-                            <div className="w-[84px] text-right pr-6">Yearly Cost</div>
+                            <div className="w-20 text-right">Monthly</div>
+                            <div className="w-24 text-right pr-6">Yearly Total</div>
                           </div>
                           {cat.items.map(item => (
 
@@ -679,12 +701,23 @@ export default function OverheadsPage() {
                                   <span className="text-slate-400 text-sm">$</span>
                                   <input 
                                     type="number"
-                                    value={item.yearlyCost || ''}
-                                    onChange={e => updateItem(cat.id, item.id, { yearlyCost: Number(e.target.value) })}
+                                    value={Math.round((item.yearlyCost || 0) / 12) || ''}
+                                    onChange={e => updateItem(cat.id, item.id, { yearlyCost: Number(e.target.value) * 12 })}
                                     className="w-16 bg-transparent border-b border-slate-200 dark:border-slate-700 focus:border-blue-500 px-1 py-1 text-sm outline-none text-right"
+                                    placeholder="0"
                                   />
                                 </div>
-                                <button onClick={() => removeItem(cat.id, item.id)} className="text-slate-400 hover:text-red-500 shrink-0">
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className="text-slate-400 text-sm">$</span>
+                                  <input 
+                                    type="number"
+                                    value={item.yearlyCost || ''}
+                                    onChange={e => updateItem(cat.id, item.id, { yearlyCost: Number(e.target.value) })}
+                                    className="w-20 bg-transparent border-b border-slate-200 dark:border-slate-700 focus:border-blue-500 px-1 py-1 text-sm font-bold outline-none text-right text-slate-700 dark:text-slate-200"
+                                    placeholder="0"
+                                  />
+                                </div>
+                                <button onClick={() => removeItem(cat.id, item.id)} className="text-slate-400 hover:text-red-500 shrink-0 ml-2">
                                   <Trash2 size={14} />
                                 </button>
                               </div>
