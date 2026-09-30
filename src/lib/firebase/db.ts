@@ -407,12 +407,12 @@ export const importProjectData = async (data: any) => {
 
   // 3. Create allocations
   for (const alloc of allocations) {
-    const { id, phaseId, ...allocData } = alloc;
+    const { id, phaseId, projectId: oldPid, ...allocData } = alloc as any;
     const newPhaseId = phaseIdMap.get(phaseId);
     
     if (newPhaseId) {
       const newAllocRef = doc(collection(db, 'allocations'));
-      batch.set(newAllocRef, sanitize({ ...allocData, phaseId: newPhaseId, companyId }));
+      batch.set(newAllocRef, sanitize({ ...allocData, projectId: newProjectId, phaseId: newPhaseId, companyId }));
     }
   }
   

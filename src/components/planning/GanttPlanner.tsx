@@ -405,7 +405,7 @@ export function GanttPlanner() {
                 project={projects.find(p => p.id === activeProjectId)!}
                 phases={phases}
                 members={members}
-                allocations={allocations.filter(a => a.projectId === activeProjectId)}
+                allocations={allocations.filter(a => phases.map(p => p.id).includes(a.phaseId))}
                 tasks={tasks}
                 onTaskCreate={handleTaskCreate}
                 onTaskUpdate={handleTaskUpdate}
