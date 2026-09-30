@@ -654,7 +654,7 @@ export default function OverheadsPage() {
                 const isCollapsed = collapsedCategories[cat.id];
                 
                 return (
-                  <div key={cat.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col self-start">
+                  <div key={cat.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col w-full">
                     <button 
                       onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat.id]: !isCollapsed }))}
                       className="w-full p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors text-left"
