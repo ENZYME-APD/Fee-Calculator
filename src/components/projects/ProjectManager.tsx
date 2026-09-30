@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase, getUsersByCompany, getProjectCosts, getAllocations, getTeamMembers } from '@/lib/firebase/db';
 import { Project, Phase, User, Allocation, ProjectCost, TeamMember } from '@/lib/firebase/schema';
-import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save, FileText, ArrowUp, ArrowDown } from 'lucide-react';
+import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save, FileText, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { PaymentScheduleManager } from './PaymentScheduleManager';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
@@ -18,6 +18,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'status'>('date');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [showLost, setShowLost] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -404,6 +405,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
 
   const sortedProjects = [...projects]
     .filter(p => isTemplateMode || showLost || p.status !== 'Lost')
+    .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       let comparison = 0;
       if (sortBy === 'date') {
@@ -496,6 +498,21 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
               </button>
             </div>
           </form>
+        </div>
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center gap-2">
+          <Search size={16} className="text-slate-400 shrink-0" />
+          <input
+            type="text"
+            placeholder={isTemplateMode ? "Search templates..." : "Search projects..."}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1 bg-transparent text-sm font-medium text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+              <X size={14} />
+            </button>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-1 bg-slate-50/30 dark:bg-slate-900/30 transition-colors">
           {sortedProjects.map(p => {
@@ -602,6 +619,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
             );
           })}
           {projects.length === 0 && <div className="text-slate-400 text-center py-8 text-sm">No projects created yet.</div>}
+          {projects.length > 0 && sortedProjects.length === 0 && <div className="text-slate-400 text-center py-8 text-sm">No projects matching "{searchQuery}".</div>}
         </div>
       </div>
 
