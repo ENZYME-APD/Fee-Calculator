@@ -401,19 +401,25 @@ export default function OverheadsPage() {
                 <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
                   <label className="text-[11px] font-bold text-slate-500 uppercase">Target Income</label>
                   <input 
-                    type="number" 
-                    value={yearlyIncomeTarget}
-                    onChange={e => setYearlyIncomeTarget(Number(e.target.value))}
+                    type="text" 
+                    value={yearlyIncomeTarget ? yearlyIncomeTarget.toLocaleString() : ''}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setYearlyIncomeTarget(val ? parseInt(val) : 0);
+                    }}
                     className="w-24 bg-transparent text-right outline-none font-bold text-sm"
                   />
                 </div>
                 <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
                   <label className="text-[11px] font-bold text-slate-500 uppercase">Work Hrs/Yr</label>
                   <input 
-                    type="number" 
-                    value={workingHoursPerYear}
-                    onChange={e => setWorkingHoursPerYear(Number(e.target.value))}
-                    className="w-20 bg-transparent text-right outline-none font-bold text-sm"
+                    type="text" 
+                    value={workingHoursPerYear ? workingHoursPerYear.toLocaleString() : ''}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setWorkingHoursPerYear(val ? parseInt(val) : 0);
+                    }}
+                    className="w-24 bg-transparent text-right outline-none font-bold text-sm"
                   />
                 </div>
               </div>
