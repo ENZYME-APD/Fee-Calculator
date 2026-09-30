@@ -425,6 +425,14 @@ export default function OverheadsPage() {
               Export
             </button>
             <button 
+              onClick={handleSyncToTeam}
+              disabled={syncing}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all"
+            >
+              <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+              {syncing ? 'Syncing...' : 'Sync to Team'}
+            </button>
+            <button 
               onClick={handleSave}
               disabled={saving}
               className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all"
@@ -460,14 +468,7 @@ export default function OverheadsPage() {
                 <div className="text-lg font-bold">{(computedStats.overheadPercentVsIncome * 100).toFixed(1)}%</div>
               </div>
 
-              <button 
-                onClick={handleSyncToTeam}
-                disabled={syncing}
-                className="flex items-center justify-center gap-2 px-4 py-2 mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all"
-              >
-                <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
-                {syncing ? 'Syncing...' : 'Sync to Team'}
-              </button>
+
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -508,30 +509,7 @@ export default function OverheadsPage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Global Metrics</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Target Yearly Income</label>
-                  <input 
-                    type="number" 
-                    value={yearlyIncomeTarget}
-                    onChange={e => setYearlyIncomeTarget(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Working Hours / Year</label>
-                  <input 
-                    type="number" 
-                    value={workingHoursPerYear}
-                    onChange={e => setWorkingHoursPerYear(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-            </div>
+            
           </div>
 
           {/* RIGHT: Data Entry */}
@@ -564,28 +542,53 @@ export default function OverheadsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {members.map(m => {
-                        const yearly = m.salary * 12;
-                        const pct = m.nonBillablePercentage || 0;
-                        const burden = yearly * (pct / 100);
+                      {Object.entries(
+                        members.reduce((groups, m) => {
+                          const cat = m.category || 'UNCATEGORIZED';
+                          if (!groups[cat]) groups[cat] = [];
+                          groups[cat].push(m);
+                          return groups;
+                        }, {} as Record<string, TeamMember[]>)
+                      )
+                      .sort(([catA], [catB]) => {
+                        const orderA = teamCategories.find(c => c.id === catA)?.order ?? 99;
+                        const orderB = teamCategories.find(c => c.id === catB)?.order ?? 99;
+                        return orderA - orderB;
+                      })
+                      .map(([categoryId, catMembers]) => {
+                        const categoryName = teamCategories.find(c => c.id === categoryId)?.name || 'Uncategorized';
                         return (
-                          <tr key={m.id} className="border-b border-slate-50 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/20">
-                            <td className="px-4 py-2 text-sm font-medium">{m.name}</td>
-                            <td className="px-4 py-2 text-sm text-slate-500">${yearly.toLocaleString()}</td>
-                            <td className="px-4 py-2 text-sm">
-                              <div className="flex items-center gap-2">
-                                <input 
-                                  type="range" 
-                                  min="0" max="100" 
-                                  value={pct}
-                                  onChange={e => handleMemberChange(m.id!, Number(e.target.value))}
-                                  className="w-24"
-                                />
-                                <span className="text-sm font-bold w-10">{pct}%</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-2 text-sm text-right font-bold text-rose-500/80">${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                          </tr>
+                          <React.Fragment key={categoryId}>
+                            <tr className="bg-slate-100/50 dark:bg-slate-800/50">
+                              <td colSpan={4} className="px-4 py-1.5 font-bold text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                {categoryName}
+                              </td>
+                            </tr>
+                            {catMembers.map(m => {
+                              const yearly = m.salary * 12;
+                              const pct = m.nonBillablePercentage || 0;
+                              const burden = yearly * (pct / 100);
+                              return (
+                                <tr key={m.id} className="border-b border-slate-50 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/20">
+                                  <td className="px-4 py-2 text-sm font-medium pl-8">{m.name}</td>
+                                  <td className="px-4 py-2 text-sm text-slate-500">\${yearly.toLocaleString()}</td>
+                                  <td className="px-4 py-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <input 
+                                        type="number" 
+                                        min="0" max="100" 
+                                        value={pct}
+                                        onChange={e => handleMemberChange(m.id!, Number(e.target.value))}
+                                        className="w-16 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-blue-500 px-2 py-1 text-sm rounded outline-none"
+                                      />
+                                      <span className="text-sm font-bold text-slate-500">%</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-2 text-sm text-right font-bold text-rose-500/80">\${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
                         );
                       })}
                     </tbody>
