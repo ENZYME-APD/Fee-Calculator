@@ -8,6 +8,7 @@ import { TeamMember, OverheadsProfile, OverheadCategory, OverheadItem, TeamCateg
 import { useAuth } from '@/lib/auth/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 const DEFAULT_CATEGORIES: OverheadCategory[] = [
@@ -67,6 +68,7 @@ export default function OverheadsPage() {
   
   const [isNonBillableCollapsed, setIsNonBillableCollapsed] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, action: () => void}>({ isOpen: false, title: '', message: '', action: () => {} });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -170,8 +172,7 @@ export default function OverheadsPage() {
     }
   };
 
-  const handleSyncToTeam = async () => {
-    if (!confirm('This will update the overheads for all team members who are not manually overridden. Proceed?')) return;
+  const performSync = async () => {
     setSyncing(true);
     try {
       const totalYearlyOverhead = computedStats.totalOverheadsYearly;
@@ -187,14 +188,23 @@ export default function OverheadsPage() {
         }));
         const mems = await getTeamMembers();
         setMembers(mems);
-        alert('Successfully synced calculated overheads to your team!');
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Successfully synced overheads to team' } }));
       }
     } catch(e) {
       console.error(e);
-      alert('Error syncing overheads');
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Error syncing overheads' } }));
     } finally {
       setSyncing(false);
     }
+  };
+
+  const handleSyncToTeam = () => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Sync Overheads',
+      message: 'This will update the overheads for all team members who are not manually overridden. Proceed?',
+      action: performSync
+    });
   };
 
   const handleMemberChange = async (id: string, nonBillablePercentage: number) => {
@@ -241,8 +251,7 @@ export default function OverheadsPage() {
   };
 
   
-  const handleSeedMyData = async () => {
-    if (!confirm('Seed your specific data?')) return;
+  const performSeed = async () => {
     const myCategories = [
       { id: 'cat-1', name: 'Consultants & Corp', items: [
         { id: 'item-1-1', name: 'Ada', yearlyCost: 2000, isActive: true },
@@ -308,8 +317,17 @@ export default function OverheadsPage() {
         workingHoursPerYear: 1832,
         categories: myCategories
       });
-      alert('Data seeded! You can remove this button now.');
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Data seeded! You can remove this button now.' } }));
     } catch(e) {}
+  };
+
+  const handleSeedMyData = () => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Seed My Data',
+      message: 'Seed your specific data?',
+      action: performSeed
+    });
   };
 
   const handleExportCSV = () => {
@@ -658,6 +676,18 @@ export default function OverheadsPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={() => {
+          confirmConfig.action();
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        }}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
+
