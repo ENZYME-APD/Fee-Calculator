@@ -51,6 +51,7 @@ export interface TeamMember {
   currency: string;
   category?: string;
   nonBillablePercentage?: number;
+  nonBillableDescription?: string;
   isOverheadsManuallyOverridden?: boolean;
   avatarUrl?: string;
   role?: string;

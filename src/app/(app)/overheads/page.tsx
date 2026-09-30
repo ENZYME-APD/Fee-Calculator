@@ -228,9 +228,11 @@ export default function OverheadsPage() {
     });
   };
 
-  const handleMemberChange = async (id: string, nonBillablePercentage: number) => {
-    setMembers(prev => prev.map(m => m.id === id ? { ...m, nonBillablePercentage } : m));
-    await updateTeamMember(id, { nonBillablePercentage });
+  const handleMemberChange = async (id: string, nonBillablePercentage: number, nonBillableDescription?: string) => {
+    const update: any = { nonBillablePercentage };
+    if (nonBillableDescription !== undefined) update.nonBillableDescription = nonBillableDescription;
+    setMembers(prev => prev.map(m => m.id === id ? { ...m, ...update } : m));
+    await updateTeamMember(id, update);
   };
 
   const addCategoryItem = (catId: string) => {
@@ -501,6 +503,7 @@ export default function OverheadsPage() {
                       <tr className="bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-500 uppercase">
                         <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">Team Member</th>
                         <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">Yearly Salary</th>
+                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">Task Description</th>
                         <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">% Non-Billable</th>
                         <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-right">Burden ($/yr)</th>
                       </tr>
@@ -527,7 +530,7 @@ export default function OverheadsPage() {
                         return (
                           <React.Fragment key={categoryId}>
                             <tr className="bg-slate-100/50 dark:bg-slate-800/50">
-                              <td colSpan={4} className="px-4 py-1.5 font-bold text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                              <td colSpan={5} className="px-4 py-1.5 font-bold text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                 {categoryName}
                               </td>
                             </tr>
@@ -540,12 +543,21 @@ export default function OverheadsPage() {
                                   <td className="px-4 py-2 text-sm font-medium pl-8">{m.name}</td>
                                   <td className="px-4 py-2 text-sm text-slate-500">${yearly.toLocaleString()}</td>
                                   <td className="px-4 py-2 text-sm">
+                                    <input 
+                                      type="text"
+                                      value={m.nonBillableDescription || ''}
+                                      onChange={e => handleMemberChange(m.id!, m.nonBillablePercentage || 0, e.target.value)}
+                                      placeholder="e.g. Admin, BD..."
+                                      className="w-full bg-transparent border-b border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 px-1 py-1 text-sm outline-none transition-colors"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2 text-sm">
                                     <div className="flex items-center gap-2">
                                       <input 
                                         type="number" 
                                         min="0" max="100" 
                                         value={pct}
-                                        onChange={e => handleMemberChange(m.id!, Number(e.target.value))}
+                                        onChange={e => handleMemberChange(m.id!, Number(e.target.value), m.nonBillableDescription)}
                                         className="w-16 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-blue-500 px-2 py-1 text-sm rounded outline-none"
                                       />
                                       <span className="text-sm font-bold text-slate-500">%</span>
