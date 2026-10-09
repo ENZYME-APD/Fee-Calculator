@@ -405,7 +405,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   const validProjectCosts = projectCosts.filter(c => phaseIds.includes(c.phaseId));
   const totalCost = validAllocations.reduce((sum, a) => sum + (a.hours * (teamMembers.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
     validProjectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
-  const profitMarginPercent = activeProject?.profitMargin ?? 0;
+  const profitMarginPercent = activeProject?.profitMargin ?? 30;
   const profitMarginAmount = totalCost * (profitMarginPercent / 100);
   const totalFee = totalCost + profitMarginAmount;
 
