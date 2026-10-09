@@ -113,14 +113,19 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   };
 
   const loadPhases = async (projectId: string) => {
+    const data = await getPhases(projectId);
+    const sortedPhases = data.sort((a, b) => a.order - b.order);
+    setPhases(sortedPhases);
+    
+    const phaseIds = sortedPhases.map(p => p.id);
     const pAllocations = await getAllocations();
     const pCosts = await getProjectCosts(projectId);
     const pMembers = await getTeamMembers();
-    setAllocations(pAllocations.filter(a => a.projectId === projectId));
-    setProjectCosts(pCosts);
+    
+    // Use the robust phaseId filtering method instead of projectId due to legacy DB mapping bug
+    setAllocations(pAllocations.filter(a => phaseIds.includes(a.phaseId)));
+    setProjectCosts(pCosts.filter(c => phaseIds.includes(c.phaseId)));
     setTeamMembers(pMembers);
-    const data = await getPhases(projectId);
-    setPhases(data.sort((a, b) => a.order - b.order));
   };
 
   useEffect(() => {
