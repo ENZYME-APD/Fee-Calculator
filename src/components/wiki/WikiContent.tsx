@@ -15,7 +15,8 @@ import { ShieldAlert, Bookmark,
   GripHorizontal,
   PieChart,
   Settings,
-  Building
+  Building,
+  RefreshCw
 } from 'lucide-react';
 
 export function WikiContent() {
@@ -312,6 +313,22 @@ export function WikiContent() {
                 <li><strong>Bottom-Up Method:</strong> Instead of guessing a flat fee and hoping it covers your costs, you calculate exactly how much time the project needs.</li>
                 <li><strong>Real-time Totals:</strong> The <em>Fee Proposal</em> tab aggregates every hour allocated across all phases, multiplies them by the external billing rates, and presents the final recommended fee to charge the client.</li>
               </ul>
+
+              <div className="mt-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-2xl p-6">
+                <h5 className="font-bold text-blue-900 dark:text-blue-300 mb-2">Rates are locked in when you allocate</h5>
+                <p className="text-sm">
+                  Each time you drag a team member into a phase (or reassign an allocation to someone else), the app
+                  records their hourly cost <em>at that moment</em>. If that person&apos;s salary or overhead changes
+                  later on Team Resources, open proposals keep showing the original rate &mdash; so a proposal you
+                  already sent to a client doesn&apos;t silently change.
+                </p>
+                <p className="text-sm mt-3">
+                  If you <em>do</em> want a project to reflect updated team costs (for example, re-pricing a Draft
+                  proposal before sending it), admins can click the <RefreshCw size={13} className="inline -mt-0.5" /> <strong>Refresh Rates</strong> icon
+                  next to <em>Total Cost</em> on the Fee Proposal Canvas to re-pull everyone&apos;s current rate into
+                  that project.
+                </p>
+              </div>
             </div>
           </section>
 
