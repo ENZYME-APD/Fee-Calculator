@@ -34,9 +34,9 @@ export function DraggableCostChip({ type }: DraggableCostChipProps) {
       {...listeners}
       {...attributes}
       className={cn(
-        "flex items-center gap-3 p-2.5 rounded-xl border bg-white dark:bg-slate-800 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group",
+        "flex items-center gap-3 p-2.5 rounded-xl border bg-white dark:bg-slate-800 cursor-grab active:cursor-grabbing hover:opacity-90 transition-opacity group",
         style.border,
-        isDragging && "opacity-50 ring-2 ring-blue-500 ring-offset-2 scale-95 shadow-sm"
+        isDragging && "opacity-50 ring-2 ring-blue-500 ring-offset-2 scale-95 shadow-lg"
       )}
     >
       <div className={cn("p-2 rounded-lg flex items-center justify-center transition-colors group-hover:scale-110", style.iconBg, style.color)}>

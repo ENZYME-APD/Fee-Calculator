@@ -121,7 +121,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
         </div>
       </div>
       
-      <div className="mb-5 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+      <div className="mb-5 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-center text-[10px] font-bold px-2 py-1 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
           <span className="text-blue-600 dark:text-blue-400">Team: {formatCurrency(baseCost)}</span>
           <span className="text-orange-500 dark:text-orange-400">Other: {formatCurrency(addedCost)}</span>

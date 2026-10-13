@@ -30,8 +30,8 @@ export function DraggablePersonChip({ member }: DraggablePersonChipProps) {
       {...listeners}
       {...attributes}
       className={cn(
-        "flex items-center gap-3 p-2.5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group",
-        isDragging && "opacity-50 ring-2 ring-blue-500 ring-offset-2 scale-95 shadow-sm"
+        "flex items-center gap-3 p-2.5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-grab active:cursor-grabbing hover:border-blue-300 dark:hover:border-blue-700 transition-colors group",
+        isDragging && "opacity-50 ring-2 ring-blue-500 ring-offset-2 scale-95 shadow-lg"
       )}
     >
       <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
