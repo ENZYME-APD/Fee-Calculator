@@ -177,7 +177,7 @@ export default function Home() {
               }
             }}
           >
-            {projects.map(p => (
+            {[...projects].sort((a, b) => a.name.localeCompare(b.name)).map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>

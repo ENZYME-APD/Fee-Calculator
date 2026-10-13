@@ -317,6 +317,7 @@ export function GanttPlanner() {
             >
               {projects
                 .filter(p => !p.isTemplate && (showLost || p.status !== "Lost"))
+                .sort((a, b) => a.name.localeCompare(b.name))
                 .map(p => (
                   <option key={p.id} value={p.id}>
                     {p.name} {p.status === 'Lost' ? ' (Lost/Archived)' : ''}
