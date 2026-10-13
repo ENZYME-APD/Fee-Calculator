@@ -11,6 +11,8 @@ import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
+import { Card, CardBody } from '@/components/ui/Card';
+import { PrimaryButton, SecondaryButton } from '@/components/ui/Button';
 
 export default function TeamPage() {
   const { user, dbUser, loading: authLoading } = useAuth();
@@ -132,35 +134,36 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl w-full mx-auto flex flex-col h-full">
-      <div className="flex justify-between items-center mb-8 shrink-0">
+    <div className="p-8 max-w-6xl w-full mx-auto flex flex-col h-full gap-5">
+      <div className="flex justify-between items-center shrink-0">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Team Resources</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Manage team members, salaries, and rates.</p>
+          <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 tracking-tight">Team Resources</h1>
+          <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">Manage team members, salaries, and rates.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/settings?tab=categories" className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2 mr-2 whitespace-nowrap">
-            <Settings size={18} />
-            Categories
+        <div className="flex items-center gap-2">
+          <Link href="/settings?tab=categories">
+            <SecondaryButton>
+              <Settings size={14} />
+              Categories
+            </SecondaryButton>
           </Link>
           <CsvManager onComplete={loadMembers} />
-          <button 
-            onClick={handleAddNew}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2 whitespace-nowrap"
-          >
-            <Plus size={18} />
+          <PrimaryButton onClick={handleAddNew}>
+            <Plus size={15} />
             Add Member
-          </button>
+          </PrimaryButton>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-950 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex-1 flex flex-col min-h-0">
+      <Card className="flex-1 min-h-0">
         {loading ? (
           <div className="flex-1 flex items-center justify-center text-slate-500">Loading resources...</div>
         ) : (
-          <TeamTable members={members} onEdit={handleEdit} onDelete={handleDelete} onBulkDelete={handleBulkDelete} onBulkEdit={handleBulkEdit} />
+          <CardBody className="flex flex-col overflow-hidden">
+            <TeamTable members={members} onEdit={handleEdit} onDelete={handleDelete} onBulkDelete={handleBulkDelete} onBulkEdit={handleBulkEdit} />
+          </CardBody>
         )}
-      </div>
+      </Card>
 
       <TeamMemberForm 
         isOpen={isFormOpen}

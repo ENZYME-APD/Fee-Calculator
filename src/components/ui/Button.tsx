@@ -51,6 +51,11 @@ export function IconButton({ className, children, ...props }: React.ButtonHTMLAt
 
 // Shared className for text/number/date inputs and <select>s — one radius,
 // one border, one focus ring, instead of px-2/px-3/px-4 py-1.5/2/2.5 mixed
-// per instance.
+// per instance. Deliberately carries NO width utility: callers that append
+// their own (w-20, flex-1, w-full, ...) need it to actually win, and two
+// width classes on one element is a specificity tie Tailwind resolves by
+// stylesheet order, not call-site order — it silently picked `w-full` over
+// `w-20` everywhere that combination was used, collapsing name fields next
+// to it. Every call site must append its own width class explicitly.
 export const fieldClass =
-  'w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors';
+  'px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors';

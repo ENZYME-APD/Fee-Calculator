@@ -5,6 +5,7 @@ import { getCategories } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { BulkEditTeamModal } from './BulkEditTeamModal';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { SecondaryButton, IconButton } from '@/components/ui/Button';
 
 interface TeamTableProps {
   members: TeamMember[];
@@ -116,18 +117,12 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
         <div className="bg-blue-50 dark:bg-blue-900/30 px-6 py-3 flex items-center justify-between border-b border-blue-100 dark:border-blue-900/50 shrink-0">
           <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">{selectedIds.size} member{selectedIds.size > 1 ? 's' : ''} selected</span>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setIsBulkEditOpen(true)}
-              className="text-sm font-medium bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/30 px-4 py-1.5 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
-            >
-              <Edit3 size={16} /> Edit Selected
-            </button>
-            <button 
-              onClick={handleBulkDelete}
-              className="text-sm font-medium bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-900/30 px-4 py-1.5 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
-            >
-              <Trash2 size={16} /> Delete Selected
-            </button>
+            <SecondaryButton onClick={() => setIsBulkEditOpen(true)}>
+              <Edit3 size={14} /> Edit Selected
+            </SecondaryButton>
+            <SecondaryButton onClick={handleBulkDelete} className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 border-rose-200 dark:border-rose-900/50">
+              <Trash2 size={14} /> Delete Selected
+            </SecondaryButton>
           </div>
         </div>
       )}

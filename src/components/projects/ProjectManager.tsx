@@ -520,7 +520,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                 <select
                   value={selectedTemplateId}
                   onChange={(e) => setSelectedTemplateId(e.target.value)}
-                  className={fieldClass}
+                  className={fieldClass + ' w-full'}
                 >
                   <option value="">No Template</option>
                   <optgroup label="Templates">
@@ -536,7 +536,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                   placeholder={isTemplateMode ? "New template name..." : "New project name..."}
                   value={newProjectName}
                   onChange={e => setNewProjectName(e.target.value)}
-                  className={fieldClass}
+                  className={fieldClass + ' w-full'}
                 />
                 <PrimaryButton type="submit" disabled={isSavingProject}>
                   {isSavingProject ? 'Saving...' : <><Plus size={15} /> Add</>}
@@ -676,8 +676,8 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
               </CardHeader>
               <div className="p-3 border-b border-slate-100 dark:border-slate-800">
                 <form onSubmit={handleCreatePhase} className="flex gap-2 items-center">
-                  <input type="text" required value={newPhaseName} onChange={e => setNewPhaseName(e.target.value)} placeholder="Phase name, e.g. Schematic Design" className={fieldClass + ' flex-1'} />
-                  <input type="number" required min="0.5" step="0.5" value={newPhaseDuration} onChange={e => setNewPhaseDuration(e.target.value)} placeholder="Wks" className={fieldClass + ' w-20 text-center'} />
+                  <input type="text" required value={newPhaseName} onChange={e => setNewPhaseName(e.target.value)} placeholder="Phase name, e.g. Schematic Design" className={fieldClass + ' flex-1 min-w-0'} />
+                  <input type="number" required min="0.5" step="0.5" value={newPhaseDuration} onChange={e => setNewPhaseDuration(e.target.value)} placeholder="Wks" className={fieldClass + ' w-24 text-center shrink-0'} />
                   <PrimaryButton type="submit" disabled={isSavingPhase}>
                     {isSavingPhase ? 'Adding...' : <><Plus size={15} /> Add</>}
                   </PrimaryButton>

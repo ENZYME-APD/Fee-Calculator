@@ -415,9 +415,9 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
           </span>
         )}
         <form onSubmit={handleCreate} className="flex flex-col gap-2">
-          <input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="Payment name, e.g. Phase 1 Completion" className={fieldClass} />
+          <input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="Payment name, e.g. Phase 1 Completion" className={fieldClass + ' w-full'} />
           <div className="flex gap-2 items-center">
-            <input type="number" required min="0" max={Math.max(0, 100 - totalPercentage)} step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="%" className={fieldClass + ' w-20 text-center'} />
+            <input type="number" required min="0" max={Math.max(0, 100 - totalPercentage)} step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="%" className={fieldClass + ' w-24 text-center shrink-0'} />
             <select value={newPhaseId} onChange={e => setNewPhaseId(e.target.value)} className={fieldClass + ' flex-1'}>
               <option value="">(No Phase)</option>
               {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -448,9 +448,9 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
               return (
                 <div key={payment.id} className="p-3 border-b border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
                   <form onSubmit={handleEditSave} className="flex-1 flex flex-col gap-2">
-                    <input type="text" autoFocus required value={editName} onChange={e => setEditName(e.target.value)} className={fieldClass} />
+                    <input type="text" autoFocus required value={editName} onChange={e => setEditName(e.target.value)} className={fieldClass + ' w-full'} />
                     <div className="flex gap-2 items-center justify-between">
-                      <input type="number" required min="0" max={Math.max(0, 100 - (totalPercentage - payment.percentage))} step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className={fieldClass + ' w-20 text-center'} />
+                      <input type="number" required min="0" max={Math.max(0, 100 - (totalPercentage - payment.percentage))} step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className={fieldClass + ' w-24 text-center shrink-0'} />
                       <select value={editPhaseId} onChange={e => setEditPhaseId(e.target.value)} className={fieldClass + ' flex-1'}>
                         <option value="">(No Phase)</option>
                         {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}

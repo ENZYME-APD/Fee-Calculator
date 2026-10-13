@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { SecondaryButton, PrimaryButton } from '@/components/ui/Button';
 
 const DEFAULT_CATEGORIES: OverheadCategory[] = [
   { id: 'cat-1', name: 'Consultants & Corp', items: [
@@ -378,38 +379,27 @@ export default function OverheadsPage() {
   return (
     <div className="flex flex-col h-full w-full p-8 text-slate-900 dark:text-white">
       <div className="max-w-7xl mx-auto w-full flex flex-col h-full min-h-0">
-        <div className="flex items-center justify-between mb-8 shrink-0">
-          <div className="flex items-center gap-3">
-            <Building size={28} className="text-blue-500" />
-            <h1 className="text-2xl font-bold tracking-tight">Overheads Calculator</h1>
+        <div className="flex items-center justify-between mb-6 shrink-0">
+          <div>
+            <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 tracking-tight">Overheads Calculator</h1>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">Set target income and overhead costs to derive team hourly rates.</p>
           </div>
-          <div className="flex items-center gap-3">
-            
-<button 
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl transition-all"
-            >
-              <Upload size={16} />
+          <div className="flex items-center gap-2">
+            <SecondaryButton onClick={() => fileInputRef.current?.click()}>
+              <Upload size={14} />
               Import CSV
-            </button>
+            </SecondaryButton>
             <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCSV} className="hidden" />
-            <button 
-              onClick={handleExportCSV}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl transition-all"
-            >
-              <Download size={16} />
+            <SecondaryButton onClick={handleExportCSV}>
+              <Download size={14} />
               Export
-            </button>
-            <button 
-              onClick={handleSyncToTeam}
-              disabled={syncing}
-              className="flex items-center gap-2 px-4 py-2 text-sm bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all"
-            >
+            </SecondaryButton>
+            <PrimaryButton onClick={handleSyncToTeam} disabled={syncing} className="bg-emerald-600 hover:bg-emerald-700">
               <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
               {syncing ? 'Syncing...' : 'Sync to Team'}
-            </button>
-            
-            {saving && <span className="text-sm font-bold text-slate-400 flex items-center gap-2"><RefreshCw size={14} className="animate-spin" /> Saving...</span>}
+            </PrimaryButton>
+
+            {saving && <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5"><RefreshCw size={12} className="animate-spin" /> Saving...</span>}
           </div>
         </div>
 

@@ -146,7 +146,7 @@ export default function TemplatesPage() {
           <select
             value={selectedTemplate}
             onChange={(e) => setSelectedTemplate(e.target.value as TemplateKey)}
-            className={fieldClass + ' sm:w-64'}
+            className={fieldClass + ' w-full sm:w-64'}
           >
             {Object.entries(INTERNATIONAL_TEMPLATES).map(([key, template]) => (
               <option key={key} value={key}>{template.name}</option>
