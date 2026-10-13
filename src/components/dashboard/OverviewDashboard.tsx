@@ -437,7 +437,7 @@ export function OverviewDashboard() {
   return (
     <div className="p-8 max-w-7xl mx-auto w-full h-full overflow-y-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Overview Dashboard</h1>
+        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 mb-1 tracking-tight">Overview Dashboard</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
           Showing data for <strong>Proposed</strong> and <strong>Active</strong> projects only. You can change a project's status in the Projects tab.
         </p>
@@ -445,7 +445,7 @@ export function OverviewDashboard() {
       
       {/* Top KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-4">
           <div className="p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl">
             <Folder size={24} />
           </div>
@@ -454,7 +454,7 @@ export function OverviewDashboard() {
             <p className="text-2xl font-black text-slate-900 dark:text-white">{formatCurrency(kpis.pipelineValue)}</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-4">
           <div className="p-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl">
             <CircleDollarSign size={24} />
           </div>
@@ -463,7 +463,7 @@ export function OverviewDashboard() {
             <p className="text-2xl font-black text-slate-900 dark:text-white">{formatCurrency(kpis.activeValue)}</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-4">
           <div className="p-4 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl">
             <TrendingUp size={24} />
           </div>
@@ -475,7 +475,7 @@ export function OverviewDashboard() {
       </div>
       
       {/* Global Date Filters */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Timeline Range:</span>
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg ml-2">
@@ -518,7 +518,7 @@ export function OverviewDashboard() {
       </div>
 
       {/* Projected Fee Income Timeline */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm mb-8 flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-8 flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Projected Fee Income</h2>
         </div>
@@ -580,7 +580,7 @@ export function OverviewDashboard() {
               return <div className="text-sm text-slate-500 italic">No invoices in this timeframe.</div>;
             }
             return filteredMonths.map(m => (
-              <div key={m.bucketKey} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 min-w-[160px] shadow-sm flex flex-col gap-1 shrink-0">
+              <div key={m.bucketKey} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 min-w-[160px] flex flex-col gap-1 shrink-0">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{m.label}</span>
                 <span className="text-xl font-black text-slate-900 dark:text-white">{formatCurrency(m.totalValue)}</span>
               </div>
@@ -590,7 +590,7 @@ export function OverviewDashboard() {
       </div>
 
       {/* Monthly Cashflow Comparison */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm mb-8 flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-8 flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Monthly Cashflow</h2>
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
@@ -707,7 +707,7 @@ export function OverviewDashboard() {
       </div>
 
       {/* Team Occupancy Grid */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm mb-8 flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-8 flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Team Occupancy</h2>
         </div>
@@ -832,7 +832,7 @@ export function OverviewDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Scatter Plot */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-6">Profit Margin vs Fee Size</h2>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -858,7 +858,7 @@ export function OverviewDashboard() {
 
         {/* Leaderboard (If Admin) */}
         {dbUser?.role === 'admin' && (
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                 <Users size={20} className="text-blue-500" />

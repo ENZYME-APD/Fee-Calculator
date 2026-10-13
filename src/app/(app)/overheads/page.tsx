@@ -12,6 +12,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { SecondaryButton, PrimaryButton } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 
 const DEFAULT_CATEGORIES: OverheadCategory[] = [
   { id: 'cat-1', name: 'Consultants & Corp', items: [
@@ -407,7 +408,7 @@ export default function OverheadsPage() {
           {/* LEFT: Stats */}
           <div className="lg:col-span-1 h-full overflow-y-auto pr-2 pb-8 custom-scrollbar">
             <div className="space-y-4 lg:mt-[52px]">
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <Card className="p-4">
               <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Global Metrics</h3>
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
@@ -464,9 +465,9 @@ export default function OverheadsPage() {
                   <div className="text-xl font-bold text-emerald-500">${computedStats.monthlyOverheadPerPerson.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <Card className="p-4">
               <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Breakdown</h3>
               <div className="h-32 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -502,9 +503,9 @@ export default function OverheadsPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
-            
+
           </div>
 
           {/* RIGHT: Data Entry */}
@@ -513,14 +514,14 @@ export default function OverheadsPage() {
             <div className="flex justify-between items-center bg-transparent shrink-0 mb-6">
               <h2 className="text-xl font-bold">Expense Categories</h2>
               <div className="flex items-center gap-2">
-                <button onClick={handleExpandAll} className="text-sm text-blue-500 hover:text-blue-600 font-bold px-3 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg">Expand All</button>
-                <button onClick={handleCollapseAll} className="text-sm text-slate-500 hover:text-slate-600 font-bold px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">Collapse All</button>
+                <SecondaryButton onClick={handleExpandAll}>Expand All</SecondaryButton>
+                <SecondaryButton onClick={handleCollapseAll}>Collapse All</SecondaryButton>
               </div>
             </div>
             
             <div className="flex-1 overflow-y-auto pr-4 pb-24 space-y-6 custom-scrollbar">
             {/* Non Billable Roster */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <Card>
               <button 
                 onClick={() => setIsNonBillableCollapsed(!isNonBillableCollapsed)}
                 className={`w-full p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left ${!isNonBillableCollapsed ? 'border-b border-slate-100 dark:border-slate-800' : ''}`}
@@ -614,7 +615,7 @@ export default function OverheadsPage() {
                   </table>
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* Other Categories */}
             <div className="flex flex-col space-y-6">
@@ -623,7 +624,7 @@ export default function OverheadsPage() {
                 const isCollapsed = collapsedCategories[cat.id];
                 
                 return (
-                  <div key={cat.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col w-full">
+                  <Card key={cat.id}>
                     <button 
                       onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat.id]: !isCollapsed }))}
                       className="w-full p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors text-left"
@@ -696,13 +697,13 @@ export default function OverheadsPage() {
                         
                         <button 
                           onClick={() => addCategoryItem(cat.id)}
-                          className="flex items-center gap-1 text-sm font-bold text-blue-500 hover:text-blue-600"
+                          className="flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700"
                         >
                           <Plus size={14} /> Add Item
                         </button>
                       </div>
                     )}
-                  </div>
+                  </Card>
                 );
               })}
             </div>
