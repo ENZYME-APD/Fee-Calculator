@@ -1,6 +1,9 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
+// Not edge: this route inlines a ~270KB base64 logo, which crosses Vercel's
+// 1MB edge function size limit once bundled with webpack (the production
+// build tool, switched from Turbopack to work around a firebase-admin/auth
+// bundling bug elsewhere). The Node.js runtime has no such limit.
 export const alt = 'Fee Calculator by Enzyme APD';
 export const size = {
   width: 1200,
