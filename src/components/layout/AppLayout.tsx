@@ -5,7 +5,8 @@ import {
 } from '@dnd-kit/core';
 import { TeamMember, Phase, Allocation, ProjectCost, Project } from '@/lib/firebase/schema';
 import { addAllocation, addProjectCost, updateAllocation, deleteAllocation, deleteProjectCost, updateProjectCost, updateProject, refreshProjectAllocationRates } from '@/lib/firebase/db';
-import { getAllocationRate } from '@/lib/utils/allocationCost';
+import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
+import { ProjectFinancialHeader } from '@/components/layout/ProjectFinancialHeader';
 import { useUndo } from '@/lib/context/UndoContext';
 import { DraggablePersonChip } from '../dnd/DraggablePersonChip';
 import { DraggableCostChip } from '../dnd/DraggableCostChip';
@@ -40,8 +41,6 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
 
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
   const [isRefreshingRates, setIsRefreshingRates] = useState(false);
-  const [isEditingMargin, setIsEditingMargin] = useState(false);
-  const [marginInput, setMarginInput] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeMember, setActiveMember] = useState<TeamMember | null>(null);
   
@@ -535,125 +534,69 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
             
             <div className="absolute inset-0 overflow-x-hidden overflow-y-auto p-8 z-10">
               {project && (() => {
-                const projectPhaseIds = phases.filter(p => p.projectId === project.id).map(p => p.id);
-                const totalCost = localAllocations.filter(a => projectPhaseIds.includes(a.phaseId)).reduce((sum, a) => sum + (a.hours * getAllocationRate(a, members.find(m => m.id === a.memberId))), 0) +
-                  localProjectCosts.filter(c => projectPhaseIds.includes(c.phaseId)).reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
-                const profitMarginPercent = project.profitMargin ?? 30;
-                const profitMarginAmount = totalCost * (profitMarginPercent / 100);
-                const totalFee = totalCost + profitMarginAmount;
+                const projectPhases = phases.filter(p => p.projectId === project.id);
+                const { totalCost, profitMarginPercent, totalFee } = computeProjectFinancials(project, projectPhases, localAllocations, localProjectCosts, members);
 
                 return (
-                  <div id="tour-title-block" className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-baseline gap-2">
-                        <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100">{project.name}</h2>
-                        <button 
-                          onClick={() => setIsProjectSettingsOpen(true)}
-                          className="text-slate-400 hover:text-blue-500 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors"
-                          title="Edit Project"
-                        >
-                          <Edit3 size={14} />
-                        </button>
-                        <Link href={`/planning?project=${project.id}`}>
-                          <button 
-                            className="text-slate-400 hover:text-emerald-500 p-1 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-full transition-colors"
-                            title="Open in Planner"
-                          >
-                            <CalendarDays size={14} />
-                          </button>
-                        </Link>
-                        {project.area && (
-                          <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-2">
-                            {project.area} {areaUnit}
-                          </span>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <select
-                          value={project.status || 'Draft'}
-                          onChange={async (e) => {
-                            await updateProject(project.id!, { status: e.target.value });
-                            onAllocationAdded();
-                          }}
-                          className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 border-none outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer appearance-none text-center pr-8"
-                        >
-                          <option value="Draft">Draft</option>
-                          <option value="Proposed">Proposed</option>
-                          <option value="Active">Active</option>
-                          <option value="Completed">Completed</option>
-                          <option value="Lost">Lost/Archived</option>
-                        </select>
-                        <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-blue-600 dark:text-blue-400 pointer-events-none" />
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-8">
-                      <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Cost</span>
-                          {isAdmin && (
-                            <Tooltip
-                              position="bottom"
-                              content="Re-pull current team rates into this project's allocations. Proposal costs are locked to the rates at the time each allocation was made, so salary changes don't retroactively change an already-agreed fee."
+                  <div id="tour-title-block" className="mb-6">
+                    <ProjectFinancialHeader
+                      totalCost={totalCost}
+                      profitMarginPercent={profitMarginPercent}
+                      totalFee={totalFee}
+                      formatCurrency={formatCurrency}
+                      marginEditable
+                      onMarginChange={async (val) => {
+                        await updateProject(project.id!, { profitMargin: val });
+                        onAllocationAdded();
+                      }}
+                      showRefreshRates={isAdmin}
+                      isRefreshingRates={isRefreshingRates}
+                      onRefreshRates={handleRefreshRates}
+                      left={
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="flex items-baseline gap-2">
+                            <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100">{project.name}</h2>
+                            <button
+                              onClick={() => setIsProjectSettingsOpen(true)}
+                              className="text-slate-400 hover:text-blue-500 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+                              title="Edit Project"
                             >
+                              <Edit3 size={14} />
+                            </button>
+                            <Link href={`/planning?project=${project.id}`}>
                               <button
-                                onClick={handleRefreshRates}
-                                disabled={isRefreshingRates}
-                                aria-label="Refresh Rates"
-                                className="text-slate-400 hover:text-blue-500 disabled:opacity-50 p-0.5 -mt-0.5 rounded transition-colors"
+                                className="text-slate-400 hover:text-emerald-500 p-1 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-full transition-colors"
+                                title="Open in Planner"
                               >
-                                <RefreshCw size={11} className={isRefreshingRates ? 'animate-spin' : ''} />
+                                <CalendarDays size={14} />
                               </button>
-                            </Tooltip>
-                          )}
-                        </div>
-                        <span className="text-xl font-bold text-slate-700 dark:text-slate-300">
-                          {formatCurrency(totalCost)}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Profit Margin</span>
-                        {isEditingMargin ? (
-                          <form 
-                            onSubmit={async (e) => {
-                              e.preventDefault();
-                              const val = parseFloat(marginInput);
-                              if (!isNaN(val)) {
-                                await updateProject(project.id!, { profitMargin: val });
-                                onAllocationAdded(); // Trigger re-render
-                              }
-                              setIsEditingMargin(false);
-                            }} 
-                            className="flex items-center gap-1"
-                          >
-                            <input 
-                              type="number" 
-                              step="0.1" 
-                              value={marginInput} 
-                              onChange={e => setMarginInput(e.target.value)}
-                              className="w-16 px-1.5 py-0.5 text-sm border border-slate-300 dark:border-slate-600 rounded text-right font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-blue-500"
-                              autoFocus
-                              onBlur={() => setIsEditingMargin(false)}
-                            />
-                            <span className="text-sm font-bold text-slate-600 dark:text-slate-400">%</span>
-                          </form>
-                        ) : (
-                          <div 
-                            className="flex items-center gap-1.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 px-2 py-0.5 rounded -mr-2 transition-colors"
-                            onClick={() => { setIsEditingMargin(true); setMarginInput(profitMarginPercent.toString()); }}
-                          >
-                            <span className="text-xl font-bold text-slate-700 dark:text-slate-300">{profitMarginPercent}%</span>
-                            <Edit3 size={12} className="text-slate-400" />
+                            </Link>
+                            {project.area && (
+                              <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-2">
+                                {project.area} {areaUnit}
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Total Fee</span>
-                        <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                          {formatCurrency(totalFee)}
-                        </span>
-                      </div>
-                    </div>
+                          <div className="relative">
+                            <select
+                              value={project.status || 'Draft'}
+                              onChange={async (e) => {
+                                await updateProject(project.id!, { status: e.target.value });
+                                onAllocationAdded();
+                              }}
+                              className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border-none outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer appearance-none text-center pr-8"
+                            >
+                              <option value="Draft">Draft</option>
+                              <option value="Proposed">Proposed</option>
+                              <option value="Active">Active</option>
+                              <option value="Completed">Completed</option>
+                              <option value="Lost">Lost/Archived</option>
+                            </select>
+                            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          </div>
+                        </div>
+                      }
+                    />
                   </div>
                 );
               })()}

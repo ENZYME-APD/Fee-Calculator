@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ProjectManager } from '@/components/projects/ProjectManager';
 import { LayoutTemplate } from 'lucide-react';
 import { addProject, addPhase } from '@/lib/firebase/db';
+import { PrimaryButton, fieldClass } from '@/components/ui/Button';
 
 const INTERNATIONAL_TEMPLATES = {
   'riba': {
@@ -137,33 +138,28 @@ export default function TemplatesPage() {
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 z-30 shrink-0 shadow-sm transition-colors duration-300">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Project Templates</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Create reusable project structures and phases.</p>
-        </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <select 
+      {/* ProjectManager renders the page title/subtitle for this page (isTemplateMode);
+          this bar is a secondary, same-weight-as-elsewhere toolbar, not a second header. */}
+      <div className="px-8 pt-4 flex flex-col sm:flex-row sm:items-center justify-end gap-2 shrink-0">
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 sm:mr-2">Seed from a standard:</span>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select
             value={selectedTemplate}
             onChange={(e) => setSelectedTemplate(e.target.value as TemplateKey)}
-            className="flex-1 sm:w-64 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className={fieldClass + ' sm:w-64'}
           >
             {Object.entries(INTERNATIONAL_TEMPLATES).map(([key, template]) => (
               <option key={key} value={key}>{template.name}</option>
             ))}
           </select>
-          
-          <button 
-            onClick={handleSeedTemplate}
-            disabled={seeding}
-            className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-4 py-2 rounded-lg font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50 whitespace-nowrap"
-          >
-            <LayoutTemplate size={18} />
+
+          <PrimaryButton onClick={handleSeedTemplate} disabled={seeding}>
+            <LayoutTemplate size={15} />
             {seeding ? 'Creating...' : 'Seed Template'}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
-      
+
       <div className="flex-1 overflow-hidden relative">
         <ProjectManager isTemplateMode={true} />
       </div>
