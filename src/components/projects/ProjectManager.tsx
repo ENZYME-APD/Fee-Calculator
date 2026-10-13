@@ -17,8 +17,16 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   const [templates, setTemplates] = useState<Project[]>([]);
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'status'>('date');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-  const [showLost, setShowLost] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['Draft', 'Proposed', 'Active']);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const toggleStatusFilter = (status: string) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status) 
+        : [...prev, status]
+    );
+  };
 
   const formatStatus = (status: string) => {
     if (status === 'Lost') return 'Lost/Archived';
@@ -415,7 +423,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   const totalFee = totalCost + profitMarginAmount;
 
   const sortedProjects = [...projects]
-    .filter(p => isTemplateMode || showLost || p.status !== 'Lost')
+    .filter(p => isTemplateMode || selectedStatuses.includes(p.status || 'Draft'))
     .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       let comparison = 0;
@@ -437,17 +445,6 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
           <div className="flex justify-between items-center">
             <h2 className="font-bold text-xl text-slate-800 dark:text-slate-100">{isTemplateMode ? 'Project Templates' : 'Projects'}</h2>
             <div className="flex items-center gap-3">
-              {!isTemplateMode && (
-                <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={showLost}
-                    onChange={(e) => setShowLost(e.target.checked)}
-                    className="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 bg-white dark:bg-slate-900 cursor-pointer"
-                  />
-                  Show Lost/Archived
-                </label>
-              )}
               <select
                 value={`${sortBy}-${sortOrder}`}
                 onChange={(e) => {
@@ -471,12 +468,31 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
             </div>
           </div>
           {!isTemplateMode && (
-            <div className="flex flex-wrap gap-3 mt-1 text-[11px] font-medium uppercase tracking-wider">
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500"></span><span className="text-slate-500">Draft</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400 dark:bg-amber-500"></span><span className="text-amber-600 dark:text-amber-500">Proposed</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400 dark:bg-emerald-500"></span><span className="text-emerald-600 dark:text-emerald-500">Active</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-400 dark:bg-blue-500"></span><span className="text-blue-600 dark:text-blue-500">Completed</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-400 dark:bg-rose-500"></span><span className="text-rose-600 dark:text-rose-500">Lost/Archived</span></div>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              {[
+                { id: 'Draft', label: 'Draft', dotColor: 'bg-slate-400 dark:bg-slate-500', activeClass: 'border-slate-400 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600' },
+                { id: 'Proposed', label: 'Proposed', dotColor: 'bg-amber-400 dark:bg-amber-500', activeClass: 'border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700' },
+                { id: 'Active', label: 'Active', dotColor: 'bg-emerald-400 dark:bg-emerald-500', activeClass: 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700' },
+                { id: 'Completed', label: 'Completed', dotColor: 'bg-blue-400 dark:bg-blue-500', activeClass: 'border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-700' },
+                { id: 'Lost', label: 'Lost/Archived', dotColor: 'bg-rose-400 dark:bg-rose-500', activeClass: 'border-rose-400 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-700' }
+              ].map(st => {
+                const isActive = selectedStatuses.includes(st.id);
+                return (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => toggleStatusFilter(st.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
+                      isActive 
+                        ? st.activeClass 
+                        : 'border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${st.dotColor} ${!isActive && 'opacity-40'}`} />
+                    <span>{st.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
