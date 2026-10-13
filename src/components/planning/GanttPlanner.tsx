@@ -57,7 +57,16 @@ export function GanttPlanner() {
   const loadProjects = async () => {
     setLoading(true);
     const data = await getProjects();
-    setProjects(data.sort((a, b) => b.createdAt - a.createdAt));
+    const sorted = data.sort((a, b) => b.createdAt - a.createdAt);
+    setProjects(sorted);
+    if (sorted.length > 0 && !activeProjectId) {
+      const initial = initialProjectId && sorted.find(p => p.id === initialProjectId)
+        ? initialProjectId
+        : (sorted.find(p => !p.isTemplate && p.status !== 'Lost') || sorted[0])?.id || null;
+      if (initial) {
+        setActiveProjectId(initial);
+      }
+    }
     setLoading(false);
   };
 
@@ -278,147 +287,158 @@ export function GanttPlanner() {
   }
 
   return (
-    <div className="flex h-full gap-6 mx-auto w-full p-8" style={{ maxWidth: '1600px' }}>
-      {/* Projects List - Reusing same style as ProjectManager */}
-      <div className="w-80 shrink-0 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-          <h2 className="font-bold text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <CalendarDays size={20} className="text-blue-600 dark:text-blue-400" />
-            Planning
-          </h2>
-          
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-sm text-slate-500 dark:text-slate-400">Select a project</p>
-            <button 
-              onClick={() => setShowLost(!showLost)} 
-              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1"
-            >
-              {showLost ? <EyeOff size={12} /> : <Eye size={12} />}
-              {showLost ? 'Hide Lost/Archived' : 'Show Lost/Archived'}
-            </button>
+    <div className="flex h-full w-full flex-col overflow-hidden">
+      {/* Top Project Selector Bar */}
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between z-30 shrink-0 shadow-sm transition-colors duration-300">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold">
+            <CalendarDays size={18} className="text-blue-600 dark:text-blue-400" />
+            <span className="text-sm uppercase tracking-wider">Project Planning</span>
           </div>
-    
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {projects.filter(p => !p.isTemplate && (showLost || p.status !== "Lost")).map(p => (
-            <div 
-              key={p.id}
-              onClick={() => {
-                setActiveProjectId(p.id!);
+
+          <div className="w-[320px] flex items-center">
+            <select 
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors cursor-pointer"
+              value={activeProjectId || ''}
+              onChange={(e) => {
+                const newId = e.target.value;
+                setActiveProjectId(newId);
                 if (typeof window !== 'undefined') {
                   const url = new URL(window.location.href);
-                  url.searchParams.set('project', p.id!);
+                  if (newId) {
+                    url.searchParams.set('project', newId);
+                  } else {
+                    url.searchParams.delete('project');
+                  }
                   window.history.replaceState({}, '', url.toString());
                 }
               }}
-              className={`p-3.5 pb-2 rounded-xl cursor-pointer flex flex-col group transition-colors min-h-[64px] ${activeProjectId === p.id ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'}`}
             >
-              <div className="flex items-center justify-between gap-3 overflow-hidden w-full">
-                <div className="flex items-center gap-3 overflow-hidden flex-1">
-                  <Folder size={20} className={`shrink-0 ${activeProjectId === p.id ? "text-blue-600 dark:text-blue-400 fill-blue-100 dark:fill-blue-900" : "text-slate-400 dark:text-slate-500"}`} />
-                  <span className={`font-semibold text-sm truncate ${activeProjectId === p.id ? "text-blue-900 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"}`}>{p.name}</span>
-                </div>
-                <div className="flex justify-end items-center gap-1 h-7 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
-                  <button onClick={(e) => { e.stopPropagation(); router.push(`/dashboard?project=${p.id}`); }} className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md transition-colors" title="Open Fee Proposal">
-                    <Calculator size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+              {projects
+                .filter(p => !p.isTemplate && (showLost || p.status !== "Lost"))
+                .map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.status === 'Lost' ? ' (Lost/Archived)' : ''}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <button 
+            type="button"
+            onClick={() => setShowLost(!showLost)} 
+            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            {showLost ? <EyeOff size={14} /> : <Eye size={14} />}
+            <span>{showLost ? 'Hide Lost/Archived' : 'Show Lost/Archived'}</span>
+          </button>
         </div>
+
+        {activeProjectId && (
+          <button
+            onClick={() => router.push(`/dashboard?project=${activeProjectId}`)}
+            className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-lg flex items-center gap-1.5 transition-colors"
+            title="Open Fee Proposal"
+          >
+            <Calculator size={15} />
+            <span className="hidden sm:inline">Fee Proposal</span>
+          </button>
+        )}
       </div>
 
-      {/* Grid Area */}
-      <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors">
-        {activeProjectId ? (
-          <div className="flex flex-col h-full overflow-hidden">
-            {/* Summary Header */}
-            {(() => {
-               const project = projects.find(p => p.id === activeProjectId)!;
-               const projectPhases = phases.filter(p => p.projectId === activeProjectId);
-               const phaseIds = projectPhases.map(p => p.id);
-               const projectAllocs = allocations.filter(a => phaseIds.includes(a.phaseId) && a.hours > 0);
-               const validProjectCosts = projectCosts.filter(c => phaseIds.includes(c.phaseId));
-               
-               const budgetedCost = projectAllocs.reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
-                  validProjectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
-               
-               const plannedCost = tasks.reduce((sum, t) => sum + (t.durationHours * (members.find(m => m.id === t.memberId)?.costPerHour || 0)), 0);
-               
-               const diff = budgetedCost - plannedCost;
-               const isOverBudget = diff < 0;
+      {/* Grid Canvas Area */}
+      <div className="flex-1 overflow-hidden p-6 bg-slate-50 dark:bg-slate-950 flex flex-col">
+        <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors">
+          {activeProjectId ? (
+            <div className="flex flex-col h-full overflow-hidden">
+              {/* Summary Header */}
+              {(() => {
+                 const project = projects.find(p => p.id === activeProjectId);
+                 if (!project) return null;
+                 const projectPhases = phases.filter(p => p.projectId === activeProjectId);
+                 const phaseIds = projectPhases.map(p => p.id);
+                 const projectAllocs = allocations.filter(a => phaseIds.includes(a.phaseId) && a.hours > 0);
+                 const validProjectCosts = projectCosts.filter(c => phaseIds.includes(c.phaseId));
+                 
+                 const budgetedCost = projectAllocs.reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
+                    validProjectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
+                 
+                 const plannedCost = tasks.reduce((sum, t) => sum + (t.durationHours * (members.find(m => m.id === t.memberId)?.costPerHour || 0)), 0);
+                 
+                 const diff = budgetedCost - plannedCost;
+                 const isOverBudget = diff < 0;
 
-               return (
-                 <div className="flex items-start md:items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0 gap-6 flex-wrap md:flex-nowrap">
-                   <div className="min-w-[200px] flex-1">
-                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 line-clamp-2">{project.name}</h2>
-                     <p className="text-sm text-slate-500 mt-1">Resource & Task Planning</p>
+                 return (
+                   <div className="flex items-start md:items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0 gap-6 flex-wrap md:flex-nowrap">
+                     <div className="min-w-[200px] flex-1">
+                       <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 line-clamp-2">{project.name}</h2>
+                       <p className="text-sm text-slate-500 mt-1">Resource & Task Planning</p>
+                     </div>
+                     <div className="flex items-center gap-6">
+                       
+                       <div className="flex flex-row items-center gap-3 border-r border-slate-200 dark:border-slate-700 pr-6 mr-2">
+                          <button 
+                             onClick={handleSyncBudget}
+                             disabled={isSyncing}
+                             className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-white hover:bg-emerald-600 transition-colors bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-md border border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap"
+                             title="Overwrite budget with planner tasks"
+                          >
+                             <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} /> Update
+                          </button>
+                          <button onClick={handleResetToBudget} disabled={isResetting || loading} className="flex items-center gap-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-900/50 bg-rose-50 dark:bg-rose-900/30 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:opacity-50 whitespace-nowrap">
+                            <Undo2 size={16} className={isResetting ? "animate-spin" : ""} /> Reset
+                          </button>
+                          <button
+                             onClick={() => {
+                               if (collapsedPhases.size > 0) setCollapsedPhases(new Set());
+                               else setCollapsedPhases(new Set(phases.map(p => p.id!)));
+                             }}
+                             className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm whitespace-nowrap"
+                          >
+                             {collapsedPhases.size > 0 ? <><ChevronsRight size={16}/> Expand</> : <><ChevronsLeft size={16} /> Collapse</>}
+                          </button>
+                       </div>
+                       <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Budgeted Cost</span>
+                          <span className="text-lg font-bold text-slate-700 dark:text-slate-300">{formatCurrency(budgetedCost)}</span>
+                       </div>
+                       <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Planned Cost</span>
+                          <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(plannedCost)}</span>
+                       </div>
+                       <div className="flex flex-col items-end">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Variance</span>
+                          <span className={`text-lg font-bold ${isOverBudget ? 'text-rose-500' : 'text-emerald-500'}`}>
+                            {isOverBudget ? '-' : '+'}{formatCurrency(Math.abs(diff))}
+                          </span>
+                       </div>
+                     </div>
                    </div>
-                   <div className="flex items-center gap-6">
-                     
-                     <div className="flex flex-row items-center gap-3 border-r border-slate-200 dark:border-slate-700 pr-6 mr-2">
-                        <button 
-                           onClick={handleSyncBudget}
-                           disabled={isSyncing}
-                           className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-white hover:bg-emerald-600 transition-colors bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-md border border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap"
-                           title="Overwrite budget with planner tasks"
-                        >
-                           <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} /> Update
-                        </button>
-                        <button onClick={handleResetToBudget} disabled={isResetting || loading} className="flex items-center gap-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-900/50 bg-rose-50 dark:bg-rose-900/30 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:opacity-50 whitespace-nowrap">
-                          <Undo2 size={16} className={isResetting ? "animate-spin" : ""} /> Reset
-                        </button>
-                        <button
-                           onClick={() => {
-                             if (collapsedPhases.size > 0) setCollapsedPhases(new Set());
-                             else setCollapsedPhases(new Set(phases.map(p => p.id!)));
-                           }}
-                           className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm whitespace-nowrap"
-                        >
-                           {collapsedPhases.size > 0 ? <><ChevronsRight size={16}/> Expand</> : <><ChevronsLeft size={16} /> Collapse</>}
-                        </button>
-                     </div>
-                     <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Budgeted Cost</span>
-                        <span className="text-lg font-bold text-slate-700 dark:text-slate-300">{formatCurrency(budgetedCost)}</span>
-                     </div>
-                     <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Planned Cost</span>
-                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(plannedCost)}</span>
-                     </div>
-                     <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Variance</span>
-                        <span className={`text-lg font-bold ${isOverBudget ? 'text-rose-500' : 'text-emerald-500'}`}>
-                          {isOverBudget ? '-' : '+'}{formatCurrency(Math.abs(diff))}
-                        </span>
-                     </div>
-                   </div>
-                 </div>
-               );
-            })()}
-            <div className="flex-1 overflow-hidden relative">
-              <GanttGrid 
-                collapsedPhases={collapsedPhases}
-                setCollapsedPhases={setCollapsedPhases}
+                 );
+              })()}
+              <div className="flex-1 overflow-hidden relative">
+                <GanttGrid 
+                  collapsedPhases={collapsedPhases}
+                  setCollapsedPhases={setCollapsedPhases}
 
-                project={projects.find(p => p.id === activeProjectId)!}
-                phases={phases}
-                members={members}
-                allocations={allocations.filter(a => phases.map(p => p.id).includes(a.phaseId))}
-                tasks={tasks}
-                onTaskCreate={handleTaskCreate}
-                onTaskUpdate={handleTaskUpdate}
-                onTaskDelete={handleTaskDelete}
-              />
+                  project={projects.find(p => p.id === activeProjectId)!}
+                  phases={phases}
+                  members={members}
+                  allocations={allocations.filter(a => phases.map(p => p.id).includes(a.phaseId))}
+                  tasks={tasks}
+                  onTaskCreate={handleTaskCreate}
+                  onTaskUpdate={handleTaskUpdate}
+                  onTaskDelete={handleTaskDelete}
+                />
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 gap-4 transition-colors">
-            <CalendarDays size={48} className="text-slate-200 dark:text-slate-800" />
-            <p>Select a project to view the planner.</p>
-          </div>
-        )}
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 gap-4 transition-colors">
+              <CalendarDays size={48} className="text-slate-200 dark:text-slate-800" />
+              <p>Select a project to view the planner.</p>
+            </div>
+          )}
+        </div>
       </div>
       <ConfirmModal
         isOpen={showResetConfirm}
