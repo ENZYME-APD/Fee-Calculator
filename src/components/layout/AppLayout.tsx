@@ -592,12 +592,15 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Cost</span>
                           {isAdmin && (
-                            <Tooltip content="Re-pull current team rates into this project's allocations. Proposal costs are locked to the rates at the time each allocation was made, so salary changes don't retroactively change an already-agreed fee.">
+                            <Tooltip
+                              position="bottom"
+                              content="Re-pull current team rates into this project's allocations. Proposal costs are locked to the rates at the time each allocation was made, so salary changes don't retroactively change an already-agreed fee."
+                            >
                               <button
                                 onClick={handleRefreshRates}
                                 disabled={isRefreshingRates}
+                                aria-label="Refresh Rates"
                                 className="text-slate-400 hover:text-blue-500 disabled:opacity-50 p-0.5 -mt-0.5 rounded transition-colors"
-                                title="Refresh Rates"
                               >
                                 <RefreshCw size={11} className={isRefreshingRates ? 'animate-spin' : ''} />
                               </button>
