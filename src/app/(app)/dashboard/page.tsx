@@ -53,7 +53,8 @@ export default function Home() {
           }
         }
       }
-      setActiveProject(prev => prev ? (projs.find(p => p.id === prev.id) || projs[0]) : projs[0]);
+      const defaultProject = projs.find(p => p.status !== 'Lost') || projs[0];
+      setActiveProject(prev => prev ? (projs.find(p => p.id === prev.id) || defaultProject) : defaultProject);
     }
     setLoading(false);
   };
@@ -177,9 +178,12 @@ export default function Home() {
               }
             }}
           >
-            {[...projects].sort((a, b) => a.name.localeCompare(b.name)).map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
+            {projects
+              .filter(p => p.status !== 'Lost' || p.id === activeProject?.id)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(p => (
+                <option key={p.id} value={p.id}>{p.name}{p.status === 'Lost' ? ' (Lost/Archived)' : ''}</option>
+              ))}
           </select>
         </div>
         
