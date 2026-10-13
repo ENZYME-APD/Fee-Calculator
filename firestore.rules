@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to get the current user's companyId
+    function getUserCompanyId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId;
+    }
+
+    // Superadmins are identified by their @weareenzyme.com email, same check
+    // used client-side in src/app/(app)/superadmin/page.tsx.
+    function isSuperadmin() {
+      return request.auth != null &&
+        request.auth.token.email != null &&
+        request.auth.token.email.matches('.*@weareenzyme[.]com$');
+    }
+
+    // Companies collection
+    match /companies/{companyId} {
+      allow read: if request.auth != null && (getUserCompanyId() == companyId || isSuperadmin());
+      // Creation during signup: only the document matching the new company, no companyId yet to compare against.
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (getUserCompanyId() == companyId || isSuperadmin());
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isSuperadmin());
+    }
+
+    // All other collections (strictly enforced by companyId)
+    match /{document=**} {
+      allow create: if request.auth != null &&
+        (request.resource.data.companyId == getUserCompanyId() || isSuperadmin());
+
+      allow read, update, delete: if request.auth != null &&
+        (resource.data.companyId == getUserCompanyId() || isSuperadmin());
+    }
+  }
+}
