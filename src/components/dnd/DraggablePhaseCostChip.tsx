@@ -59,7 +59,7 @@ export function DraggablePhaseCostChip({
       <div className="flex flex-col">
         <div className="flex items-center gap-2">
           {getCostIcon(cost.type)}
-          <span className="font-bold text-slate-800 dark:text-slate-200">{cost.name}</span>
+          <span className="font-semibold text-sm text-slate-800 dark:text-slate-200">{cost.name}</span>
         </div>
         <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{cost.quantity} × {formatCurrency(cost.unitCost)}</span>
       </div>
