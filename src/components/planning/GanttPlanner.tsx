@@ -294,7 +294,7 @@ export function GanttPlanner() {
               className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1"
             >
               {showLost ? <EyeOff size={12} /> : <Eye size={12} />}
-              {showLost ? 'Hide Lost' : 'Show Lost'}
+              {showLost ? 'Hide Lost/Archived' : 'Show Lost/Archived'}
             </button>
           </div>
     

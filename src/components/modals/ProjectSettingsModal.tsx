@@ -84,7 +84,7 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave }: Proje
                   <option value="Proposed">Proposed</option>
                   <option value="Active">Active</option>
                   <option value="Completed">Completed</option>
-                  <option value="Lost">Lost</option>
+                  <option value="Lost">Lost/Archived</option>
                 </select>
               </div>
               <div>

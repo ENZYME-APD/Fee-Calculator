@@ -20,6 +20,11 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   const [showLost, setShowLost] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const formatStatus = (status: string) => {
+    if (status === 'Lost') return 'Lost/Archived';
+    return status;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Draft': return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
@@ -440,7 +445,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                     onChange={(e) => setShowLost(e.target.checked)}
                     className="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 bg-white dark:bg-slate-900 cursor-pointer"
                   />
-                  Show Lost
+                  Show Lost/Archived
                 </label>
               )}
               <select
@@ -471,7 +476,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
               <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400 dark:bg-amber-500"></span><span className="text-amber-600 dark:text-amber-500">Proposed</span></div>
               <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400 dark:bg-emerald-500"></span><span className="text-emerald-600 dark:text-emerald-500">Active</span></div>
               <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-400 dark:bg-blue-500"></span><span className="text-blue-600 dark:text-blue-500">Completed</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-400 dark:bg-rose-500"></span><span className="text-rose-600 dark:text-rose-500">Lost</span></div>
+              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-400 dark:bg-rose-500"></span><span className="text-rose-600 dark:text-rose-500">Lost/Archived</span></div>
             </div>
           )}
         </div>
@@ -548,7 +553,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                           <option value="Proposed">Proposed</option>
                           <option value="Active">Active</option>
                           <option value="Completed">Completed</option>
-                          <option value="Lost">Lost</option>
+                          <option value="Lost">Lost/Archived</option>
                         </select>
                         <input 
                           type="date" 
@@ -586,7 +591,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                   </div>
                   {!isTemplateMode && (
                     <span className={`shrink-0 px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full ${getStatusColor(p.status || 'Draft')}`}>
-                      {p.status || 'Draft'}
+                      {formatStatus(p.status || 'Draft')}
                     </span>
                   )}
                 </div>
@@ -650,7 +655,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                   <Calculator size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" />
                 </button>
                 <span className={`px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full ${getStatusColor(activeProject.status || 'Draft')}`}>
-                  {activeProject.status || 'Draft'}
+                  {formatStatus(activeProject.status || 'Draft')}
                 </span>
               </div>
               {activeProject.area && <span className="text-sm text-slate-500 mt-1">{activeProject.area} {areaUnit}</span>}

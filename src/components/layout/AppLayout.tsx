@@ -557,9 +557,10 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                           className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 border-none outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer appearance-none text-center pr-8"
                         >
                           <option value="Draft">Draft</option>
+                          <option value="Proposed">Proposed</option>
                           <option value="Active">Active</option>
                           <option value="Completed">Completed</option>
-                          <option value="Lost">Lost</option>
+                          <option value="Lost">Lost/Archived</option>
                         </select>
                         <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-blue-600 dark:text-blue-400 pointer-events-none" />
                       </div>
