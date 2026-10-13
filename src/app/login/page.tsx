@@ -2,12 +2,30 @@
 import React, { useState, Suspense } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, updateProfile } from 'firebase/auth';
 import { auth, db, googleProvider } from '@/lib/firebase/config';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getInviteByToken, deleteInvite, bootstrapCompanyData } from '@/lib/firebase/db';
+import { getInviteByToken, bootstrapCompanyData } from '@/lib/firebase/db';
 import { Invite } from '@/lib/firebase/schema';
 import { Building2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { User as FirebaseUser } from 'firebase/auth';
+
+// Provisions (or joins) a company server-side — see src/app/api/auth/provision/route.ts
+// for why this can't be a direct client-side Firestore write.
+async function provision(
+  firebaseUser: FirebaseUser,
+  payload: { mode: 'signup'; companyName: string; displayName?: string } | { mode: 'invite'; token: string; displayName?: string }
+): Promise<{ companyId: string; role: string }> {
+  const idToken = await firebaseUser.getIdToken();
+  const res = await fetch('/api/auth/provision', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to provision account');
+  return data;
+}
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -53,63 +71,32 @@ function LoginContent() {
         if (!inviteData && !companyName.trim()) throw new Error("Company name is required");
         // 1. Check if we have invite data
         if (inviteData) {
+          let userCred;
           try {
             // Try to create the user first
-            const userCred = await createUserWithEmailAndPassword(auth, email, password);
-            await setDoc(doc(db, 'users', userCred.user.uid), {
-              email,
-              displayName,
-              companyId: inviteData.companyId,
-              role: inviteData.role
-            });
+            userCred = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(userCred.user, { displayName });
           } catch (err: any) {
             if (err.code === 'auth/email-already-in-use') {
               // User exists, try signing them in
-              const userCred = await signInWithEmailAndPassword(auth, email, password);
-              // Update their user doc to join the new company
-              await setDoc(doc(db, 'users', userCred.user.uid), {
-                email,
-                companyId: inviteData.companyId,
-                role: inviteData.role
-              });
+              userCred = await signInWithEmailAndPassword(auth, email, password);
             } else {
               throw err;
             }
           }
-          
-          // Delete invite regardless
-          if (inviteData.id) {
-            await deleteInvite(inviteData.id);
-          }
+          // Server validates the invite belongs to this email and assigns
+          // companyId/role — the client can no longer set these directly.
+          await provision(userCred.user, { mode: 'invite', token: inviteToken!, displayName });
         } else {
           // Normal Sign up (No invite)
           if (!companyName.trim()) throw new Error("Company name is required");
-          
-          const userCred = await createUserWithEmailAndPassword(auth, email, password);
-          
-          // 2. Create the company in Firestore
-          const companyId = crypto.randomUUID();
-          const isEnzymeEmail = email.toLowerCase().endsWith('@weareenzyme.com');
-          
-          await setDoc(doc(db, 'companies', companyId), {
-            name: companyName,
-            subscriptionStatus: isEnzymeEmail ? 'lifetime' : 'trialing',
-            trialEndsAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days from now
-            createdAt: Date.now()
-          });
 
+          const userCred = await createUserWithEmailAndPassword(auth, email, password);
           await updateProfile(userCred.user, { displayName });
 
-          // 3. Create the user doc linked to the company
-          await setDoc(doc(db, 'users', userCred.user.uid), {
-            email,
-            displayName,
-            companyId,
-            role: 'admin'
-          });
+          const { companyId } = await provision(userCred.user, { mode: 'signup', companyName, displayName });
 
-          // 4. Bootstrap sample data
+          // Bootstrap sample data
           await bootstrapCompanyData(companyId, userCred.user.uid);
         }
         router.push('/overview');
@@ -149,40 +136,15 @@ function LoginContent() {
       
       if (userDoc.exists()) {
         if (inviteData) {
-          await setDoc(userDocRef, {
-            email: user.email,
-            companyId: inviteData.companyId,
-            role: inviteData.role
-          }, { merge: true });
-          if (inviteData.id) await deleteInvite(inviteData.id);
+          await provision(user, { mode: 'invite', token: inviteToken! });
         }
         router.push('/overview');
       } else {
         if (inviteData) {
-          await setDoc(userDocRef, {
-            email: user.email,
-            companyId: inviteData.companyId,
-            role: inviteData.role
-          });
-          if (inviteData.id) await deleteInvite(inviteData.id);
+          await provision(user, { mode: 'invite', token: inviteToken!, displayName: user.displayName || undefined });
         } else {
           const cName = companyName.trim() || `${user.displayName || 'My'} Workspace`;
-          const companyId = crypto.randomUUID();
-          const isEnzymeEmail = user.email?.toLowerCase().endsWith('@weareenzyme.com');
-          
-          await setDoc(doc(db, 'companies', companyId), {
-            name: cName,
-            subscriptionStatus: isEnzymeEmail ? 'lifetime' : 'trialing',
-            trialEndsAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
-            createdAt: Date.now()
-          });
-
-          await setDoc(userDocRef, {
-            email: user.email,
-            companyId,
-            role: 'admin'
-          });
-
+          const { companyId } = await provision(user, { mode: 'signup', companyName: cName, displayName: user.displayName || undefined });
           await bootstrapCompanyData(companyId, user.uid);
         }
         router.push('/overview');

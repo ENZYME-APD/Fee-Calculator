@@ -9,8 +9,15 @@ import { CsvManager } from '@/components/resources/CsvManager';
 import { Plus, Settings } from 'lucide-react';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function TeamPage() {
+  const { user, dbUser, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const isSuperadmin = user?.email?.toLowerCase().endsWith('@weareenzyme.com');
+  const isAdmin = dbUser?.role === 'admin' || isSuperadmin;
+
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -40,8 +47,14 @@ export default function TeamPage() {
   };
 
   useEffect(() => {
-    loadMembers();
-  }, []);
+    if (!authLoading && !isAdmin) {
+      router.replace('/overview');
+      return;
+    }
+    if (!authLoading && isAdmin) {
+      loadMembers();
+    }
+  }, [authLoading, isAdmin]);
 
   const handleDelete = async (id: string) => {
     setConfirmConfig({
@@ -109,6 +122,14 @@ export default function TeamPage() {
     setEditingMember(undefined);
     setIsFormOpen(true);
   };
+
+  if (authLoading || (!isAdmin)) {
+    return (
+      <div className="flex h-full items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-6xl w-full mx-auto flex flex-col h-full">

@@ -15,6 +15,29 @@ service cloud.firestore {
         request.auth.token.email.matches('.*@weareenzyme[.]com$');
     }
 
+    // Admins can manage sensitive company configuration (salaries, overheads).
+    function isAdmin() {
+      return request.auth != null &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || isSuperadmin());
+    }
+
+    // True if the caller is an admin of the given company (used for the
+    // Settings > Team tab, where an admin edits/removes a teammate's own
+    // users/{uid} doc).
+    function isAdminOfCompany(companyId) {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId;
+    }
+
+    // Collections holding raw salary/overhead figures: only admins may create,
+    // update or delete these documents. Reads remain company-scoped below
+    // (any team member can still read them today; restricting reads too would
+    // require splitting these into public/private documents).
+    function isSensitiveCollection(path) {
+      return path.split('/')[0] == 'teamMembers' || path.split('/')[0] == 'overheadsProfile';
+    }
+
     // Companies collection
     match /companies/{companyId} {
       allow read: if request.auth != null && (getUserCompanyId() == companyId || isSuperadmin());
@@ -23,18 +46,44 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && (getUserCompanyId() == companyId || isSuperadmin());
     }
 
-    // Users collection
+    // Users collection. companyId/role are assigned server-side on creation
+    // (see src/app/api/auth/provision/route.ts, which uses the Admin SDK and
+    // so bypasses these rules) after validating signup/invite acceptance.
+    // Clients can never create a user doc, and can only update an existing
+    // one without changing its companyId, which previously allowed
+    // self-escalation into any company as 'admin'.
     match /users/{userId} {
-      allow read, write: if request.auth != null && (request.auth.uid == userId || isSuperadmin());
+      allow read: if request.auth != null && (request.auth.uid == userId || isSuperadmin());
+
+      // A user may edit their own doc (e.g. displayName) but never their own role or companyId.
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.companyId == resource.data.companyId;
+
+      // An admin may edit a teammate's role/displayName within their own company,
+      // but may not move them to a different company.
+      allow update: if isAdminOfCompany(resource.data.companyId) &&
+        request.resource.data.companyId == resource.data.companyId;
+
+      // Self-removal (account deletion) or an admin removing a teammate from their own company.
+      allow delete: if request.auth != null &&
+        (request.auth.uid == userId || isAdminOfCompany(resource.data.companyId));
+
+      allow create: if isSuperadmin();
     }
 
     // All other collections (strictly enforced by companyId)
     match /{document=**} {
       allow create: if request.auth != null &&
-        (request.resource.data.companyId == getUserCompanyId() || isSuperadmin());
+        (request.resource.data.companyId == getUserCompanyId() || isSuperadmin()) &&
+        (!isSensitiveCollection(document) || isAdmin());
 
-      allow read, update, delete: if request.auth != null &&
+      allow read: if request.auth != null &&
         (resource.data.companyId == getUserCompanyId() || isSuperadmin());
+
+      allow update, delete: if request.auth != null &&
+        (resource.data.companyId == getUserCompanyId() || isSuperadmin()) &&
+        (!isSensitiveCollection(document) || isAdmin());
     }
   }
 }

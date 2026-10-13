@@ -6,6 +6,7 @@ import { Building, Plus, Trash2, Info, RefreshCw, CheckCircle2, ChevronDown, Che
 import { getTeamMembers, getOverheadsProfile, updateOverheadsProfile, updateTeamMember, getCategories } from '@/lib/firebase/db';
 import { TeamMember, OverheadsProfile, OverheadCategory, OverheadItem, TeamCategory } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
@@ -53,7 +54,10 @@ const DEFAULT_CATEGORIES: OverheadCategory[] = [
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 export default function OverheadsPage() {
-  const { user } = useAuth();
+  const { user, dbUser, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const isSuperadmin = user?.email?.toLowerCase().endsWith('@weareenzyme.com');
+  const isAdmin = dbUser?.role === 'admin' || isSuperadmin;
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [profile, setProfile] = useState<OverheadsProfile | null>(null);
   
@@ -74,6 +78,12 @@ export default function OverheadsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAdmin) {
+      router.replace('/overview');
+      return;
+    }
+
     const loadData = async () => {
       setLoading(true);
       try {
@@ -99,7 +109,7 @@ export default function OverheadsPage() {
       }
     };
     loadData();
-  }, []);
+  }, [authLoading, isAdmin]);
 
   const computedStats = useMemo(() => {
     let nonBillableSalaries = 0;
@@ -362,6 +372,7 @@ export default function OverheadsPage() {
     reader.readAsText(file);
   };
 
+  if (authLoading || !isAdmin) return <div className="p-8 text-white">Loading...</div>;
   if (loading) return <div className="p-8 text-white">Loading...</div>;
 
   return (

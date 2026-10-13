@@ -38,21 +38,28 @@ export function Navigation() {
   
   if (pathname === '/login') return null;
 
+  const isSuperadmin = user?.email?.toLowerCase().endsWith('@weareenzyme.com');
+  const isAdmin = dbUser?.role === 'admin' || isSuperadmin;
+
   const navItems = [
     { name: 'Overview Dashboard', href: '/overview', icon: PieChart },
     { name: 'Projects & Phases', href: '/projects', icon: FolderKanban },
     { name: 'Fee Proposal', href: '/dashboard', icon: Calculator },
     { name: 'Project Planning', href: '/planning', icon: CalendarDays },
     { name: 'Document Builder', href: '/documents', icon: FileText },
-    { name: 'Team Resources', href: '/team', icon: Users },
-    { name: 'Overheads Calculator', href: '/overheads', icon: Building },
+    // Team Resources / Overheads expose salaries and overhead costs, so only
+    // admins (or superadmins) see these in the nav at all.
+    ...(isAdmin ? [
+      { name: 'Team Resources', href: '/team', icon: Users },
+      { name: 'Overheads Calculator', href: '/overheads', icon: Building },
+    ] : []),
     { name: 'Templates', href: '/templates', icon: LayoutTemplate },
     { name: 'Documentation', href: '/docs', icon: BookOpen },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Billing', href: '/billing', icon: CreditCard },
   ];
-  
-  if (user?.email?.toLowerCase().endsWith('@weareenzyme.com')) {
+
+  if (isSuperadmin) {
     navItems.push({ name: 'Superadmin', href: '/superadmin', icon: ShieldAlert });
   }
   
