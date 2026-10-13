@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { Project, Phase, TeamMember, Allocation, ProjectCost, Payment, TeamCategory } from '@/lib/firebase/schema';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 
 export function exportProposalToExcel(
   project: Project,
@@ -33,12 +34,14 @@ export function exportProposalToExcel(
     const m = membersMap.get(mId);
     if (m) {
       const cat = categories.find(c => c.id === m.category);
+      const memberAlloc = allocations.find(a => a.memberId === mId);
+      const rate = memberAlloc ? getAllocationRate(memberAlloc, m) : m.costPerHour;
       teamRows.push([
         m.name,
         m.position,
         cat?.name || 'Uncategorized',
         cat?.type || 'internal',
-        { v: m.costPerHour, t: 'n', z: '#,##0.00' }
+        { v: rate, t: 'n', z: '#,##0.00' }
       ]);
     }
   });
@@ -75,7 +78,7 @@ export function exportProposalToExcel(
           m.name,
           cat?.name || '',
           { v: alloc.hours, t: 'n', z: '#,##0.00' },
-          { v: m.costPerHour, t: 'n', z: '#,##0.00' },
+          { v: getAllocationRate(alloc, m), t: 'n', z: '#,##0.00' },
           { f: `C${rowNum}*D${rowNum}`, t: 'n', z: '#,##0.00' }
         ]);
         rowNum++;
@@ -156,7 +159,7 @@ export function exportProposalToExcel(
     phaseAllocs.forEach(alloc => {
       const m = membersMap.get(alloc.memberId);
       if (m) {
-        pCost += alloc.hours * m.costPerHour;
+        pCost += alloc.hours * getAllocationRate(alloc, m);
       }
     });
     pCosts.forEach(c => {

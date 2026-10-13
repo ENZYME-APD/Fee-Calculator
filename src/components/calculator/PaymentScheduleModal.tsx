@@ -4,6 +4,7 @@ import { Project, Phase, Allocation, TeamMember, ProjectCost, Payment } from '@/
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { FileSpreadsheet, X, Download } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 
 interface PaymentScheduleModalProps {
   project: Project;
@@ -23,9 +24,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
     let totalCost = 0;
     phaseAllocations.forEach(alloc => {
       const member = members.find(m => m.id === alloc.memberId);
-      if (member) {
-        totalCost += (alloc.hours * member.costPerHour);
-      }
+      totalCost += alloc.hours * getAllocationRate(alloc, member);
     });
     const phaseCosts = projectCosts.filter(c => c.phaseId === phase.id);
     const addedCost = phaseCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);

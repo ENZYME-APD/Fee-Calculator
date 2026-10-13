@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { Tooltip } from '@/components/ui/Tooltip';
 import Link from 'next/link';
 import { Folder, CircleDollarSign, TrendingUp, Users, PieChart as PieChartIcon, List } from 'lucide-react';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 
 export function OverviewDashboard() {
   const { dbUser } = useAuth();
@@ -168,9 +169,7 @@ export function OverviewDashboard() {
       let totalCost = 0;
       projAllocs.forEach(alloc => {
         const member = members.find(m => m.id === alloc.memberId);
-        if (member) {
-          totalCost += alloc.hours * member.costPerHour;
-        }
+        totalCost += alloc.hours * getAllocationRate(alloc, member);
       });
       projCosts.forEach(c => {
         totalCost += c.quantity * c.unitCost;

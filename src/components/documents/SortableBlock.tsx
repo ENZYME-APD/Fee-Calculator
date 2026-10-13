@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DocumentBlock, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Project, Payment } from '@/lib/firebase/schema';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 import { GripVertical, Trash2, FileText, Calculator, Users, CreditCard, BookmarkPlus } from 'lucide-react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Bold, Italic, List, ListOrdered } from 'lucide-react';
@@ -126,7 +127,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
                 let phaseCost = 0;
                 allocations.filter(a => a.phaseId === phase.id).forEach(a => {
                   const m = members.find(m => m.id === a.memberId);
-                  if (m) phaseCost += a.hours * m.costPerHour;
+                  if (m) phaseCost += a.hours * getAllocationRate(a, m);
                 });
                 costs.filter(c => c.phaseId === phase.id).forEach(c => {
                   phaseCost += c.quantity * c.unitCost;
@@ -204,7 +205,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
         let phaseCost = 0;
         allocations.filter(a => a.phaseId === phase.id).forEach(a => {
           const m = members.find(m => m.id === a.memberId);
-          if (m) phaseCost += a.hours * m.costPerHour;
+          if (m) phaseCost += a.hours * getAllocationRate(a, m);
         });
         costs.filter(c => c.phaseId === phase.id).forEach(c => {
           phaseCost += c.quantity * c.unitCost;

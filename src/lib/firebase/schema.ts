@@ -94,6 +94,13 @@ export interface Allocation {
   allocationType: 'hours' | 'percentage' | 'weeks';
   allocationValue: number;
   hours: number;
+  // The member's costPerHour at the time this allocation was created/last
+  // reassigned, so fee calculations stay correct if the member's salary
+  // changes later. Older allocations predating this field fall back to the
+  // member's current costPerHour (see getAllocationRate in
+  // src/lib/utils/allocationCost.ts). An admin can re-pull current rates
+  // for a whole project with the "Refresh Rates" action.
+  costPerHourSnapshot?: number;
 }
 
 export interface ProjectCost {

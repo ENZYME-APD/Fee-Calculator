@@ -2,6 +2,7 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType } from 'docx';
 import { saveAs } from 'file-saver';
 import { DocumentBlock, Project, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Payment } from '@/lib/firebase/schema';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 
 // Helper to strip HTML tags for simple rich text fallback
 const stripHtml = (html: string) => {
@@ -95,7 +96,7 @@ export const exportToDocx = async (
         let phaseCost = 0;
         allocations.filter(a => a.phaseId === phase.id).forEach(a => {
           const m = members.find(m => m.id === a.memberId);
-          if (m) phaseCost += a.hours * m.costPerHour;
+          if (m) phaseCost += a.hours * getAllocationRate(a, m);
         });
         costs.filter(c => c.phaseId === phase.id).forEach(c => {
           phaseCost += c.quantity * c.unitCost;
@@ -192,7 +193,7 @@ export const exportToDocx = async (
         let phaseCost = 0;
         allocations.filter(a => a.phaseId === phase.id).forEach(a => {
           const m = members.find(m => m.id === a.memberId);
-          if (m) phaseCost += a.hours * m.costPerHour;
+          if (m) phaseCost += a.hours * getAllocationRate(a, m);
         });
         costs.filter(c => c.phaseId === phase.id).forEach(c => {
           phaseCost += c.quantity * c.unitCost;

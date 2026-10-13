@@ -6,6 +6,7 @@ import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Calculator, Edit3, Check, X, Download } from 'lucide-react';
 import { InlinePercentInput } from '@/components/projects/PaymentScheduleManager';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 
 interface ProjectSummaryProps {
   project: Project;
@@ -56,7 +57,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
       const member = members.find(m => m.id === alloc.memberId);
       if (member) {
         totalHours += alloc.hours;
-        const cost = alloc.hours * member.costPerHour;
+        const cost = alloc.hours * getAllocationRate(alloc, member);
         totalCost += cost;
 
         const catId = member.category || 'uncategorized';

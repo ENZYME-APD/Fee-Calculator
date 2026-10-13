@@ -5,6 +5,7 @@ import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Copy, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 
 export type ExtendedAllocation = Allocation & { member: TeamMember };
 
@@ -58,8 +59,8 @@ export function DraggablePhaseAllocationChip({
       </div>
       <div className="flex flex-col items-end pr-2 pl-2">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Cost</span>
-        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatCurrency(allocation.hours * allocation.member.costPerHour)}</span>
-        <span className="text-[10px] text-slate-400 font-medium mt-0.5">@ {formatCurrency(allocation.member.costPerHour)}/h</span>
+        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatCurrency(allocation.hours * getAllocationRate(allocation, allocation.member))}</span>
+        <span className="text-[10px] text-slate-400 font-medium mt-0.5">@ {formatCurrency(getAllocationRate(allocation, allocation.member))}/h</span>
       </div>
       
       {/* We stop propagation on pointer down so that clicking buttons doesn't initiate a drag */}

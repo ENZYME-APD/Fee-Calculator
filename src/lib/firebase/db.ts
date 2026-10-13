@@ -133,6 +133,12 @@ export const deleteTeamMember = async (id: string) => {
   await deleteDoc(doc(db, 'teamMembers', id));
 };
 
+export const getTeamMember = async (id: string): Promise<TeamMember | null> => {
+  const snap = await getDoc(doc(db, 'teamMembers', id));
+  if (!snap.exists()) return null;
+  return extractData(snap) as TeamMember;
+};
+
 // --- Projects ---
 export const getProjects = async (isTemplate: boolean = false, ownerId?: string): Promise<Project[]> => {
   const companyId = requireCompanyId();
@@ -454,17 +460,60 @@ export const getAllocations = async (): Promise<Allocation[]> => {
   return snap.docs.map(extractData) as Allocation[];
 };
 
+// Snapshots the member's current costPerHour onto the allocation so later
+// salary changes don't retroactively change an already-agreed fee. See
+// src/lib/utils/allocationCost.ts and the "Refresh Rates" action.
 export const addAllocation = async (allocation: Omit<Allocation, 'id' | 'companyId'>) => {
-  const docRef = await addDoc(collection(db, 'allocations'), sanitize({ ...allocation, companyId: requireCompanyId() }));
+  let costPerHourSnapshot = (allocation as Allocation).costPerHourSnapshot;
+  if (costPerHourSnapshot === undefined && allocation.memberId) {
+    const member = await getTeamMember(allocation.memberId);
+    costPerHourSnapshot = member?.costPerHour;
+  }
+  const docRef = await addDoc(
+    collection(db, 'allocations'),
+    sanitize({ ...allocation, costPerHourSnapshot, companyId: requireCompanyId() })
+  );
   return docRef.id;
 };
 
 export const updateAllocation = async (id: string, allocation: Partial<Omit<Allocation, 'id' | 'companyId'>>) => {
-  await updateDoc(doc(db, 'allocations', id), sanitize(allocation) as any);
+  const updates: Partial<Allocation> = { ...allocation };
+  // Reassigning to a different member re-snapshots their current rate,
+  // unless the caller already supplied an explicit snapshot.
+  if (allocation.memberId && updates.costPerHourSnapshot === undefined) {
+    const member = await getTeamMember(allocation.memberId);
+    updates.costPerHourSnapshot = member?.costPerHour;
+  }
+  await updateDoc(doc(db, 'allocations', id), sanitize(updates) as any);
 };
 
 export const deleteAllocation = async (id: string) => {
   await deleteDoc(doc(db, 'allocations', id));
+};
+
+// Admin action: re-pull every allocation's costPerHourSnapshot in a project
+// from the team members' current rates. Use when salaries changed and a
+// still-open proposal should reflect the new numbers.
+export const refreshProjectAllocationRates = async (projectId: string): Promise<number> => {
+  const companyId = requireCompanyId();
+  const [allocSnap, membersSnap] = await Promise.all([
+    getDocs(query(collection(db, 'allocations'), where('companyId', '==', companyId), where('projectId', '==', projectId))),
+    getDocs(query(collection(db, 'teamMembers'), where('companyId', '==', companyId))),
+  ]);
+  const membersMap = new Map(membersSnap.docs.map(d => [d.id, d.data() as TeamMember]));
+
+  const batch = writeBatch(db);
+  let updated = 0;
+  allocSnap.docs.forEach(docSnap => {
+    const alloc = docSnap.data() as Allocation;
+    const member = membersMap.get(alloc.memberId);
+    if (member && member.costPerHour !== alloc.costPerHourSnapshot) {
+      batch.update(docSnap.ref, { costPerHourSnapshot: member.costPerHour });
+      updated++;
+    }
+  });
+  if (updated > 0) await batch.commit();
+  return updated;
 };
 
 // --- Payments ---

@@ -6,6 +6,7 @@ import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectTasks
 import { Folder, Eye, EyeOff, CalendarDays, Lock, Calculator, ChevronsRight, ChevronsLeft, RefreshCw, Undo2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GanttGrid } from './GanttGrid';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
@@ -360,7 +361,7 @@ export function GanttPlanner() {
                  const projectAllocs = allocations.filter(a => phaseIds.includes(a.phaseId) && a.hours > 0);
                  const validProjectCosts = projectCosts.filter(c => phaseIds.includes(c.phaseId));
                  
-                 const budgetedCost = projectAllocs.reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
+                 const budgetedCost = projectAllocs.reduce((sum, a) => sum + (a.hours * getAllocationRate(a, members.find(m => m.id === a.memberId))), 0) + 
                     validProjectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
                  
                  const plannedCost = tasks.reduce((sum, t) => sum + (t.durationHours * (members.find(m => m.id === t.memberId)?.costPerHour || 0)), 0);

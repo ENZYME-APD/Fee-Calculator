@@ -10,6 +10,7 @@ import { useAppSettings } from '@/lib/auth/AuthContext';
 import { useUndo } from '@/lib/context/UndoContext';
 import { cn } from '@/lib/utils';
 import { DraggablePhaseAllocationChip, ExtendedAllocation } from './DraggablePhaseAllocationChip';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 import { DraggablePhaseCostChip } from './DraggablePhaseCostChip';
 
 interface DroppablePhaseLaneProps {
@@ -41,7 +42,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
     },
   });
 
-  const baseCost = allocations.reduce((sum, a) => sum + (a.hours * a.member.costPerHour), 0);
+  const baseCost = allocations.reduce((sum, a) => sum + (a.hours * getAllocationRate(a, a.member)), 0);
   const addedCost = projectCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
   const totalCost = baseCost + addedCost;
 
@@ -49,7 +50,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
   let otherExpenses = 0;
 
   allocations.forEach(a => {
-    const cost = a.hours * a.member.costPerHour;
+    const cost = a.hours * getAllocationRate(a, a.member);
     const catId = a.member.category || 'uncategorized';
     breakdown[catId] = (breakdown[catId] || 0) + cost;
   });

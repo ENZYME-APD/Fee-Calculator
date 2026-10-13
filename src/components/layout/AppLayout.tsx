@@ -4,7 +4,8 @@ import {
   DndContext, DragEndEvent, DragStartEvent, TouchSensor, MouseSensor, useSensor, useSensors, DragOverlay
 } from '@dnd-kit/core';
 import { TeamMember, Phase, Allocation, ProjectCost, Project } from '@/lib/firebase/schema';
-import { addAllocation, addProjectCost, updateAllocation, deleteAllocation, deleteProjectCost, updateProjectCost, updateProject } from '@/lib/firebase/db';
+import { addAllocation, addProjectCost, updateAllocation, deleteAllocation, deleteProjectCost, updateProjectCost, updateProject, refreshProjectAllocationRates } from '@/lib/firebase/db';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 import { useUndo } from '@/lib/context/UndoContext';
 import { DraggablePersonChip } from '../dnd/DraggablePersonChip';
 import { DraggableCostChip } from '../dnd/DraggableCostChip';
@@ -15,11 +16,11 @@ import { AllocationModal } from '../modals/AllocationModal';
 import { CostModal } from '../modals/CostModal';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import { ProjectSettingsModal } from '../modals/ProjectSettingsModal';
-import { PanelLeftClose, PanelLeftOpen, Users, ChevronDown, ChevronRight, PlusCircle, Menu, Edit3, Check, CalendarDays } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Users, ChevronDown, ChevronRight, PlusCircle, Menu, Edit3, Check, CalendarDays, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { getCategories } from '@/lib/firebase/db';
-import { useAppSettings } from '@/lib/auth/AuthContext';
+import { useAppSettings, useAuth } from '@/lib/auth/AuthContext';
 import { TeamCategory } from '@/lib/firebase/schema';
 import { Tooltip } from '@/components/ui/Tooltip';
 interface AppLayoutProps {
@@ -34,8 +35,11 @@ interface AppLayoutProps {
 export function AppLayout({ project, members, phases, allocations, projectCosts = [], onAllocationAdded }: AppLayoutProps) {
   const { pushAction } = useUndo();
   const { formatCurrency, areaUnit } = useAppSettings();
-  
+  const { user, dbUser } = useAuth();
+  const isAdmin = dbUser?.role === 'admin' || user?.email?.toLowerCase().endsWith('@weareenzyme.com');
+
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
+  const [isRefreshingRates, setIsRefreshingRates] = useState(false);
   const [isEditingMargin, setIsEditingMargin] = useState(false);
   const [marginInput, setMarginInput] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -297,6 +301,23 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
     setIsModalOpen(true);
   };
 
+  const handleRefreshRates = async () => {
+    if (!project?.id || isRefreshingRates) return;
+    setIsRefreshingRates(true);
+    try {
+      const updated = await refreshProjectAllocationRates(project.id);
+      onAllocationAdded();
+      window.dispatchEvent(new CustomEvent('show-toast', {
+        detail: { message: updated > 0 ? `Refreshed ${updated} rate${updated === 1 ? '' : 's'} to current team costs.` : 'All rates already match current team costs.' }
+      }));
+    } catch (e) {
+      console.error(e);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to refresh rates.' } }));
+    } finally {
+      setIsRefreshingRates(false);
+    }
+  };
+
   const handleDeleteAllocation = async (id: string) => {
     setAllocationToDelete(id);
   };
@@ -515,7 +536,7 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
             <div className="absolute inset-0 overflow-x-hidden overflow-y-auto p-8 z-10">
               {project && (() => {
                 const projectPhaseIds = phases.filter(p => p.projectId === project.id).map(p => p.id);
-                const totalCost = localAllocations.filter(a => projectPhaseIds.includes(a.phaseId)).reduce((sum, a) => sum + (a.hours * (members.find(m => m.id === a.memberId)?.costPerHour || 0)), 0) + 
+                const totalCost = localAllocations.filter(a => projectPhaseIds.includes(a.phaseId)).reduce((sum, a) => sum + (a.hours * getAllocationRate(a, members.find(m => m.id === a.memberId))), 0) +
                   localProjectCosts.filter(c => projectPhaseIds.includes(c.phaseId)).reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
                 const profitMarginPercent = project.profitMargin ?? 30;
                 const profitMarginAmount = totalCost * (profitMarginPercent / 100);
@@ -568,7 +589,21 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                     
                     <div className="flex items-center gap-8">
                       <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Cost</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Cost</span>
+                          {isAdmin && (
+                            <Tooltip content="Re-pull current team rates into this project's allocations. Proposal costs are locked to the rates at the time each allocation was made, so salary changes don't retroactively change an already-agreed fee.">
+                              <button
+                                onClick={handleRefreshRates}
+                                disabled={isRefreshingRates}
+                                className="text-slate-400 hover:text-blue-500 disabled:opacity-50 p-0.5 -mt-0.5 rounded transition-colors"
+                                title="Refresh Rates"
+                              >
+                                <RefreshCw size={11} className={isRefreshingRates ? 'animate-spin' : ''} />
+                              </button>
+                            </Tooltip>
+                          )}
+                        </div>
                         <span className="text-xl font-bold text-slate-700 dark:text-slate-300">
                           {formatCurrency(totalCost)}
                         </span>
