@@ -9,6 +9,7 @@ import { ProfileTab } from '@/components/settings/ProfileTab';
 import { SecurityTab } from '@/components/settings/SecurityTab';
 import { PreferencesTab } from '@/components/settings/PreferencesTab';
 import { CategoriesTab } from '@/components/settings/CategoriesTab';
+import { Card, CardBody } from '@/components/ui/Card';
 
 export default function SettingsPage() {
   const { dbUser } = useAuth();
@@ -44,9 +45,9 @@ export default function SettingsPage() {
 
   return (
     <div className="p-8 w-full max-w-6xl mx-auto flex flex-col h-full overflow-y-auto">
-      <div className="mb-8 shrink-0">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your company preferences, team, and security.</p>
+      <div className="mb-6 shrink-0">
+        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 tracking-tight">Settings</h1>
+        <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">Manage your company preferences, team, and security.</p>
       </div>
 
       <div className="flex gap-8 items-start">
@@ -95,13 +96,15 @@ export default function SettingsPage() {
           </nav>
         </div>
 
-        <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-          {activeTab === 'profile' && <ProfileTab />}
-          {activeTab === 'preferences' && company && <PreferencesTab company={company} />}
-          {activeTab === 'categories' && company && <CategoriesTab company={company} />}
-          {activeTab === 'team' && company && <TeamTab company={company} />}
-          {activeTab === 'security' && <SecurityTab />}
-        </div>
+        <Card className="flex-1">
+          <CardBody className="p-6">
+            {activeTab === 'profile' && <ProfileTab />}
+            {activeTab === 'preferences' && company && <PreferencesTab company={company} />}
+            {activeTab === 'categories' && company && <CategoriesTab company={company} />}
+            {activeTab === 'team' && company && <TeamTab company={company} />}
+            {activeTab === 'security' && <SecurityTab />}
+          </CardBody>
+        </Card>
       </div>
     </div>
   );

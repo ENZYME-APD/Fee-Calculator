@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { getCompany } from '@/lib/firebase/db';
 import { Company } from '@/lib/firebase/schema';
 import { BillingTab } from '@/components/settings/BillingTab';
+import { Card, CardBody } from '@/components/ui/Card';
 
 export default function BillingPage() {
   const { dbUser } = useAuth();
@@ -29,14 +30,16 @@ export default function BillingPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto flex flex-col h-full overflow-y-auto w-full">
-      <div className="mb-8 shrink-0">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Billing & Subscription</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your company's subscription and billing details.</p>
+      <div className="mb-6 shrink-0">
+        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 tracking-tight">Billing & Subscription</h1>
+        <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">Manage your company's subscription and billing details.</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-        {company && <BillingTab company={company} />}
-      </div>
+      <Card>
+        <CardBody className="p-6">
+          {company && <BillingTab company={company} />}
+        </CardBody>
+      </Card>
     </div>
   );
 }

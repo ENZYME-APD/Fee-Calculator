@@ -40,7 +40,7 @@ export function WikiContent() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
         
         {/* Quick Start Guide */}
-        <div className="mb-16 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-3xl p-8 shadow-sm">
+        <div className="mb-16 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-2xl p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-blue-600 rounded-xl text-white">
               <Book size={24} />
@@ -88,7 +88,7 @@ export function WikiContent() {
         </div>
 
         {/* Table of Contents */}
-        <div className="mb-16 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="mb-16 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Contents</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <ul className="space-y-3">
@@ -343,7 +343,7 @@ export function WikiContent() {
               </div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Project Planning & Timeline</h2>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800">
               <p className="text-slate-600 dark:text-slate-400 mb-6">
                 The <strong className="text-slate-800 dark:text-slate-200">Project Planning</strong> feature allows you to translate your estimated fee hours into a concrete schedule on a timeline.
               </p>
@@ -392,7 +392,7 @@ export function WikiContent() {
               </div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Data Security & Compliance</h2>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800">
               <p className="text-slate-600 dark:text-slate-400 mb-6">
                 We know that financial estimates and salary data are highly sensitive. Fee Calculator uses enterprise-grade security to ensure your data is isolated, encrypted, and strictly access-controlled.
               </p>
@@ -430,7 +430,7 @@ export function WikiContent() {
               </div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Document Builder</h2>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800">
               <p className="text-slate-600 dark:text-slate-400 mb-6">
                 The <strong className="text-slate-800 dark:text-slate-200">Document Builder</strong> automatically turns your Fee Proposal data into a professional document ready to send to clients.
               </p>

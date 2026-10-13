@@ -6,6 +6,7 @@ import { getAllCompaniesForSuperadmin, getAllUsersForSuperadmin, updateCompany }
 import { ShieldAlert, Building2, Users as UsersIcon, Calendar, Activity } from 'lucide-react';
 import { Company, User } from '@/lib/firebase/schema';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
+import { Card } from '@/components/ui/Card';
 
 export default function SuperadminPage() {
   const { user, loading } = useAuth();
@@ -112,9 +113,9 @@ export default function SuperadminPage() {
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
-        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <Card className="flex-row items-center justify-between p-6">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2 tracking-tight">
               <ShieldAlert className="text-rose-500" />
               Superadmin Dashboard
             </h1>
@@ -127,25 +128,25 @@ export default function SuperadminPage() {
               {error}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <Card className="p-5">
             <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
               <Building2 size={18} />
               <span className="font-semibold text-sm">Total Companies</span>
             </div>
             <div className="text-3xl font-black text-slate-800 dark:text-slate-100">{companies.length}</div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          </Card>
+          <Card className="p-5">
             <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
               <UsersIcon size={18} />
               <span className="font-semibold text-sm">Total Users</span>
             </div>
             <div className="text-3xl font-black text-slate-800 dark:text-slate-100">{users.length}</div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          </Card>
+          <Card className="p-5">
             <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
               <Activity size={18} />
               <span className="font-semibold text-sm">Active Trials</span>
@@ -153,8 +154,8 @@ export default function SuperadminPage() {
             <div className="text-3xl font-black text-slate-800 dark:text-slate-100">
               {companies.filter(c => c.subscriptionStatus === 'trialing').length}
             </div>
-          </div>
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          </Card>
+          <Card className="p-5">
             <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
               <Calendar size={18} />
               <span className="font-semibold text-sm">Lifetime Accounts</span>
@@ -162,11 +163,11 @@ export default function SuperadminPage() {
             <div className="text-3xl font-black text-slate-800 dark:text-slate-100">
               {companies.filter(c => c.subscriptionStatus === 'lifetime').length}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Data Table */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold">
@@ -261,8 +262,8 @@ export default function SuperadminPage() {
               </tbody>
             </table>
           </div>
-        </div>
-        
+        </Card>
+
         <ConfirmModal
           isOpen={confirmConfig.isOpen}
           title={confirmConfig.title}
