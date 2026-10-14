@@ -8,11 +8,11 @@ export default function LandingPage() {
     <div className="flex flex-col pt-20">
       <AuthRedirect />
       {/* Hero Section */}
-      <section className="relative px-4 pt-20 pb-24 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
+      <section className="relative px-4 pt-20 pb-24 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden min-h-[85vh] flex items-center">
         {/* Background glow */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/20 dark:bg-blue-600/20 blur-[120px] rounded-full -z-10 pointer-events-none" />
-        
-        <div className="text-center max-w-4xl mx-auto">
+
+        <div className="text-center max-w-4xl mx-auto w-full">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 text-sm font-bold mb-8 shadow-sm">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
@@ -48,52 +48,6 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
-      </section>
-
-      {/* Product Walkthrough */}
-      <section className="relative bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-800/60 py-20 sm:py-28">
-      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-24">
-        {[
-          {
-            img: '/screenshots/team-resources.jpg',
-            alt: 'Team Resources screen listing team members grouped by category with salary, overheads, and derived cost per hour',
-            title: 'Your team, priced accurately',
-            body: "Set each person's salary and overheads once — internal staff or external consultants — and the app derives their true hourly cost automatically. No more guessing what an hour of someone's time actually costs you.",
-          },
-          {
-            img: '/screenshots/overheads.jpg',
-            alt: 'Overheads Calculator showing target income, overhead categories, and the resulting cost multiplier',
-            title: 'Overheads built into every rate',
-            body: 'Model rent, software, insurance, and non-billable time by category, and sync the result straight into your team’s hourly rates. Change one overhead line and every project’s cost updates with it.',
-          },
-          {
-            img: '/screenshots/projects-phases.jpg',
-            alt: 'Projects and Phases screen showing a project’s phases, live total cost and fee, and payment schedule',
-            title: 'Phases, costs & payment schedules in one place',
-            body: 'Break a project into phases, and watch total cost, profit margin, and fee recalculate live as you work. Build the payment schedule from a preset — by phase, monthly, or weighted to each phase’s actual cost — or do it by hand.',
-          },
-          {
-            img: '/screenshots/fee-proposal.jpg',
-            alt: 'Fee Proposal canvas with team members and cost chips dragged into project phases, showing cost breakdowns',
-            title: 'Drag, drop, and the fee calculates itself',
-            body: 'Drag team members and expenses straight into project phases. Every allocation locks in that rate at the moment you assign it, so a salary change later never retroactively changes a fee you already sent a client.',
-          },
-        ].map((item, i) => (
-          <div key={item.title} className={`flex flex-col md:flex-row items-center gap-12 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
-            <div className="md:w-1/2 w-full">
-              <img
-                src={item.img}
-                alt={item.alt}
-                className="w-full h-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl"
-              />
-            </div>
-            <div className="md:w-1/2 w-full">
-              <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4">{item.title}</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed">{item.body}</p>
-            </div>
-          </div>
-        ))}
-      </div>
       </section>
 
       {/* Features Section */}
@@ -154,6 +108,52 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Product Walkthrough */}
+      <section className="relative bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800/50 py-20 sm:py-28">
+      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-24">
+        {[
+          {
+            img: '/screenshots/team-resources.jpg',
+            alt: 'Team Resources screen listing team members grouped by category with salary, overheads, and derived cost per hour',
+            title: 'Your team, priced accurately',
+            body: "Set each person's salary and overheads once — internal staff or external consultants — and the app derives their true hourly cost automatically. No more guessing what an hour of someone's time actually costs you.",
+          },
+          {
+            img: '/screenshots/overheads.jpg',
+            alt: 'Overheads Calculator showing target income, overhead categories, and the resulting cost multiplier',
+            title: 'Overheads built into every rate',
+            body: 'Model rent, software, insurance, and non-billable time by category, and sync the result straight into your team’s hourly rates. Change one overhead line and every project’s cost updates with it.',
+          },
+          {
+            img: '/screenshots/projects-phases.jpg',
+            alt: 'Projects and Phases screen showing a project’s phases, live total cost and fee, and payment schedule',
+            title: 'Phases, costs & payment schedules in one place',
+            body: 'Break a project into phases, and watch total cost, profit margin, and fee recalculate live as you work. Build the payment schedule from a preset — by phase, monthly, or weighted to each phase’s actual cost — or do it by hand.',
+          },
+          {
+            img: '/screenshots/fee-proposal.jpg',
+            alt: 'Fee Proposal canvas with team members and cost chips dragged into project phases, showing cost breakdowns',
+            title: 'Drag, drop, and the fee calculates itself',
+            body: 'Drag team members and expenses straight into project phases. Every allocation locks in that rate at the moment you assign it, so a salary change later never retroactively changes a fee you already sent a client.',
+          },
+        ].map((item, i) => (
+          <div key={item.title} className={`flex flex-col md:flex-row items-center gap-12 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+            <div className="md:w-1/2 w-full">
+              <img
+                src={item.img}
+                alt={item.alt}
+                className="w-full h-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl"
+              />
+            </div>
+            <div className="md:w-1/2 w-full">
+              <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4">{item.title}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed">{item.body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
       </section>
 
       {/* How it Works Section */}
