@@ -50,22 +50,48 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Product Preview */}
-      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto -mt-16 pb-8">
-        <div className="grid md:grid-cols-3 gap-6">
-          <figure className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-            <img src="/screenshots/fee-proposal.jpg" alt="Fee Proposal canvas: drag team members and costs into project phases to build a priced fee proposal in real time" className="w-full h-auto block" />
-            <figcaption className="px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Drag-and-drop fee proposals</figcaption>
-          </figure>
-          <figure className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-            <img src="/screenshots/projects-phases.jpg" alt="Projects and Phases screen: manage project phases, team allocations, and payment milestones in one place" className="w-full h-auto block" />
-            <figcaption className="px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Phases, costs &amp; payment schedules</figcaption>
-          </figure>
-          <figure className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-            <img src="/screenshots/project-planning.jpg" alt="Project Planning Gantt view: assign team members to a weekly timeline and track planned work against budget" className="w-full h-auto block" />
-            <figcaption className="px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Timeline &amp; resource planning</figcaption>
-          </figure>
-        </div>
+      {/* Product Walkthrough */}
+      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pt-8 pb-24 space-y-24">
+        {[
+          {
+            img: '/screenshots/team-resources.jpg',
+            alt: 'Team Resources screen listing team members grouped by category with salary, overheads, and derived cost per hour',
+            title: 'Your team, priced accurately',
+            body: "Set each person's salary and overheads once — internal staff or external consultants — and the app derives their true hourly cost automatically. No more guessing what an hour of someone's time actually costs you.",
+          },
+          {
+            img: '/screenshots/overheads.jpg',
+            alt: 'Overheads Calculator showing target income, overhead categories, and the resulting cost multiplier',
+            title: 'Overheads built into every rate',
+            body: 'Model rent, software, insurance, and non-billable time by category, and sync the result straight into your team’s hourly rates. Change one overhead line and every project’s cost updates with it.',
+          },
+          {
+            img: '/screenshots/projects-phases.jpg',
+            alt: 'Projects and Phases screen showing a project’s phases, live total cost and fee, and payment schedule',
+            title: 'Phases, costs & payment schedules in one place',
+            body: 'Break a project into phases, and watch total cost, profit margin, and fee recalculate live as you work. Build the payment schedule from a preset — by phase, monthly, or weighted to each phase’s actual cost — or do it by hand.',
+          },
+          {
+            img: '/screenshots/fee-proposal.jpg',
+            alt: 'Fee Proposal canvas with team members and cost chips dragged into project phases, showing cost breakdowns',
+            title: 'Drag, drop, and the fee calculates itself',
+            body: 'Drag team members and expenses straight into project phases. Every allocation locks in that rate at the moment you assign it, so a salary change later never retroactively changes a fee you already sent a client.',
+          },
+        ].map((item, i) => (
+          <div key={item.title} className={`flex flex-col md:flex-row items-center gap-12 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+            <div className="md:w-1/2 w-full">
+              <img
+                src={item.img}
+                alt={item.alt}
+                className="w-full h-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl"
+              />
+            </div>
+            <div className="md:w-1/2 w-full">
+              <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4">{item.title}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed">{item.body}</p>
+            </div>
+          </div>
+        ))}
       </section>
 
       {/* Features Section */}
