@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase, getUsersByCompany, getProjectCosts, getAllocations, getTeamMembers, updateAllocation } from '@/lib/firebase/db';
 import { Project, Phase, User, Allocation, ProjectCost, TeamMember } from '@/lib/firebase/schema';
-import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save, Search, CalendarDays, MoreVertical } from 'lucide-react';
+import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save, Search, CalendarDays } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { PaymentScheduleManager } from './PaymentScheduleManager';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
@@ -11,8 +11,10 @@ import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { PromptModal } from '@/components/modals/PromptModal';
 import { PhaseSettingsModal } from '@/components/modals/PhaseSettingsModal';
 import { Card, CardHeader, CardBody, Row } from '@/components/ui/Card';
+import { RowMenu } from '@/components/ui/RowMenu';
 import { PrimaryButton, IconButton, fieldClass } from '@/components/ui/Button';
 import { StatusBadge, getStatusConfig } from '@/components/ui/StatusBadge';
+import { StatusSelect } from '@/components/ui/StatusSelect';
 import { ProjectFinancialHeader } from '@/components/layout/ProjectFinancialHeader';
 import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
 
@@ -68,8 +70,6 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
   // Overflow ("more actions") menus for project/phase rows — collapses the
   // less-frequent actions behind one button instead of 4-5 always-reserved
   // hover icons per row.
-  const [openProjectMenuId, setOpenProjectMenuId] = useState<string | null>(null);
-  const [openPhaseMenuId, setOpenPhaseMenuId] = useState<string | null>(null);
 
   const [promptConfig, setPromptConfig] = useState<{
     isOpen: boolean;
@@ -451,7 +451,10 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                 {activeProject.name}
                 <Calculator size={15} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" />
               </button>
-              <StatusBadge status={activeProject.status || 'Draft'} />
+              <StatusSelect
+                status={activeProject.status || 'Draft'}
+                onChange={(status) => activeProject.id && updateProject(activeProject.id, { status }).then(loadProjects)}
+              />
               {activeProject.area && <span className="text-xs text-slate-400">· {activeProject.area} {areaUnit}</span>}
             </div>
           }
@@ -619,7 +622,13 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                   <Folder size={16} className={`shrink-0 ${activeProjectId === p.id ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`} />
                   <div className="flex-1 min-w-0">
                     <div className={`font-semibold text-sm truncate ${activeProjectId === p.id ? "text-blue-900 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"}`}>{p.name}</div>
-                    {!isTemplateMode && <StatusBadge status={p.status || 'Draft'} className="mt-0.5" />}
+                    {!isTemplateMode && (
+                      <StatusSelect
+                        status={p.status || 'Draft'}
+                        onChange={(status) => p.id && updateProject(p.id, { status }).then(loadProjects)}
+                        className="mt-0.5"
+                      />
+                    )}
                   </div>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 relative">
                     {!isTemplateMode && (
@@ -629,34 +638,36 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                         </IconButton>
                       </Tooltip>
                     )}
-                    <IconButton onClick={(e) => { e.stopPropagation(); setOpenProjectMenuId(openProjectMenuId === p.id ? null : p.id!); }}>
-                      <MoreVertical size={14} />
-                    </IconButton>
-                    {openProjectMenuId === p.id && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setOpenProjectMenuId(null); }} />
-                        <div className="absolute right-0 top-8 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-20">
-                          <button onClick={(e) => { setOpenProjectMenuId(null); p.id && handleDuplicateProject(p.id, e); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                            <Copy size={14} /> {isTemplateMode ? 'Duplicate Template' : 'Duplicate Project'}
-                          </button>
-                          {!isTemplateMode && (
-                            <button onClick={(e) => { setOpenProjectMenuId(null); p.id && handleSaveAsTemplate(p.id, e); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                              <Save size={14} /> Save as Template
-                            </button>
-                          )}
-                          <button onClick={(e) => { e.stopPropagation(); setOpenProjectMenuId(null); router.push('/planning?project=' + p.id); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                            <CalendarDays size={14} /> Project Planning
-                          </button>
-                          <button onClick={(e) => { setOpenProjectMenuId(null); handleEditProjectStart(p, e); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                            <Pencil size={14} /> Edit Name
-                          </button>
-                          <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
-                          <button onClick={(e) => { setOpenProjectMenuId(null); p.id && handleDeleteProject(p.id, e); }} className="w-full text-left px-4 py-2 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 flex items-center gap-2">
-                            <Trash2 size={14} /> Delete
-                          </button>
-                        </div>
-                      </>
-                    )}
+                    <RowMenu
+                      items={[
+                        {
+                          label: isTemplateMode ? 'Duplicate Template' : 'Duplicate Project',
+                          icon: <Copy size={14} />,
+                          onClick: () => p.id && handleDuplicateProject(p.id, { stopPropagation() {} } as React.MouseEvent),
+                        },
+                        ...(!isTemplateMode ? [{
+                          label: 'Save as Template',
+                          icon: <Save size={14} />,
+                          onClick: () => p.id && handleSaveAsTemplate(p.id, { stopPropagation() {} } as React.MouseEvent),
+                        }] : []),
+                        {
+                          label: 'Project Planning',
+                          icon: <CalendarDays size={14} />,
+                          onClick: () => router.push('/planning?project=' + p.id),
+                        },
+                        {
+                          label: 'Edit Details',
+                          icon: <Pencil size={14} />,
+                          onClick: () => handleEditProjectStart(p, { stopPropagation() {} } as React.MouseEvent),
+                        },
+                        {
+                          label: 'Delete',
+                          icon: <Trash2 size={14} />,
+                          danger: true,
+                          onClick: () => p.id && handleDeleteProject(p.id, { stopPropagation() {} } as React.MouseEvent),
+                        },
+                      ]}
+                    />
                   </div>
                 </Row>
               );
@@ -744,23 +755,21 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
                           <IconButton onClick={() => setSettingsPhaseId(phase.id!)} className="hover:text-blue-600 dark:hover:text-blue-400" aria-label="Edit Phase">
                             <Pencil size={14} />
                           </IconButton>
-                          <IconButton onClick={() => setOpenPhaseMenuId(openPhaseMenuId === phase.id ? null : phase.id!)} aria-label="More actions">
-                            <MoreVertical size={14} />
-                          </IconButton>
-                          {openPhaseMenuId === phase.id && (
-                            <>
-                              <div className="fixed inset-0 z-10" onClick={() => setOpenPhaseMenuId(null)} />
-                              <div className="absolute right-0 top-8 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-20">
-                                <button onClick={() => { setOpenPhaseMenuId(null); phase.id && handleClearPhase(phase.id); }} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                                  <Eraser size={14} /> Clear Team &amp; Costs
-                                </button>
-                                <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
-                                <button onClick={() => { setOpenPhaseMenuId(null); phase.id && handleDeletePhase(phase.id); }} className="w-full text-left px-4 py-2 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 flex items-center gap-2">
-                                  <Trash2 size={14} /> Delete Phase
-                                </button>
-                              </div>
-                            </>
-                          )}
+                          <RowMenu
+                            items={[
+                              {
+                                label: 'Clear Team & Costs',
+                                icon: <Eraser size={14} />,
+                                onClick: () => phase.id && handleClearPhase(phase.id),
+                              },
+                              {
+                                label: 'Delete Phase',
+                                icon: <Trash2 size={14} />,
+                                danger: true,
+                                onClick: () => phase.id && handleDeletePhase(phase.id),
+                              },
+                            ]}
+                          />
                         </div>
                       </Row>
                     );

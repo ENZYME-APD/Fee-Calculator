@@ -35,19 +35,24 @@ export function SecondaryButton({ className, children, ...props }: React.ButtonH
 // One icon-button treatment for row actions — flat, no individual border, a
 // single neutral hover background. Row actions pick the hover color by
 // context (e.g. rose on delete) via className, but the shape is shared.
-export function IconButton({ className, children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      {...props}
-      className={cn(
-        'w-7 h-7 shrink-0 inline-flex items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400',
-        className
-      )}
-    >
-      {children}
-    </button>
-  );
-}
+// forwardRef so callers (e.g. RowMenu) can measure the button's screen
+// position to place a dropdown.
+export const IconButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
+  function IconButton({ className, children, ...props }, ref) {
+    return (
+      <button
+        ref={ref}
+        {...props}
+        className={cn(
+          'w-7 h-7 shrink-0 inline-flex items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400',
+          className
+        )}
+      >
+        {children}
+      </button>
+    );
+  }
+);
 
 // Shared className for text/number/date inputs and <select>s — one radius,
 // one border, one focus ring, instead of px-2/px-3/px-4 py-1.5/2/2.5 mixed

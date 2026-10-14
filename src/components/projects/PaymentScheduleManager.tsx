@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Allocation, Phase, Payment, ProjectCost, TeamMember } from '@/lib/firebase/schema';
 import { getPayments, addPayment, updatePayment, deletePayment, batchAddPayments, clearPayments, batchUpdatePayments } from '@/lib/firebase/db';
-import { FileSpreadsheet, Plus, Trash2, Pencil, Check, X, CalendarDays, MoreVertical, Layers } from 'lucide-react';
+import { FileSpreadsheet, Plus, Trash2, Pencil, Check, X, CalendarDays, Layers } from 'lucide-react';
+import { RowMenu } from '@/components/ui/RowMenu';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { Card, CardHeader, CardBody, Row } from '@/components/ui/Card';
 import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
@@ -76,7 +77,6 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
   const [editPhaseId, setEditPhaseId] = useState('');
 
   // Context Menu
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -130,7 +130,6 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     setEditName(p.name);
     setEditPercentage(p.percentage.toString());
     setEditPhaseId(p.phaseId || '');
-    setMenuOpenId(null);
   };
 
   const handleEditSave = async (e: React.FormEvent) => {
@@ -167,7 +166,6 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
         setConfirmConfig(prev => ({ ...prev, isOpen: false }));
       }
     });
-    setMenuOpenId(null);
   };
 
   const handleAddBeforeAfter = async (targetPayment: Payment, position: 'before' | 'after') => {
@@ -188,7 +186,6 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     await batchUpdatePayments(updates);
     
     await loadPayments();
-    setMenuOpenId(null);
   };
 
   const handleUseTemplate = async () => {
@@ -499,33 +496,14 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
                     }}
                   />
 
-                  <IconButton onClick={() => setMenuOpenId(menuOpenId === payment.id ? null : payment.id!)} aria-label="More actions">
-                    <MoreVertical size={14} />
-                  </IconButton>
-
-                  {menuOpenId === payment.id && (() => {
-                    const isLastItems = index >= Math.max(0, payments.length - 2);
-                    return (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)} />
-                        <div className={`absolute right-0 ${isLastItems ? 'bottom-10 mb-1' : 'top-10 mt-1'} w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-20`}>
-                        <button onClick={() => handleEditStart(payment)} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                          <Pencil size={14} /> Edit Payment
-                        </button>
-                        <button onClick={() => handleAddBeforeAfter(payment, 'before')} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                          <Plus size={14} /> Add Payment Before
-                        </button>
-                        <button onClick={() => handleAddBeforeAfter(payment, 'after')} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                          <Plus size={14} /> Add Payment After
-                        </button>
-                        <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
-                        <button onClick={() => handleDelete(payment.id!)} className="w-full text-left px-4 py-2 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 flex items-center gap-2">
-                          <Trash2 size={14} /> Delete Payment
-                        </button>
-                      </div>
-                      </>
-                    );
-                  })()}
+                  <RowMenu
+                    items={[
+                      { label: 'Edit Payment', icon: <Pencil size={14} />, onClick: () => handleEditStart(payment) },
+                      { label: 'Add Payment Before', icon: <Plus size={14} />, onClick: () => handleAddBeforeAfter(payment, 'before') },
+                      { label: 'Add Payment After', icon: <Plus size={14} />, onClick: () => handleAddBeforeAfter(payment, 'after') },
+                      { label: 'Delete Payment', icon: <Trash2 size={14} />, danger: true, onClick: () => handleDelete(payment.id!) },
+                    ]}
+                  />
                 </div>
               </Row>
             );
