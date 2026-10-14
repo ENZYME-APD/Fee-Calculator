@@ -573,9 +573,15 @@ export const clearPayments = async (projectId: string) => {
 
 // --- Bootstrapping Sample Data ---
 export const bootstrapCompanyData = async (companyId: string, ownerId: string) => {
-  // Create sample categories
-  const catRef1 = await addDoc(collection(db, 'teamCategories'), { companyId, name: 'Default team 1', order: 1, color: '#3b82f6', isFixed: true, type: 'internal' });
-  const catRef2 = await addDoc(collection(db, 'teamCategories'), { companyId, name: 'Default Team External', order: 2, color: '#10b981', isFixed: true, type: 'external' });
+  // Create sample categories. Must go in 'categories' (not 'teamCategories')
+  // — that's the collection getCategories()/addCategory() actually read and
+  // write everywhere else in the app (Settings, Team Resources, Fee
+  // Proposal sidebar, Overheads). Writing to the wrong collection here meant
+  // every new signup's sample team members pointed at a category id nothing
+  // could resolve, so the UI fell back to printing the raw document id as
+  // the category header.
+  const catRef1 = await addDoc(collection(db, 'categories'), { companyId, name: 'Default team 1', order: 1, color: '#3b82f6', isFixed: true, type: 'internal' });
+  const catRef2 = await addDoc(collection(db, 'categories'), { companyId, name: 'Default Team External', order: 2, color: '#10b981', isFixed: true, type: 'external' });
 
   // Create sample team members
   const member1 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Alice (Sample)', position: 'Partner', type: 'Employee', salary: 10000, overheads: 2000, costPerHour: 75, currency: 'USD', category: catRef1.id, isSample: true });

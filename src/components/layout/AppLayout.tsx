@@ -489,7 +489,7 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                 return orderA - orderB;
               })
               .map(([category, catMembers]) => {
-                const displayCat = categories.find(c => c.id === category)?.name || (category === 'UNCATEGORIZED' ? 'Uncategorized' : category);
+                const displayCat = categories.find(c => c.id === category)?.name || 'Uncategorized';
                 const displayColor = categories.find(c => c.id === category)?.color || '#94a3b8';
                 return (
               <div key={category} className="flex flex-col gap-1.5">

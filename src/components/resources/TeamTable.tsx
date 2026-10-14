@@ -189,7 +189,7 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                       <div className="flex items-center gap-2">
                         {isExpanded(category) ? <ChevronDown size={16} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400" /> : <ChevronRight size={16} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400" />}
                         <span className="font-bold text-slate-800 dark:text-slate-200">
-                          {categories.find(c => c.id === category)?.name || (category === 'UNCATEGORIZED' ? 'Uncategorized' : category)}
+                          {categories.find(c => c.id === category)?.name || 'Uncategorized'}
                         </span>
                         {categories.find(c => c.id === category)?.type === 'external' && (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-400">
