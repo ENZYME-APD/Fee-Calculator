@@ -136,32 +136,28 @@ export default function TemplatesPage() {
     setSeeding(false);
   };
 
+  const seedAction = (
+    <div className="flex items-center gap-2 shrink-0">
+      <select
+        value={selectedTemplate}
+        onChange={(e) => setSelectedTemplate(e.target.value as TemplateKey)}
+        className={fieldClass + ' w-56'}
+      >
+        {Object.entries(INTERNATIONAL_TEMPLATES).map(([key, template]) => (
+          <option key={key} value={key}>{template.name}</option>
+        ))}
+      </select>
+      <PrimaryButton onClick={handleSeedTemplate} disabled={seeding}>
+        <LayoutTemplate size={15} />
+        {seeding ? 'Creating...' : 'Seed Template'}
+      </PrimaryButton>
+    </div>
+  );
+
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
-      {/* ProjectManager renders the page title/subtitle for this page (isTemplateMode);
-          this bar is a secondary, same-weight-as-elsewhere toolbar, not a second header. */}
-      <div className="px-8 pt-4 flex flex-col sm:flex-row sm:items-center justify-end gap-2 shrink-0">
-        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 sm:mr-2">Seed from a standard:</span>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            value={selectedTemplate}
-            onChange={(e) => setSelectedTemplate(e.target.value as TemplateKey)}
-            className={fieldClass + ' w-full sm:w-64'}
-          >
-            {Object.entries(INTERNATIONAL_TEMPLATES).map(([key, template]) => (
-              <option key={key} value={key}>{template.name}</option>
-            ))}
-          </select>
-
-          <PrimaryButton onClick={handleSeedTemplate} disabled={seeding}>
-            <LayoutTemplate size={15} />
-            {seeding ? 'Creating...' : 'Seed Template'}
-          </PrimaryButton>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-hidden relative">
-        <ProjectManager isTemplateMode={true} />
+        <ProjectManager isTemplateMode={true} headerActions={seedAction} />
       </div>
     </div>
   );

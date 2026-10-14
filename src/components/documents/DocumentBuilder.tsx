@@ -439,23 +439,29 @@ export function DocumentBuilder() {
         </div>
       </div>
 <div className="flex-1 flex flex-col h-full relative">
-        <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 print:hidden">
-          <div className="flex items-center gap-6">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-              {activeProjectId ? projects.find(p => p.id === activeProjectId)?.name : 'Document Builder'}
-            </h2>
+        <div className="flex items-center justify-between px-6 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 shadow-sm print:hidden">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold shrink-0">
+              <FileText size={18} className="text-blue-600 dark:text-blue-400" />
+              <span className="text-sm uppercase tracking-wider">Document Builder</span>
+            </div>
+            {activeProjectId && (
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 truncate">
+                {projects.find(p => p.id === activeProjectId)?.name}
+              </span>
+            )}
           </div>
-          
+
           {activeProjectId && blocks.length > 0 && (
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 onClick={handleExportWord}
                 disabled={isExporting}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm transition-colors shadow-sm"
               >
                 <Download size={16} /> Export to Word
               </button>
-              <button 
+              <button
                 onClick={handleExportPdf}
                 className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-bold text-sm transition-colors shadow-sm"
               >

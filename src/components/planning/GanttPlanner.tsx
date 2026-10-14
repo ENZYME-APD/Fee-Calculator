@@ -297,8 +297,8 @@ export function GanttPlanner() {
             <span className="text-sm uppercase tracking-wider">Project Planning</span>
           </div>
 
-          <div className="w-[320px] flex items-center">
-            <select 
+          <div className="w-[300px] flex items-center">
+            <select
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors cursor-pointer"
               value={activeProjectId || ''}
               onChange={(e) => {

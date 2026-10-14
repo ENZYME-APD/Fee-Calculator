@@ -7,7 +7,7 @@ import { PaymentScheduleModal } from '@/components/calculator/PaymentScheduleMod
 import { getProjects, getPhases, getTeamMembers, getAllocations, importProjectData, getProjectCosts, getPayments, getCategories } from '@/lib/firebase/db';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Project, Phase, TeamMember, Allocation, ProjectCost, Payment, TeamCategory } from '@/lib/firebase/schema';
-import { Folder, Download, Upload, FileSpreadsheet, Table } from 'lucide-react';
+import { Folder, Download, Upload, FileSpreadsheet, Table, Calculator } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { exportProposalToExcel } from '@/lib/excelExport';
 
@@ -158,11 +158,16 @@ export default function Home() {
 
   return (
     <div className="h-full flex flex-col relative bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
-      {/* Project Selector Bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pl-4 pr-6 py-3 flex items-center justify-between z-30 shrink-0 shadow-sm transition-colors duration-300">
-        <div className="w-[304px] pr-4 border-r border-slate-200 dark:border-slate-800 flex items-center shrink-0">
-          <select 
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors"
+      {/* Top Toolbar — same shape as Project Planning and Document Builder */}
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between z-30 shrink-0 shadow-sm transition-colors duration-300">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold shrink-0">
+            <Calculator size={18} className="text-blue-600 dark:text-blue-400" />
+            <span className="text-sm uppercase tracking-wider">Fee Proposal</span>
+          </div>
+          <div className="w-[300px]">
+          <select
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors cursor-pointer"
             value={activeProject?.id || ''}
             onChange={(e) => {
               const p = projects.find(proj => proj.id === e.target.value) || null;
@@ -185,8 +190,9 @@ export default function Home() {
                 <option key={p.id} value={p.id}>{p.name}{p.status === 'Lost' ? ' (Lost/Archived)' : ''}</option>
               ))}
           </select>
+          </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {activeProject && (
             <>

@@ -18,7 +18,7 @@ import { StatusSelect } from '@/components/ui/StatusSelect';
 import { ProjectFinancialHeader } from '@/components/layout/ProjectFinancialHeader';
 import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
 
-export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: boolean }) {
+export function ProjectManager({ isTemplateMode = false, headerActions }: { isTemplateMode?: boolean; headerActions?: React.ReactNode }) {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [templates, setTemplates] = useState<Project[]>([]);
@@ -437,6 +437,7 @@ export function ProjectManager({ isTemplateMode = false }: { isTemplateMode?: bo
             {isTemplateMode ? 'Manage reusable project structures.' : 'Manage projects, phases, and payment milestones.'}
           </p>
         </div>
+        {headerActions}
       </div>
 
       {activeProject && !isTemplateMode && (
