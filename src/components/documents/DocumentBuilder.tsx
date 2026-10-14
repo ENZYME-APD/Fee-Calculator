@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDraggable, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableBlock } from './SortableBlock';
-import { FileText, Download, Printer, Plus, LayoutTemplate, Folder, Eye, EyeOff, Bookmark, Trash2 } from 'lucide-react';
+import { FileText, Download, Printer, Plus, LayoutTemplate, Eye, EyeOff, Bookmark, Trash2 } from 'lucide-react';
 import { exportToDocx } from '@/lib/utils/docxExport';
 import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import { PromptModal } from '@/components/modals/PromptModal';
@@ -365,54 +365,9 @@ export function DocumentBuilder() {
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950">
       
-      {/* Project Sidebar */}
+      {/* Templates Sidebar */}
       <div className="w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 h-full print:hidden">
-        {/* Project Selector (Top Half) */}
-        <div className="flex flex-col h-1/2 border-b border-slate-200 dark:border-slate-800">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <Folder size={18} className="text-blue-500" />
-              Proposals
-            </h3>
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-sm text-slate-500 dark:text-slate-400">Select a project</p>
-            <button 
-              onClick={() => setShowLost(!showLost)} 
-              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1"
-            >
-              {showLost ? <EyeOff size={12} /> : <Eye size={12} />}
-              {showLost ? 'Hide Lost/Archived' : 'Show Lost/Archived'}
-            </button>
-          </div>
-    
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {projects.filter(p => !p.isTemplate && (showLost || p.status !== "Lost")).map(project => (
-              <button
-                key={project.id}
-                onClick={() => {
-                  setActiveProjectId(project.id!);
-                  if (typeof window !== 'undefined') {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('project', project.id!);
-                    window.history.replaceState({}, '', url.toString());
-                  }
-                }}
-                className={`w-full text-left px-4 py-3 rounded-xl transition-all ${activeProjectId === project.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium shadow-sm border border-blue-100 dark:border-blue-800' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'}`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="truncate">{project.name}</span>
-                  {activeProjectId === project.id && (
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Templates Library (Bottom Half) */}
-        <div className="flex flex-col h-1/2 bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="flex flex-col h-full">
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
             <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
               <Bookmark size={18} className="text-emerald-500" />
@@ -445,11 +400,42 @@ export function DocumentBuilder() {
               <FileText size={18} className="text-blue-600 dark:text-blue-400" />
               <span className="text-sm uppercase tracking-wider">Document Builder</span>
             </div>
-            {activeProjectId && (
-              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 truncate">
-                {projects.find(p => p.id === activeProjectId)?.name}
-              </span>
-            )}
+            <div className="w-[300px] flex items-center">
+              <select
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors cursor-pointer"
+                value={activeProjectId || ''}
+                onChange={(e) => {
+                  const newId = e.target.value;
+                  setActiveProjectId(newId || null);
+                  if (typeof window !== 'undefined') {
+                    const url = new URL(window.location.href);
+                    if (newId) {
+                      url.searchParams.set('project', newId);
+                    } else {
+                      url.searchParams.delete('project');
+                    }
+                    window.history.replaceState({}, '', url.toString());
+                  }
+                }}
+              >
+                <option value="">Select a project...</option>
+                {projects
+                  .filter(p => !p.isTemplate && (showLost || p.status !== "Lost"))
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(p => (
+                    <option key={p.id} value={p.id}>{p.name}{p.status === 'Lost' ? ' (Lost/Archived)' : ''}</option>
+                  ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowLost(!showLost)}
+              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              {showLost ? <EyeOff size={14} /> : <Eye size={14} />}
+              <span>{showLost ? 'Hide Lost/Archived' : 'Show Lost/Archived'}</span>
+            </button>
           </div>
 
           {activeProjectId && blocks.length > 0 && (
