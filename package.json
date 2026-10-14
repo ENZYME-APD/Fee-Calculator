@@ -24,6 +24,7 @@
     "docx": "^9.7.1",
     "file-saver": "^2.0.5",
     "firebase": "^12.16.0",
+    "firebase-admin": "^14.2.0",
     "html2pdf.js": "^0.14.0",
     "lucide-react": "^1.27.0",
     "next": "16.2.12",
@@ -44,8 +45,10 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
-    "firebase-admin": "^14.2.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "jose": "^4.15.9"
   }
 }
