@@ -8,9 +8,9 @@ export default function LandingPage() {
     <div className="flex flex-col pt-20">
       <AuthRedirect />
       {/* Hero Section */}
-      <section className="relative px-4 pt-20 pb-32 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
+      <section className="relative px-4 pt-20 pb-24 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
         {/* Background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/20 dark:bg-blue-600/20 blur-[120px] rounded-full -z-10 pointer-events-none" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/20 dark:bg-blue-600/20 blur-[120px] rounded-full -z-10 pointer-events-none" />
         
         <div className="text-center max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 text-sm font-bold mb-8 shadow-sm">
@@ -51,7 +51,8 @@ export default function LandingPage() {
       </section>
 
       {/* Product Walkthrough */}
-      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pt-8 pb-24 space-y-24">
+      <section className="relative bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-800/60 py-20 sm:py-28">
+      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-24">
         {[
           {
             img: '/screenshots/team-resources.jpg',
@@ -92,6 +93,7 @@ export default function LandingPage() {
             </div>
           </div>
         ))}
+      </div>
       </section>
 
       {/* Features Section */}
