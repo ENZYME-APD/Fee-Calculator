@@ -387,19 +387,19 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
 
   return (
     <Card className="flex-1">
-      <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-start gap-3">
+      <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-3">
         <div className="min-w-0">
           <h2 className="font-semibold text-sm text-slate-800 dark:text-slate-100">Payment Schedule</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Milestones must total 100%.</p>
         </div>
-        <div className="flex gap-1.5 flex-wrap justify-end">
-          <SecondaryButton onClick={handleUseTemplate} className="h-auto py-1.5 px-2.5">
+        <div className="flex gap-1.5">
+          <SecondaryButton onClick={handleUseTemplate} className="h-auto py-1.5 px-2.5 flex-1">
             <FileSpreadsheet size={13} /> By Phase
           </SecondaryButton>
-          <SecondaryButton onClick={handleMonthlyTemplate} className="h-auto py-1.5 px-2.5">
+          <SecondaryButton onClick={handleMonthlyTemplate} className="h-auto py-1.5 px-2.5 flex-1">
             <CalendarDays size={13} /> Monthly
           </SecondaryButton>
-          <SecondaryButton onClick={handleCostWeightedTemplate} className="h-auto py-1.5 px-2.5" title="One payment per phase, sized by that phase's actual cost — no mobilisation or final-payment line items.">
+          <SecondaryButton onClick={handleCostWeightedTemplate} className="h-auto py-1.5 px-2.5 flex-1" title="One payment per phase, sized by that phase's actual cost — no mobilisation or final-payment line items.">
             <Layers size={13} /> By Cost
           </SecondaryButton>
         </div>
