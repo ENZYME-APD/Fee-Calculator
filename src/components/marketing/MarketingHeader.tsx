@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Calculator, Moon, Sun, Menu, X } from 'lucide-react';
@@ -9,9 +10,15 @@ import { cn } from '@/lib/utils';
 export function MarketingHeader() {
   const { theme, setTheme } = useTheme();
   const { user, loading } = useAuth();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Only the homepage has a tall hero behind the header worth blending
+  // into — every other marketing page (e.g. /wiki) puts real content
+  // right at the top, so a transparent header there just overlaps it.
+  const isHome = pathname === '/';
 
   useEffect(() => {
     setMounted(true);
@@ -23,10 +30,10 @@ export function MarketingHeader() {
   }, []);
 
   return (
-    <header 
+    <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent",
-        isScrolled ? "bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-slate-200 dark:border-slate-800 shadow-sm" : "bg-transparent"
+        (isScrolled || !isHome) ? "bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-slate-200 dark:border-slate-800 shadow-sm" : "bg-transparent"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
