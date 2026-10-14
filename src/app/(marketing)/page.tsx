@@ -50,6 +50,24 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Product Preview */}
+      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto -mt-16 pb-8">
+        <div className="grid md:grid-cols-3 gap-6">
+          <figure className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+            <img src="/screenshots/fee-proposal.jpg" alt="Fee Proposal canvas: drag team members and costs into project phases to build a priced fee proposal in real time" className="w-full h-auto block" />
+            <figcaption className="px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Drag-and-drop fee proposals</figcaption>
+          </figure>
+          <figure className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+            <img src="/screenshots/projects-phases.jpg" alt="Projects and Phases screen: manage project phases, team allocations, and payment milestones in one place" className="w-full h-auto block" />
+            <figcaption className="px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Phases, costs &amp; payment schedules</figcaption>
+          </figure>
+          <figure className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+            <img src="/screenshots/project-planning.jpg" alt="Project Planning Gantt view: assign team members to a weekly timeline and track planned work against budget" className="w-full h-auto block" />
+            <figcaption className="px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">Timeline &amp; resource planning</figcaption>
+          </figure>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="py-24 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
