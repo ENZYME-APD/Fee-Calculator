@@ -6,6 +6,9 @@ import {
   Plus, 
   Minus,
   Link2,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
   RefreshCw, 
   Download, 
   Trash2, 
@@ -582,6 +585,31 @@ export function FinancialForecastView() {
     return stats;
   }, [monthKeys, startMonthKey, openingMonthKey, rows, outflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion, runningCosts.total]);
 
+  // Row ordering: drag handle (its own MIME type, so it never collides with pill drags) or arrows
+  const ROW_MIME = 'application/x-forecast-row';
+  const [dropTarget, setDropTarget] = useState<{ rowId: string; pos: 'before' | 'after' } | null>(null);
+  const moveRow = (fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0) return;
+    setRows(prev => {
+      if (fromIdx >= prev.length || toIdx >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      return next;
+    });
+  };
+  const dropRowOn = (draggedId: string, targetId: string, pos: 'before' | 'after') => {
+    setRows(prev => {
+      const from = prev.findIndex(r => r.id === draggedId);
+      if (from < 0 || draggedId === targetId) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      const targetIdx = next.findIndex(r => r.id === targetId);
+      next.splice(pos === 'before' ? targetIdx : targetIdx + 1, 0, moved);
+      return next;
+    });
+  };
+
   // Sum of a per-month value over the months on screen (for the totals column)
   const sumVisible = (fn: (m: string) => number) => monthKeys.reduce((sum, m) => sum + fn(m), 0);
 
@@ -785,7 +813,7 @@ export function FinancialForecastView() {
                 <p>Use <span className="font-semibold">Sync projects</span> to bring in milestones from your fee proposals, or <span className="font-semibold">Add income</span> for retainers and other income. Then click a cell to add an amount.</p>
               </div>
             )}
-            {rows.map(row => {
+            {rows.map((row, rowIdx) => {
               // Colour stripe drawn inside the first cell (inset shadow), so it takes no width and
               // rows stay aligned with the header and totals.
               const tagStripe = 
@@ -796,9 +824,46 @@ export function FinancialForecastView() {
                 '';
 
               return (
-                <div key={row.id} className="flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors">
+                <div
+                  key={row.id}
+                  data-forecast-row={row.id}
+                  onDragOver={e => {
+                    if (!e.dataTransfer.types.includes(ROW_MIME)) return;
+                    e.preventDefault();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const pos = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+                    if (dropTarget?.rowId !== row.id || dropTarget.pos !== pos) setDropTarget({ rowId: row.id, pos });
+                  }}
+                  onDrop={e => {
+                    if (!e.dataTransfer.types.includes(ROW_MIME)) return;
+                    e.preventDefault();
+                    const draggedId = e.dataTransfer.getData(ROW_MIME);
+                    if (draggedId && dropTarget) dropRowOn(draggedId, row.id, dropTarget.pos);
+                    setDropTarget(null);
+                  }}
+                  className={`flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors ${
+                    dropTarget?.rowId === row.id
+                      ? dropTarget.pos === 'before' ? 'shadow-[inset_0_2px_0_var(--accent-500)]' : 'shadow-[inset_0_-2px_0_var(--accent-500)]'
+                      : ''
+                  }`}
+                >
                   {/* Column 1: Workstream Name & Row Actions (280px) */}
                   <div className={`w-[280px] shrink-0 p-3 pl-4 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between gap-2 overflow-hidden ${tagStripe}`}>
+                    <div className="flex items-center gap-1 min-w-0 -ml-2">
+                    <span
+                      draggable
+                      onDragStart={e => {
+                        e.dataTransfer.setData(ROW_MIME, row.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                        const rowEl = (e.currentTarget as HTMLElement).closest('[data-forecast-row]');
+                        if (rowEl) e.dataTransfer.setDragImage(rowEl, 20, 20);
+                      }}
+                      onDragEnd={() => setDropTarget(null)}
+                      className="shrink-0 p-0.5 rounded cursor-grab active:cursor-grabbing text-ink-400 dark:text-ink-500 hover:text-ink-700 dark:hover:text-ink-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Drag to reorder"
+                    >
+                      <GripVertical size={14} />
+                    </span>
                     <div className="overflow-hidden min-w-0">
                       <div className="font-bold text-xs text-ink-800 dark:text-ink-200 truncate" title={row.name}>
                         {row.name}
@@ -827,9 +892,26 @@ export function FinancialForecastView() {
                         )}
                       </div>
                     </div>
+                    </div>
 
-                    {/* Action buttons on hover: Edit, Reset, Delete */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    {/* Action buttons on hover: Move, Edit, Reset, Delete */}
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
+                      <IconButton
+                        onClick={() => moveRow(rowIdx, rowIdx - 1)}
+                        disabled={rowIdx === 0}
+                        className="hover:text-accent-600 disabled:opacity-30 disabled:pointer-events-none"
+                        title="Move up"
+                      >
+                        <ArrowUp size={13} />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => moveRow(rowIdx, rowIdx + 1)}
+                        disabled={rowIdx === rows.length - 1}
+                        className="hover:text-accent-600 disabled:opacity-30 disabled:pointer-events-none"
+                        title="Move down"
+                      >
+                        <ArrowDown size={13} />
+                      </IconButton>
                       <IconButton
                         onClick={() => setEditingRow(row)}
                         className="hover:text-accent-600"
@@ -884,7 +966,9 @@ export function FinancialForecastView() {
                               onDrop={e => {
                                 e.preventDefault();
                                 try {
-                                  const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                                  const raw = e.dataTransfer.getData('text/plain');
+                                  if (!raw) return; // e.g. a row being reordered, handled by the row
+                                  const data = JSON.parse(raw);
                                   if (data && data.pill) {
                                     handleMovePill(data.fromRowId, row.id, data.fromMonth, data.fromStage, m, stage, data.pill);
                                   }
