@@ -15,7 +15,8 @@
  * Once Enzyme's forecast looks right in the app, delete
  * scripts/data/enzyme-forecast-baseline.json from the repo.
  */
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 const path = require('path');
 const fs = require('fs');
 
@@ -27,8 +28,8 @@ if (!serviceAccountStr) {
   console.error('❌ FIREBASE_SERVICE_ACCOUNT_KEY is missing from .env.local');
   process.exit(1);
 }
-admin.initializeApp({ credential: admin.credential.cert(JSON.parse(serviceAccountStr)) });
-const db = admin.firestore();
+initializeApp({ credential: cert(JSON.parse(serviceAccountStr)) });
+const db = getFirestore();
 
 // Fingerprint of the prototype's spreadsheet rows/outflows.
 const isBaselineCopy = (d) =>
