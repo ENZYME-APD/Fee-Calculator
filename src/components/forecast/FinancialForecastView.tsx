@@ -816,25 +816,29 @@ export function FinancialForecastView() {
             <div className={`sticky left-0 z-10 flex shrink-0 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE}`}>
               <div
                 style={{ width: NAME_W }}
-                className={`shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 flex items-center justify-between gap-2 ${showNotes ? 'border-r border-ink-200 dark:border-ink-800' : 'border-r-2 border-ink-200 dark:border-ink-700'}`}
+                className={`shrink-0 px-3.5 py-2.5 font-semibold text-xs text-ink-500 dark:text-ink-400 flex items-center ${showNotes ? 'border-r border-ink-200 dark:border-ink-800' : 'border-r-2 border-ink-200 dark:border-ink-700'}`}
               >
-                <span>Workstream <span className="font-medium">· {visibleRows.length === rows.length ? `${rows.length} ${rows.length === 1 ? 'row' : 'rows'}` : `${visibleRows.length} of ${rows.length}`}</span></span>
-                <span className="flex items-center gap-2.5">
-                <button
-                  onClick={toggleHideEmpty}
-                  className="text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline whitespace-nowrap"
-                  title={hideEmpty ? 'Show rows with no amounts in these months' : 'Hide rows with no amounts in these months'}
-                >
-                  {hideEmpty ? 'Show empty' : 'Hide empty'}
-                </button>
-                <button
-                  onClick={toggleNotes}
-                  className="text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline whitespace-nowrap"
-                  title={showNotes ? 'Hide the notes column' : 'Show the notes column'}
-                >
-                  {showNotes ? 'Hide notes' : 'Show notes'}
-                </button>
-                </span>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="whitespace-nowrap">
+                    Workstream <span className="font-medium">· {visibleRows.length === rows.length ? `${rows.length} ${rows.length === 1 ? 'row' : 'rows'}` : `${visibleRows.length} of ${rows.length} rows`}</span>
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <button
+                      onClick={toggleHideEmpty}
+                      className="text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline whitespace-nowrap"
+                      title={hideEmpty ? 'Show rows with no amounts in these months' : 'Hide rows with no amounts in these months'}
+                    >
+                      {hideEmpty ? 'Show empty rows' : 'Hide empty rows'}
+                    </button>
+                    <button
+                      onClick={toggleNotes}
+                      className="text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline whitespace-nowrap"
+                      title={showNotes ? 'Hide the notes column' : 'Show the notes column'}
+                    >
+                      {showNotes ? 'Hide notes' : 'Show notes'}
+                    </button>
+                  </span>
+                </div>
               </div>
               {showNotes && (
                 <div style={{ width: NOTES_W }} className="shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r-2 border-ink-200 dark:border-ink-700 flex items-center">

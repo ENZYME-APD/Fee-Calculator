@@ -687,9 +687,42 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
         <Card className="flex-[1.3]">
           {activeProjectId ? (
             <>
-              <CardHeader className="bg-ink-50/50 dark:bg-ink-900/50">
-                <h2 className="font-semibold text-sm text-ink-800 dark:text-ink-100">Phases</h2>
-                <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">{phases.length} phase{phases.length === 1 ? '' : 's'} · {phases.reduce((s, p) => s + p.durationWeeks, 0)} weeks total</p>
+              <CardHeader className="bg-ink-50/50 dark:bg-ink-900/50 flex items-start justify-between gap-3">
+                {(() => {
+                  const totalWeeks = phases.reduce((sum, p) => sum + p.durationWeeks, 0);
+                  const start = activeProject?.startDate;
+                  const end = start ? new Date(start + totalWeeks * 7 * 24 * 60 * 60 * 1000) : null;
+                  return (
+                    <div className="min-w-0">
+                      <h2 className="font-semibold text-sm text-ink-800 dark:text-ink-100">Phases</h2>
+                      <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">
+                        {phases.length} phase{phases.length === 1 ? '' : 's'} · {totalWeeks} weeks total
+                        {end && totalWeeks > 0 ? ` · ends ${end.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                      </p>
+                    </div>
+                  );
+                })()}
+                {activeProject && (
+                  // Project start date, editable here instead of only in the edit-details form.
+                  <label className="flex items-center gap-2 text-xs font-medium text-ink-500 dark:text-ink-400 shrink-0">
+                    Start date
+                    <input
+                      type="date"
+                      value={(() => {
+                        if (!activeProject.startDate) return '';
+                        const d = new Date(activeProject.startDate);
+                        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                      })()}
+                      onChange={e => {
+                        if (!e.target.value || !activeProject.id) return;
+                        const [y, m, d] = e.target.value.split('-').map(Number);
+                        updateProject(activeProject.id, { startDate: new Date(y, m - 1, d).getTime() }).then(loadProjects);
+                      }}
+                      className={fieldClass + ' py-1 text-xs'}
+                      aria-label="Project start date"
+                    />
+                  </label>
+                )}
               </CardHeader>
               <div className="p-3 border-b border-ink-100 dark:border-ink-800">
                 <form onSubmit={handleCreatePhase} className="flex gap-2 items-center">
