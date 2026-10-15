@@ -32,8 +32,9 @@ export function MarketingHeader() {
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent",
-        (isScrolled || !isHome) ? "bg-white/80 dark:bg-ink-950/80 backdrop-blur-md border-ink-200 dark:border-ink-800 shadow-sm" : "bg-transparent"
+        // Always solid: page content must never show through the header
+        "fixed top-0 left-0 right-0 z-50 transition-shadow duration-300 border-b bg-white dark:bg-ink-950",
+        (isScrolled || !isHome) ? "border-ink-200 dark:border-ink-800 shadow-sm" : "border-transparent"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
