@@ -301,7 +301,10 @@ export function FinancialForecastView() {
     allocations: Allocation[]
   ): Promise<ForecastRow['cells'] | null> => {
     const [phases, costs, payments] = await Promise.all([getPhases(proj.id!), getProjectCosts(proj.id!), getPayments(proj.id!)]);
-    const { totalFee } = computeProjectFinancials(proj, phases, allocations.filter(a => a.projectId === proj.id), costs, members);
+    // Pass every allocation: computeProjectFinancials keeps those on this project's phases, exactly as the
+    // fee proposal does. Filtering by allocation.projectId first dropped allocations whose projectId is
+    // missing or stale (e.g. copied from a template), so forecast amounts came out lower than the proposal.
+    const { totalFee } = computeProjectFinancials(proj, phases, allocations, costs, members);
     if (totalFee <= 0 || payments.length === 0) return null;
 
     const sortedPhases = [...phases].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
