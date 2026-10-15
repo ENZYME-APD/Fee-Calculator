@@ -43,7 +43,8 @@ import {
   getTeamMembers,
   getAllocations,
   getProjectCosts,
-  getOverheadsProfile
+  getOverheadsProfile,
+  getCategories
 } from '@/lib/firebase/db';
 import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
 import { useAppSettings } from '@/lib/auth/AuthContext';
@@ -178,10 +179,14 @@ export function FinancialForecastView() {
     async function loadData() {
       setLoading(true);
       try {
-        const [existingProfile, members, overheadsProfile] = await Promise.all([
-          getForecastProfile(), getTeamMembers(), getOverheadsProfile(),
+        const [existingProfile, members, overheadsProfile, teamCategories] = await Promise.all([
+          getForecastProfile(), getTeamMembers(), getOverheadsProfile(), getCategories(),
         ]);
-        const salaries = Math.round(members.reduce((sum, m) => sum + (m.salary || 0), 0));
+        // Only the internal team is a fixed monthly cost. Members in an external category
+        // (consultants, partner studios) are left out. No category counts as internal.
+        const externalCategoryIds = new Set(teamCategories.filter(c => c.type === 'external').map(c => c.id));
+        const internalMembers = members.filter(m => !m.category || !externalCategoryIds.has(m.category));
+        const salaries = Math.round(internalMembers.reduce((sum, m) => sum + (m.salary || 0), 0));
         const overheadItems = Math.round((overheadsProfile?.categories || [])
           .flatMap(c => c.items || [])
           .filter(i => i.isActive !== false)
@@ -1195,9 +1200,9 @@ export function FinancialForecastView() {
                     {isLinked && (
                       <div
                         className="text-[11px] text-ink-500 dark:text-ink-400 mt-0.5"
-                        title={`Salaries (Team resources): ${fmt(runningCosts.salaries)} a month\nOverhead items (Overheads): ${fmt(runningCosts.overheads)} a month\nUpdates automatically when either page changes.`}
+                        title={`Internal team salaries (Team resources): ${fmt(runningCosts.salaries)} a month\nOverhead items (Overheads): ${fmt(runningCosts.overheads)} a month\nUpdates automatically when either page changes.`}
                       >
-                        From Team resources + Overheads: <span className="font-semibold text-ink-700 dark:text-ink-300">{fmt(runningCosts.total)}</span> a month
+                        Internal team + Overheads: <span className="font-semibold text-ink-700 dark:text-ink-300">{fmt(runningCosts.total)}</span> a month
                         <button onClick={() => handleSetLinked(item.id, false)} className="ml-2 font-semibold text-accent-700 dark:text-accent-400 hover:underline">Unlink</button>
                       </div>
                     )}
