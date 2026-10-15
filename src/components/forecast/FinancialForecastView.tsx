@@ -438,6 +438,17 @@ export function FinancialForecastView() {
   };
 
   // Outflow amount change
+  // Amount repeated in every month that has no amount of its own (null switches repeating off)
+  const handleUpdateOutflowDefault = (outflowId: string, amount: number | null) => {
+    setOutflows(prev => prev.map(item => {
+      if (item.id !== outflowId) return item;
+      const next = { ...item };
+      if (amount === null || amount <= 0) delete next.defaultMonthlyAmount;
+      else next.defaultMonthlyAmount = Math.round(amount);
+      return next;
+    }));
+  };
+
   // amount null clears the month's own value, so the line's default monthly amount applies again
   const handleUpdateOutflowMonth = (outflowId: string, monthKey: string, amount: number | null) => {
     setOutflows(prev => prev.map(item => {
@@ -669,13 +680,13 @@ export function FinancialForecastView() {
             </div>
 
             {/* Description / Notes Column: 200px */}
-            <div className="w-[200px] shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r border-ink-200 dark:border-ink-800 flex items-center">
+            <div className="w-[200px] shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r-2 border-ink-200 dark:border-ink-700 flex items-center">
               <span>Description / notes</span>
             </div>
 
             {/* Month Column Headers with 3 stage sub-columns: 360px per month */}
             {monthKeys.map(m => (
-              <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 flex flex-col">
+              <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 flex flex-col">
                 <div className="text-center py-2 border-b border-ink-200 dark:border-ink-800 font-bold text-xs text-ink-800 dark:text-ink-200 bg-ink-100/50 dark:bg-ink-900/50">
                   {formatMonthLabel(m)}
                 </div>
@@ -697,17 +708,19 @@ export function FinancialForecastView() {
               </div>
             )}
             {rows.map(row => {
-              const tagBorder = 
-                row.colorTag === 'negative' ? 'border-l-4 border-l-negative-500' :
-                row.colorTag === 'warning' ? 'border-l-4 border-l-warning-500' :
-                row.colorTag === 'positive' ? 'border-l-4 border-l-positive-500' :
-                row.colorTag === 'accent' ? 'border-l-4 border-l-accent-500' :
-                'border-l-4 border-l-transparent';
+              // Colour stripe drawn inside the first cell (inset shadow), so it takes no width and
+              // rows stay aligned with the header and totals.
+              const tagStripe = 
+                row.colorTag === 'negative' ? 'shadow-[inset_4px_0_0_var(--negative-500)]' :
+                row.colorTag === 'warning' ? 'shadow-[inset_4px_0_0_var(--warning-500)]' :
+                row.colorTag === 'positive' ? 'shadow-[inset_4px_0_0_var(--positive-500)]' :
+                row.colorTag === 'accent' ? 'shadow-[inset_4px_0_0_var(--accent-500)]' :
+                '';
 
               return (
-                <div key={row.id} className={`flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors ${tagBorder}`}>
+                <div key={row.id} className="flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors">
                   {/* Column 1: Workstream Name & Row Actions (280px) */}
-                  <div className="w-[280px] shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between gap-2 overflow-hidden">
+                  <div className={`w-[280px] shrink-0 p-3 pl-4 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between gap-2 overflow-hidden ${tagStripe}`}>
                     <div className="overflow-hidden min-w-0">
                       <div className="font-bold text-xs text-ink-800 dark:text-ink-200 truncate" title={row.name}>
                         {row.name}
@@ -752,7 +765,7 @@ export function FinancialForecastView() {
                   {/* Column 2: Description / Notes (200px) */}
                   <div 
                     onClick={() => setEditingRow(row)}
-                    className="w-[200px] shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center text-xs text-ink-500 dark:text-ink-400 cursor-pointer hover:bg-ink-100/40 dark:hover:bg-ink-800/40 transition-colors overflow-hidden"
+                    className="w-[200px] shrink-0 p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center text-xs text-ink-500 dark:text-ink-400 cursor-pointer hover:bg-ink-100/40 dark:hover:bg-ink-800/40 transition-colors overflow-hidden"
                     title="Click to edit notes"
                   >
                     {row.notes ? (
@@ -767,7 +780,7 @@ export function FinancialForecastView() {
                     const monthCell = row.cells[m] || {};
 
                     return (
-                      <div key={m} className="w-[360px] shrink-0 grid grid-cols-3 border-r border-ink-100 dark:border-ink-800 last:border-r-0 min-h-[56px]">
+                      <div key={m} className="w-[360px] shrink-0 grid grid-cols-3 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 min-h-[56px]">
                         {(['possible', 'invoicing', 'collections'] as ForecastStage[]).map((stage, colIdx) => {
                           const pills = monthCell[stage] || [];
                           const borderClasses = colIdx === 1 ? 'border-x border-ink-100 dark:border-ink-800/60' : '';
@@ -851,13 +864,13 @@ export function FinancialForecastView() {
 
           {/* Subtotals by Stage */}
           <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t-2 border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 border-r border-ink-200 dark:border-ink-800">
+            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700">
               Total inflows
             </div>
             {monthKeys.map(m => {
               const st = monthlyStats[m] || { possible: 0, invoicing: 0, collections: 0 };
               return (
-                <div key={m} className="w-[360px] shrink-0 grid grid-cols-3 border-r border-ink-200 dark:border-ink-800 last:border-r-0 py-2.5 px-1.5 text-center">
+                <div key={m} className="w-[360px] shrink-0 grid grid-cols-3 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 py-2.5 px-1.5 text-center">
                   <span className="text-warning-700 dark:text-warning-300">{fmt(st.possible)}</span>
                   <span className="text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800">{fmt(st.invoicing)}</span>
                   <span className="text-positive-700 dark:text-positive-300">{fmt(st.collections)}</span>
@@ -870,11 +883,11 @@ export function FinancialForecastView() {
           <div className="bg-ink-100/40 dark:bg-ink-950/40 border-t border-ink-200 dark:border-ink-800 divide-y divide-ink-100 dark:divide-ink-800 text-xs">
             {/* Conservative */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
-              <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r border-ink-200 dark:border-ink-800">
+              <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r-2 border-ink-200 dark:border-ink-700">
                 Conservative (collections only)
               </div>
               {monthKeys.map(m => (
-                <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 px-3 py-1.5 text-right font-bold text-ink-700 dark:text-ink-300">
+                <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 px-3 py-1.5 text-right font-bold text-ink-700 dark:text-ink-300">
                   {fmt(monthlyStats[m]?.conservative || 0)}
                 </div>
               ))}
@@ -882,11 +895,11 @@ export function FinancialForecastView() {
 
             {/* Expected */}
             <div className="flex items-center text-accent-700 dark:text-accent-300 bg-accent-50/30 dark:bg-accent-950/20 font-semibold">
-              <div className="w-[480px] shrink-0 px-3.5 py-1.5 border-r border-ink-200 dark:border-ink-800">
+              <div className="w-[480px] shrink-0 px-3.5 py-1.5 border-r-2 border-ink-200 dark:border-ink-700">
                 Expected (collections + {invoicingConversion}% invoiced + {possibleConversion}% possible)
               </div>
               {monthKeys.map(m => (
-                <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 px-3 py-1.5 text-right font-bold">
+                <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 px-3 py-1.5 text-right font-bold">
                   {fmt(monthlyStats[m]?.expected || 0)}
                 </div>
               ))}
@@ -894,11 +907,11 @@ export function FinancialForecastView() {
 
             {/* Optimistic */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
-              <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r border-ink-200 dark:border-ink-800">
+              <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r-2 border-ink-200 dark:border-ink-700">
                 Optimistic (all stages in full)
               </div>
               {monthKeys.map(m => (
-                <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 px-3 py-1.5 text-right font-bold text-ink-700 dark:text-ink-300">
+                <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 px-3 py-1.5 text-right font-bold text-ink-700 dark:text-ink-300">
                   {fmt(monthlyStats[m]?.optimistic || 0)}
                 </div>
               ))}
@@ -924,7 +937,7 @@ export function FinancialForecastView() {
 
               return (
                 <div key={`referral_${personName}`} className="flex group bg-ink-50/30 dark:bg-ink-900/40 hover:bg-ink-50/60 dark:hover:bg-ink-800/30 transition-colors">
-                  <div className="w-[480px] shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between">
+                  <div className="w-[480px] shrink-0 p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-1.5">
                         <UserCheck size={14} className="text-accent-600 dark:text-accent-400" />
@@ -942,7 +955,7 @@ export function FinancialForecastView() {
                   {monthKeys.map(m => {
                     const cutAmount = personData.monthly[m] || 0;
                     return (
-                      <div key={m} className="w-[360px] shrink-0 border-r border-ink-100 dark:border-ink-800 last:border-r-0 p-2 flex items-center justify-end">
+                      <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-2 flex items-center justify-end">
                         <div className="flex items-center gap-1 text-right">
                           {cutAmount > 0 ? (
                             <span className="font-bold text-negative-600 dark:text-negative-400">
@@ -962,15 +975,33 @@ export function FinancialForecastView() {
             {/* Standard Fixed / Debt Outflows */}
             {outflows.map(item => (
               <div key={item.id} className="flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors">
-                <div className="w-[480px] shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between">
-                  <div>
+                <div className="w-[480px] shrink-0 p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between">
+                  <div className="min-w-0">
                     <span className="font-semibold text-ink-800 dark:text-ink-200">{item.name}</span>
-                    {item.initialBalance && (
+                    {item.initialBalance ? (
                       <div className="text-[10px] text-ink-500 dark:text-ink-400">
-                        Principal: {fmt(item.initialBalance)}
+                        Debt balance: {fmt(item.initialBalance)}
                       </div>
-                    )}
+                    ) : null}
                   </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Repeats in every month without its own amount */}
+                    <label className="flex items-center gap-1.5 text-[11px] font-medium text-ink-500 dark:text-ink-400" title="Applies to every month that doesn't have its own amount. Leave empty to enter months one by one.">
+                      Every month
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={item.defaultMonthlyAmount ? item.defaultMonthlyAmount : ''}
+                        onChange={e => {
+                          const raw = e.target.value.replace(/[^0-9]/g, '');
+                          handleUpdateOutflowDefault(item.id, raw === '' ? null : parseInt(raw));
+                        }}
+                        placeholder="—"
+                        className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-900 text-ink-900 dark:text-ink-100 rounded outline-none focus:border-accent-500 text-xs"
+                        aria-label={`${item.name}: amount every month`}
+                      />
+                    </label>
                   {item.id !== 'burn_base' && (
                     <IconButton
                       onClick={() => setOutflows(prev => prev.filter(o => o.id !== item.id))}
@@ -979,13 +1010,14 @@ export function FinancialForecastView() {
                       <Trash2 size={13} />
                     </IconButton>
                   )}
+                  </div>
                 </div>
 
                 {monthKeys.map(m => {
                   const own = item.monthlyAmounts?.[m];
                   const val = own ?? 0;
                   return (
-                    <div key={m} className="w-[360px] shrink-0 border-r border-ink-100 dark:border-ink-800 last:border-r-0 p-2 flex items-center justify-end">
+                    <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-2 flex items-center justify-end">
                       <div className="flex items-center gap-1">
                         <span className="text-negative-500 font-bold">-</span>
                         <input
@@ -998,8 +1030,8 @@ export function FinancialForecastView() {
                             handleUpdateOutflowMonth(item.id, m, raw === '' ? null : parseInt(raw));
                           }}
                           placeholder={String(item.defaultMonthlyAmount ?? 0)}
-                          title={item.defaultMonthlyAmount ? `Leave empty to use the default of ${item.defaultMonthlyAmount.toLocaleString()} a month` : undefined}
-                          className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-ink-50 dark:bg-ink-800 text-ink-900 dark:text-ink-100 rounded outline-none focus:border-accent-500 text-xs"
+                          title={item.defaultMonthlyAmount ? (own === undefined ? `Repeated every-month amount. Type a value to change just this month.` : `Clear to go back to the every-month amount (${item.defaultMonthlyAmount.toLocaleString()}).`) : undefined}
+                          className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-ink-50 dark:bg-ink-800 text-ink-900 dark:text-ink-100 placeholder:text-ink-500 dark:placeholder:text-ink-400 placeholder:font-medium rounded outline-none focus:border-accent-500 text-xs"
                         />
                       </div>
                     </div>
@@ -1011,13 +1043,13 @@ export function FinancialForecastView() {
 
           {/* Outflow Subtotal */}
           <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 border-r border-ink-200 dark:border-ink-800">
+            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700">
               Total outflows
             </div>
             {monthKeys.map(m => {
               const outTotal = monthlyStats[m]?.totalOutflows || 0;
               return (
-                <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 py-2.5 px-3 text-right text-negative-600 dark:text-negative-400">
+                <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 py-2.5 px-3 text-right text-negative-600 dark:text-negative-400">
                   -{fmt(outTotal)}
                 </div>
               );
@@ -1028,7 +1060,7 @@ export function FinancialForecastView() {
           <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 text-xs">
             {/* Monthly Net Delta */}
             <div className="flex items-center font-bold">
-              <div className="w-[480px] shrink-0 p-3.5 border-r border-ink-200 dark:border-ink-800 text-ink-800 dark:text-ink-200">
+              <div className="w-[480px] shrink-0 p-3.5 border-r-2 border-ink-200 dark:border-ink-700 text-ink-800 dark:text-ink-200">
                 Net cash flow (collections − outflows)
               </div>
               {monthKeys.map(m => {
@@ -1036,7 +1068,7 @@ export function FinancialForecastView() {
                 return (
                   <div 
                     key={m} 
-                    className={`w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 p-3 text-right text-sm ${
+                    className={`w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-3 text-right text-sm ${
                       delta >= 0 ? 'text-positive-600 dark:text-positive-400' : 'text-negative-600 dark:text-negative-400'
                     }`}
                   >
@@ -1048,7 +1080,7 @@ export function FinancialForecastView() {
 
             {/* Closing Runway in Banks */}
             <div className="flex items-center font-bold bg-white dark:bg-ink-900 border-t border-ink-200 dark:border-ink-800">
-              <div className="w-[480px] shrink-0 p-4 border-r border-ink-200 dark:border-ink-800 flex items-center gap-2 text-ink-900 dark:text-ink-100 text-sm">
+              <div className="w-[480px] shrink-0 p-4 border-r-2 border-ink-200 dark:border-ink-700 flex items-center gap-2 text-ink-900 dark:text-ink-100 text-sm">
                 <Landmark size={16} className="text-accent-600 dark:text-accent-400" />
                 <span>Closing bank cash</span>
               </div>
@@ -1059,7 +1091,7 @@ export function FinancialForecastView() {
                 return (
                   <div 
                     key={m} 
-                    className={`w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 p-4 text-right text-base font-extrabold ${
+                    className={`w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-4 text-right text-base font-extrabold ${
                       isDeficit ? 'text-negative-600 dark:text-negative-400 bg-negative-50/40 dark:bg-negative-950/30' : 'text-accent-700 dark:text-accent-300'
                     }`}
                   >
