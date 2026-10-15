@@ -1209,15 +1209,18 @@ export function FinancialForecastView() {
           </div>
 
           {/* Outflows / Liabilities Section */}
-          <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 p-3 font-semibold text-xs text-ink-700 dark:text-ink-300 flex items-center justify-between">
-            <span>Outflows (monthly costs, debt and commissions)</span>
-            <button
-              onClick={addOutflowLine}
-              className="text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
-            >
-              <Plus size={12} />
-              Add outflow
-            </button>
+          <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 font-semibold text-xs text-ink-700 dark:text-ink-300">
+            {/* Frozen with the other row labels so it doesn't scroll away sideways */}
+            <div style={{ width: LABEL_W }} className="sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 p-3 flex items-center justify-between gap-3">
+              <span className="truncate" title="Monthly costs, debt and commissions">Outflows</span>
+              <button
+                onClick={addOutflowLine}
+                className="shrink-0 text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
+              >
+                <Plus size={12} />
+                Add outflow
+              </button>
+            </div>
           </div>
 
           <div className="divide-y divide-ink-100 dark:divide-ink-800 bg-white dark:bg-ink-900 text-xs">
