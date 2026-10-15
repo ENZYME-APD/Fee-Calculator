@@ -556,7 +556,15 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                       left={
                         <div className="flex items-center gap-4 flex-wrap">
                           <div className="flex items-baseline gap-2">
-                            <h2 className="font-bold text-lg text-ink-800 dark:text-ink-100">{project.name}</h2>
+                            <h2 className="font-bold text-lg text-ink-800 dark:text-ink-100">
+                              <Link
+                                href={`/projects?project=${project.id}`}
+                                title="Open in Projects & phases"
+                                className="hover:text-accent-600 dark:hover:text-accent-400 hover:underline underline-offset-4 decoration-2 decoration-accent-500/40 transition-colors"
+                              >
+                                {project.name}
+                              </Link>
+                            </h2>
                             <button
                               onClick={() => setIsProjectSettingsOpen(true)}
                               className="text-ink-500 hover:text-accent-500 p-1 hover:bg-accent-50 dark:hover:bg-accent-900/30 rounded-full transition-colors"

@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProjectSummary } from '@/components/calculator/ProjectSummary';
 import { PaymentScheduleModal } from '@/components/calculator/PaymentScheduleModal';
@@ -12,6 +13,19 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { exportProposalToExcel } from '@/lib/excelExport';
 
 export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <FeeProposalPage />
+    </Suspense>
+  );
+}
+
+function FeeProposalPage() {
+  // Read ?project= from the router, not window.location: on client navigation the
+  // browser URL is updated after this page's first effects run.
+  const projectParam = useSearchParams().get('project');
+  const projectParamRef = useRef(projectParam);
+  projectParamRef.current = projectParam;
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
@@ -41,16 +55,13 @@ export default function Home() {
     
     // Maintain active project if it exists in new data
     if (projs.length > 0) {
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        const projectIdParam = params.get('project');
-        if (projectIdParam) {
-          const found = projs.find(p => p.id === projectIdParam);
-          if (found) {
-            setActiveProject(found);
-            setLoading(false);
-            return;
-          }
+      const projectIdParam = projectParamRef.current;
+      if (projectIdParam) {
+        const found = projs.find(p => p.id === projectIdParam);
+        if (found) {
+          setActiveProject(prev => (prev?.id === found.id ? prev : found));
+          setLoading(false);
+          return;
         }
       }
       const defaultProject = projs.find(p => p.status !== 'Lost') || projs[0];
@@ -62,6 +73,13 @@ export default function Home() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // A link to another project while already on this page (e.g. from the dashboard)
+  useEffect(() => {
+    if (!projectParam) return;
+    const found = projects.find(p => p.id === projectParam);
+    if (found) setActiveProject(prev => (prev?.id === found.id ? prev : found));
+  }, [projectParam, projects]);
 
   useEffect(() => {
     if (activeProject) {
