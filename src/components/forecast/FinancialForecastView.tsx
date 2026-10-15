@@ -580,6 +580,9 @@ export function FinancialForecastView() {
     return stats;
   }, [monthKeys, startMonthKey, openingMonthKey, rows, outflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion, runningCosts.total]);
 
+  // Sum of a per-month value over the months on screen (for the totals column)
+  const sumVisible = (fn: (m: string) => number) => monthKeys.reduce((sum, m) => sum + fn(m), 0);
+
   if (authLoading || !isAdmin || loading) {
     return (
       <div className="flex h-full w-full items-center justify-center p-8 text-ink-500">
@@ -757,6 +760,17 @@ export function FinancialForecastView() {
                 </div>
               </div>
             ))}
+            {/* Totals for the visible months */}
+            <div className="w-[360px] shrink-0 flex flex-col bg-ink-100/70 dark:bg-ink-900">
+              <div className="text-center py-2 border-b border-ink-200 dark:border-ink-800 font-bold text-xs text-ink-900 dark:text-ink-100">
+                Total, {monthKeys.length} months
+              </div>
+              <div className="grid grid-cols-3 text-[11px] font-semibold text-center py-1 text-ink-500">
+                <span className="text-warning-600 dark:text-warning-400 py-0.5">Possible</span>
+                <span className="text-accent-600 dark:text-accent-400 py-0.5 border-x border-ink-200 dark:border-ink-800">Invoiced</span>
+                <span className="text-positive-600 dark:text-positive-400 py-0.5">Collections</span>
+              </div>
+            </div>
           </div>
 
           {/* Workstream Inflow Rows */}
@@ -917,6 +931,17 @@ export function FinancialForecastView() {
                       </div>
                     );
                   })}
+                  {(() => {
+                    const stageTotal = (st: ForecastStage) => sumVisible(m => (row.cells[m]?.[st] || []).reduce((s, p) => s + p.amount, 0));
+                    const t = { possible: stageTotal('possible'), invoicing: stageTotal('invoicing'), collections: stageTotal('collections') };
+                    return (
+                      <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums grid grid-cols-3 text-xs font-bold text-center">
+                        <span className="flex items-center justify-center text-warning-700 dark:text-warning-300">{t.possible ? fmt(t.possible) : ''}</span>
+                        <span className="flex items-center justify-center text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800">{t.invoicing ? fmt(t.invoicing) : ''}</span>
+                        <span className="flex items-center justify-center text-positive-700 dark:text-positive-300">{t.collections ? fmt(t.collections) : ''}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
@@ -937,6 +962,11 @@ export function FinancialForecastView() {
                 </div>
               );
             })}
+            <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums grid grid-cols-3 py-2.5 px-1.5 text-center">
+              <span className="text-warning-700 dark:text-warning-300">{fmt(sumVisible(m => monthlyStats[m]?.possible || 0))}</span>
+              <span className="text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800">{fmt(sumVisible(m => monthlyStats[m]?.invoicing || 0))}</span>
+              <span className="text-positive-700 dark:text-positive-300">{fmt(sumVisible(m => monthlyStats[m]?.collections || 0))}</span>
+            </div>
           </div>
 
           {/* Scenarios Breakdown (Conservative / Expected / Optimistic) */}
@@ -951,6 +981,7 @@ export function FinancialForecastView() {
                   {fmt(monthlyStats[m]?.conservative || 0)}
                 </div>
               ))}
+              <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums px-3 py-1.5 text-right font-bold text-ink-800 dark:text-ink-200">{fmt(sumVisible(m => monthlyStats[m]?.conservative || 0))}</div>
             </div>
 
             {/* Expected */}
@@ -963,6 +994,7 @@ export function FinancialForecastView() {
                   {fmt(monthlyStats[m]?.expected || 0)}
                 </div>
               ))}
+              <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums px-3 py-1.5 text-right font-bold">{fmt(sumVisible(m => monthlyStats[m]?.expected || 0))}</div>
             </div>
 
             {/* Optimistic */}
@@ -975,6 +1007,7 @@ export function FinancialForecastView() {
                   {fmt(monthlyStats[m]?.optimistic || 0)}
                 </div>
               ))}
+              <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums px-3 py-1.5 text-right font-bold text-ink-800 dark:text-ink-200">{fmt(sumVisible(m => monthlyStats[m]?.optimistic || 0))}</div>
             </div>
           </div>
 
@@ -1028,6 +1061,9 @@ export function FinancialForecastView() {
                       </div>
                     );
                   })}
+                  <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums p-2 flex items-center justify-end font-bold text-negative-600 dark:text-negative-400">
+                    {(() => { const t = sumVisible(m => personData.monthly[m] || 0); return t ? `-${fmt(t)}` : <span className="text-ink-500 dark:text-ink-400 font-medium">0</span>; })()}
+                  </div>
                 </div>
               );
             })}
@@ -1152,6 +1188,9 @@ export function FinancialForecastView() {
                     </div>
                   );
                 })}
+                <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums p-2 flex items-center justify-end font-bold text-negative-600 dark:text-negative-400">
+                  {(() => { const t = sumVisible(m => outflowAmount(item, m, runningCosts.total)); return t ? `-${fmt(t)}` : <span className="text-ink-500 dark:text-ink-400 font-medium">0</span>; })()}
+                </div>
               </div>
               );
             })}
@@ -1170,6 +1209,7 @@ export function FinancialForecastView() {
                 </div>
               );
             })}
+            <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums py-2.5 px-3 text-right text-negative-600 dark:text-negative-400">-{fmt(sumVisible(m => monthlyStats[m]?.totalOutflows || 0))}</div>
           </div>
 
           {/* Net Cash & Closing Bank Runway Footer */}
@@ -1192,6 +1232,14 @@ export function FinancialForecastView() {
                   </div>
                 );
               })}
+              {(() => {
+                const net = sumVisible(m => monthlyStats[m]?.netDelta || 0);
+                return (
+                  <div className={`w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums p-3 text-right text-sm ${net >= 0 ? 'text-positive-600 dark:text-positive-400' : 'text-negative-600 dark:text-negative-400'}`} title="Net cash flow over the visible months">
+                    {net >= 0 ? '+' : ''}{fmt(net)}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Closing Runway in Banks */}
@@ -1215,6 +1263,14 @@ export function FinancialForecastView() {
                   </div>
                 );
               })}
+              {(() => {
+                const last = monthlyStats[monthKeys[monthKeys.length - 1]]?.closingCash ?? null;
+                return (
+                  <div className={`w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums p-4 text-right text-base font-extrabold ${last !== null && last < 0 ? 'text-negative-600 dark:text-negative-400' : 'text-accent-700 dark:text-accent-300'}`} title="Bank cash at the end of the last visible month">
+                    {last === null ? '—' : fmt(last)}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </Card>
