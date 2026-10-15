@@ -188,6 +188,8 @@ export interface ForecastPill {
   label: string;
   invoiceNumber?: string;
   notes?: string;
+  referralName?: string;
+  referralPercent?: number;
 }
 
 export interface ForecastRow {

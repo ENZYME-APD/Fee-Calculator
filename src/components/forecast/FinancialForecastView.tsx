@@ -11,7 +11,9 @@ import {
   ArrowUpRight, 
   Check, 
   FolderSync,
-  DollarSign
+  DollarSign,
+  RotateCcw,
+  UserCheck
 } from 'lucide-react';
 import { 
   ForecastProfile, 
@@ -38,6 +40,11 @@ import { EditPillModal } from './EditPillModal';
 import { AddRowModal } from './AddRowModal';
 import { AddOutflowModal } from './AddOutflowModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
+import { 
+  SPREADSHEET_BASELINE_ROWS, 
+  SPREADSHEET_BASELINE_OUTFLOWS, 
+  SPREADSHEET_BASELINE_SETTINGS 
+} from './forecastBaseline';
 
 // Helpers to format YYYY-MM
 function addMonths(yearMonth: string, offset: number): string {
@@ -68,11 +75,11 @@ export function FinancialForecastView() {
   const [profile, setProfile] = useState<ForecastProfile | null>(null);
 
   // Global settings
-  const [startMonthKey, setStartMonthKey] = useState<string>('2026-09');
-  const [visibleMonthsCount, setVisibleMonthsCount] = useState<number>(6);
-  const [startingBankBalance, setStartingBankBalance] = useState<number>(45540);
-  const [possibleConversion, setPossibleConversion] = useState<number>(50);
-  const [invoicingConversion, setInvoicingConversion] = useState<number>(90);
+  const [startMonthKey, setStartMonthKey] = useState<string>(SPREADSHEET_BASELINE_SETTINGS.startMonthKey);
+  const [visibleMonthsCount, setVisibleMonthsCount] = useState<number>(SPREADSHEET_BASELINE_SETTINGS.visibleMonthsCount);
+  const [startingBankBalance, setStartingBankBalance] = useState<number>(SPREADSHEET_BASELINE_SETTINGS.startingBankBalance);
+  const [possibleConversion, setPossibleConversion] = useState<number>(SPREADSHEET_BASELINE_SETTINGS.possibleConversion);
+  const [invoicingConversion, setInvoicingConversion] = useState<number>(SPREADSHEET_BASELINE_SETTINGS.invoicingConversion);
 
   // Rows and Outflows
   const [rows, setRows] = useState<ForecastRow[]>([]);
@@ -86,173 +93,40 @@ export function FinancialForecastView() {
   const [addRowModalOpen, setAddRowModalOpen] = useState(false);
   const [addOutflowModalOpen, setAddOutflowModalOpen] = useState(false);
   const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
+  const [confirmResetBaselineOpen, setConfirmResetBaselineOpen] = useState(false);
   const [deleteRowTarget, setDeleteRowTarget] = useState<string | null>(null);
 
   // Debounced auto-save timer
   const isInitialLoad = useRef(true);
   const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Load existing profile or initialize from sample data
+  // Load existing profile or initialize from spreadsheet baseline
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const [existingProfile, ohProfile] = await Promise.all([
-          getForecastProfile(),
-          getOverheadsProfile()
-        ]);
+        const existingProfile = await getForecastProfile();
 
-        const defaultBurn = ohProfile ? Math.round((ohProfile.yearlyIncomeTarget ? ohProfile.categories?.reduce((sum, c) => sum + (c.items?.reduce((s, i) => s + (i.isActive ? i.yearlyCost : 0), 0) || 0), 0) : 504000) / 12) : 42000;
-
-        if (existingProfile) {
+        if (existingProfile && existingProfile.rows && existingProfile.rows.length > 0) {
           setProfile(existingProfile);
-          setStartMonthKey(existingProfile.startMonthKey || '2026-09');
-          setVisibleMonthsCount(existingProfile.visibleMonthsCount || 6);
-          setStartingBankBalance(Math.round(existingProfile.startingBankBalance || 0));
-          setPossibleConversion(existingProfile.possibleConversionPercent ?? 50);
-          setInvoicingConversion(existingProfile.invoicingConversionPercent ?? 90);
+          setStartMonthKey(existingProfile.startMonthKey || SPREADSHEET_BASELINE_SETTINGS.startMonthKey);
+          setVisibleMonthsCount(existingProfile.visibleMonthsCount || SPREADSHEET_BASELINE_SETTINGS.visibleMonthsCount);
+          setStartingBankBalance(Math.round(existingProfile.startingBankBalance ?? SPREADSHEET_BASELINE_SETTINGS.startingBankBalance));
+          setPossibleConversion(existingProfile.possibleConversionPercent ?? SPREADSHEET_BASELINE_SETTINGS.possibleConversion);
+          setInvoicingConversion(existingProfile.invoicingConversionPercent ?? SPREADSHEET_BASELINE_SETTINGS.invoicingConversion);
           setRows(existingProfile.rows || []);
-          setOutflows(existingProfile.outflows || []);
+          // Ensure fixed outflows don't have hardcoded simon duplicate if dynamic commission is used
+          const cleanOutflows = (existingProfile.outflows || []).filter(o => o.id !== 'partner_simon');
+          setOutflows(cleanOutflows.length > 0 ? cleanOutflows : SPREADSHEET_BASELINE_OUTFLOWS);
         } else {
           // Initialize with user's financial spreadsheet baseline
-          setStartMonthKey('2026-09');
-          setVisibleMonthsCount(6);
-          setStartingBankBalance(45540);
-          setPossibleConversion(50);
-          setInvoicingConversion(90);
-
-          const initialRows: ForecastRow[] = [
-            {
-              id: 'row_bryant_park',
-              name: 'Bryant Park',
-              type: 'project',
-              colorTag: 'default',
-              notes: 'Final SD',
-              cells: {
-                '2026-09': { collections: [{ id: 'p1', amount: 30625, label: 'Final SD' }] },
-                '2026-12': { collections: [{ id: 'p2', amount: 43750, label: 'Closeout' }] }
-              }
-            },
-            {
-              id: 'row_greenscape',
-              name: 'GreenScape',
-              type: 'project',
-              colorTag: 'default',
-              cells: {
-                '2026-10': { collections: [{ id: 'p3', amount: 16000, label: 'Milestone' }] }
-              }
-            },
-            {
-              id: 'row_godrej',
-              name: 'Godrej',
-              type: 'project',
-              colorTag: 'default',
-              cells: {
-                '2026-09': { collections: [{ id: 'p4', amount: 21778, label: 'Invoiced receipt' }] }
-              }
-            },
-            {
-              id: 'row_neral_id',
-              name: 'Neral ID',
-              type: 'project',
-              colorTag: 'default',
-              notes: 'PCD + FCD',
-              cells: {
-                '2026-09': { collections: [{ id: 'p5', amount: 21900, label: 'PCD' }] },
-                '2026-10': { possible: [{ id: 'p6', amount: 14000, label: 'FCD' }], collections: [{ id: 'p7', amount: 2000, label: 'Part' }] },
-                '2026-11': { invoicing: [{ id: 'p8', amount: 14000, label: 'FCD' }], collections: [{ id: 'p9', amount: 2000, label: 'Part' }] }
-              }
-            },
-            {
-              id: 'row_modulnor',
-              name: 'Modulnor trasteros',
-              type: 'external',
-              colorTag: 'negative',
-              notes: '10k + 1.5k/mo',
-              cells: {
-                '2026-10': { collections: [{ id: 'p10', amount: 1500, label: 'M1' }], invoicing: [{ id: 'p11', amount: 10000, label: 'Advance' }] },
-                '2026-11': { collections: [{ id: 'p12', amount: 1500, label: 'M2' }] },
-                '2026-12': { collections: [{ id: 'p13', amount: 1500, label: 'M3' }] }
-              }
-            },
-            {
-              id: 'row_ottima',
-              name: 'Ottima PT',
-              type: 'retainer',
-              colorTag: 'positive',
-              notes: '12k/mo recurring',
-              cells: {
-                '2026-09': { possible: [{ id: 'p14', amount: 12000, label: 'Retainer' }] },
-                '2026-10': { possible: [{ id: 'p15', amount: 12000, label: 'Retainer' }] },
-                '2026-11': { possible: [{ id: 'p16', amount: 12000, label: 'Retainer' }] },
-                '2026-12': { possible: [{ id: 'p17', amount: 12000, label: 'Retainer' }] }
-              }
-            },
-            {
-              id: 'row_factory_pt',
-              name: 'Factory PT Mob',
-              type: 'project',
-              colorTag: 'default',
-              cells: {
-                '2026-09': { invoicing: [{ id: 'p18', amount: 9000, label: 'M1' }], collections: [{ id: 'p19', amount: 9000, label: 'M1' }] },
-                '2026-10': { invoicing: [{ id: 'p20', amount: 6000, label: 'M2' }], collections: [{ id: 'p21', amount: 6000, label: 'M2' }] },
-                '2026-11': { invoicing: [{ id: 'p22', amount: 6000, label: 'M3' }], collections: [{ id: 'p23', amount: 6000, label: 'M3' }] },
-                '2026-12': { invoicing: [{ id: 'p24', amount: 9000, label: 'M4' }], collections: [{ id: 'p25', amount: 9000, label: 'M4' }] }
-              }
-            },
-            {
-              id: 'row_kastoldi',
-              name: 'Kastoldi Hospital Jakarta',
-              type: 'project',
-              colorTag: 'warning',
-              cells: {
-                '2026-11': { possible: [{ id: 'p26', amount: 15850, label: 'Phase 1' }] },
-                '2026-12': { possible: [{ id: 'p27', amount: 15850, label: 'Phase 2' }] },
-                '2027-01': { possible: [{ id: 'p28', amount: 15850, label: 'Phase 3' }] },
-                '2027-02': { possible: [{ id: 'p29', amount: 15850, label: 'Phase 4' }] }
-              }
-            }
-          ];
-
-          const initialOutflows: ForecastOutflowItem[] = [
-            {
-              id: 'burn_base',
-              name: 'Fixed operational burn (overheads)',
-              type: 'burn',
-              monthlyAmounts: {
-                '2026-09': defaultBurn,
-                '2026-10': defaultBurn,
-                '2026-11': defaultBurn,
-                '2026-12': defaultBurn,
-                '2027-01': defaultBurn,
-                '2027-02': defaultBurn,
-              }
-            },
-            {
-              id: 'partner_simon',
-              name: 'Partner profit cut ("Simon %")',
-              type: 'partner',
-              monthlyAmounts: {
-                '2026-09': 5250,
-                '2026-10': 4200,
-                '2026-11': 300,
-                '2026-12': 7463
-              }
-            },
-            {
-              id: 'debt_partner_3',
-              name: 'Partner 3.0 debt repayment',
-              type: 'debt',
-              initialBalance: 72000,
-              monthlyAmounts: {
-                '2026-09': 24000,
-                '2026-10': 24000
-              }
-            }
-          ];
-
-          setRows(initialRows);
-          setOutflows(initialOutflows);
+          setStartMonthKey(SPREADSHEET_BASELINE_SETTINGS.startMonthKey);
+          setVisibleMonthsCount(SPREADSHEET_BASELINE_SETTINGS.visibleMonthsCount);
+          setStartingBankBalance(SPREADSHEET_BASELINE_SETTINGS.startingBankBalance);
+          setPossibleConversion(SPREADSHEET_BASELINE_SETTINGS.possibleConversion);
+          setInvoicingConversion(SPREADSHEET_BASELINE_SETTINGS.invoicingConversion);
+          setRows(SPREADSHEET_BASELINE_ROWS);
+          setOutflows(SPREADSHEET_BASELINE_OUTFLOWS);
         }
       } catch (err) {
         console.error("Error loading forecast data", err);
@@ -306,6 +180,46 @@ export function FinancialForecastView() {
     return list;
   }, [startMonthKey, visibleMonthsCount]);
 
+  // Dynamic Referral Commissions Map: { [referralName]: { [monthKey]: calculatedAmount } }
+  const dynamicReferrals = useMemo(() => {
+    const map: Record<string, { total: number; monthly: Record<string, number> }> = {};
+
+    rows.forEach(row => {
+      Object.entries(row.cells).forEach(([mKey, monthCell]) => {
+        // Referral commissions apply to collections
+        (monthCell.collections || []).forEach(pill => {
+          if (pill.referralName && pill.referralName.trim()) {
+            const name = pill.referralName.trim();
+            const pct = pill.referralPercent || 0;
+            const cut = Math.round(pill.amount * (pct / 100));
+
+            if (!map[name]) {
+              map[name] = { total: 0, monthly: {} };
+            }
+            map[name].monthly[mKey] = (map[name].monthly[mKey] || 0) + cut;
+            map[name].total += cut;
+          }
+        });
+      });
+    });
+
+    return map;
+  }, [rows]);
+
+  const referralNames = useMemo(() => Object.keys(dynamicReferrals).sort(), [dynamicReferrals]);
+
+  // Reset to original spreadsheet baseline
+  const handleResetToBaseline = () => {
+    setStartMonthKey(SPREADSHEET_BASELINE_SETTINGS.startMonthKey);
+    setVisibleMonthsCount(SPREADSHEET_BASELINE_SETTINGS.visibleMonthsCount);
+    setStartingBankBalance(SPREADSHEET_BASELINE_SETTINGS.startingBankBalance);
+    setPossibleConversion(SPREADSHEET_BASELINE_SETTINGS.possibleConversion);
+    setInvoicingConversion(SPREADSHEET_BASELINE_SETTINGS.invoicingConversion);
+    setRows(SPREADSHEET_BASELINE_ROWS);
+    setOutflows(SPREADSHEET_BASELINE_OUTFLOWS);
+    setConfirmResetBaselineOpen(false);
+  };
+
   // Sync projects from Fee Proposals
   const handleSyncFromProjects = async () => {
     setLoading(true);
@@ -325,7 +239,7 @@ export function FinancialForecastView() {
           // Distribute milestones across visible months
           payments.forEach((pmt, idx) => {
             const targetMonth = monthKeys[Math.min(idx, monthKeys.length - 1)] || monthKeys[0];
-            const amount = Math.round(((pmt.percentage || 10) / 100) * 25000); // estimated baseline if fee not resolved
+            const amount = Math.round(((pmt.percentage || 10) / 100) * 25000);
             const stage: ForecastStage = proj.status === 'Active' ? 'invoicing' : 'possible';
             
             if (!projCells[targetMonth]) projCells[targetMonth] = {};
@@ -476,17 +390,22 @@ export function FinancialForecastView() {
         }
       });
 
-      // Outflows for month m
+      // Fixed & Debt Outflows for month m
       let mOutflows = 0;
       outflows.forEach(item => {
         mOutflows += (item.monthlyAmounts[m] || 0);
+      });
+
+      // Add Dynamic Referral Commission Outflows for month m
+      Object.values(dynamicReferrals).forEach(refData => {
+        mOutflows += (refData.monthly[m] || 0);
       });
 
       const conservative = mCollections;
       const expected = Math.round(mCollections + (mInvoicing * (invoicingConversion / 100)) + (mPossible * (possibleConversion / 100)));
       const optimistic = mCollections + mInvoicing + mPossible;
 
-      // Net change based on real collections
+      // Net change based on real collections minus all outflows (burn + debt + referral commissions)
       const netDelta = mCollections - mOutflows;
       runningCash += netDelta;
 
@@ -504,7 +423,7 @@ export function FinancialForecastView() {
     }
 
     return stats;
-  }, [monthKeys, rows, outflows, startingBankBalance, possibleConversion, invoicingConversion]);
+  }, [monthKeys, rows, outflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion]);
 
   if (loading) {
     return (
@@ -614,6 +533,12 @@ export function FinancialForecastView() {
             <option value={6}>6 months</option>
             <option value={12}>12 months</option>
           </select>
+
+          {/* Reset to Spreadsheet Baseline */}
+          <SecondaryButton onClick={() => setConfirmResetBaselineOpen(true)} title="Reset to original spreadsheet data">
+            <RotateCcw size={14} />
+            <span>Reset to baseline</span>
+          </SecondaryButton>
 
           {/* Sync from Projects */}
           <SecondaryButton onClick={() => setConfirmSyncOpen(true)}>
@@ -752,9 +677,16 @@ export function FinancialForecastView() {
                                     stage === 'invoicing' ? 'bg-accent-50 text-accent-800 border-accent-200 dark:bg-accent-950/40 dark:text-accent-300 dark:border-accent-800/60' :
                                     'bg-positive-50 text-positive-800 border-positive-200 dark:bg-positive-950/40 dark:text-positive-300 dark:border-positive-800/60'
                                   }`}
-                                  title={`${pill.label}${pill.invoiceNumber ? ` • ${pill.invoiceNumber}` : ''}${pill.notes ? ` • ${pill.notes}` : ''}`}
+                                  title={`${pill.label}${pill.referralName ? ` • Referral: ${pill.referralName} (${pill.referralPercent || 0}%)` : ''}${pill.invoiceNumber ? ` • Inv #${pill.invoiceNumber}` : ''}${pill.notes ? ` • ${pill.notes}` : ''}`}
                                 >
-                                  <span className="truncate">{pill.label}</span>
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    <span className="truncate">{pill.label}</span>
+                                    {pill.referralName && (
+                                      <span className="shrink-0 text-[9px] px-1 py-0.2 rounded bg-ink-200/80 dark:bg-ink-700 text-ink-700 dark:text-ink-200 font-semibold" title={`Referral: ${pill.referralName} (${pill.referralPercent || 0}%)`}>
+                                        {pill.referralName.substring(0, 1).toUpperCase()}
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="shrink-0">{fmt(pill.amount)}</span>
                                 </div>
                               ))}
@@ -764,6 +696,8 @@ export function FinancialForecastView() {
                                 onClick={() => {
                                   setActiveCellLocation({ rowId: row.id, monthKey: m, stage });
                                   setEditingPill(null);
+                                  setPillModalOpen(true);
+                                daylight:
                                   setPillModalOpen(true);
                                 }}
                                 className="w-full py-1 text-ink-300 dark:text-ink-600 hover:text-ink-600 dark:hover:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 rounded opacity-0 group-hover/cell:opacity-100 transition-opacity flex items-center justify-center text-[10px]"
@@ -840,7 +774,7 @@ export function FinancialForecastView() {
 
           {/* Outflows / Liabilities Section */}
           <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 p-3 font-bold text-xs uppercase tracking-wider text-ink-600 dark:text-ink-400 flex items-center justify-between">
-            <span>Outflows & Liabilities (Monthly burn)</span>
+            <span>Outflows & Liabilities (Monthly burn & commissions)</span>
             <button
               onClick={() => setAddOutflowModalOpen(true)}
               className="text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold normal-case"
@@ -851,6 +785,48 @@ export function FinancialForecastView() {
           </div>
 
           <div className="divide-y divide-ink-100 dark:divide-ink-800 bg-white dark:bg-ink-900 text-xs">
+            {/* Dynamic Referral Commission Rows */}
+            {referralNames.map(personName => {
+              const personData = dynamicReferrals[personName];
+
+              return (
+                <div key={`referral_${personName}`} className="flex group bg-ink-50/30 dark:bg-ink-900/40 hover:bg-ink-50/60 dark:hover:bg-ink-800/30 transition-colors">
+                  <div className="w-72 shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <UserCheck size={14} className="text-accent-600 dark:text-accent-400" />
+                        <span className="font-semibold text-ink-800 dark:text-ink-200">{personName}</span>
+                      </div>
+                      <div className="text-[10px] text-ink-500 mt-0.5">
+                        Auto-calculated referral commission
+                      </div>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-300">
+                      Auto
+                    </span>
+                  </div>
+
+                  {monthKeys.map(m => {
+                    const cutAmount = personData.monthly[m] || 0;
+                    return (
+                      <div key={m} className="w-[360px] shrink-0 border-r border-ink-100 dark:border-ink-800 last:border-r-0 p-2 flex items-center justify-end">
+                        <div className="flex items-center gap-1 text-right">
+                          {cutAmount > 0 ? (
+                            <span className="font-bold text-negative-600 dark:text-negative-400">
+                              -{fmt(cutAmount)}
+                            </span>
+                          ) : (
+                            <span className="text-ink-400 text-xs font-medium">0</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+
+            {/* Standard Fixed / Debt Outflows */}
             {outflows.map(item => (
               <div key={item.id} className="flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors">
                 <div className="w-72 shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between">
@@ -896,6 +872,21 @@ export function FinancialForecastView() {
                 })}
               </div>
             ))}
+          </div>
+
+          {/* Outflow Subtotal */}
+          <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t border-ink-200 dark:border-ink-800 flex font-bold text-xs">
+            <div className="w-72 shrink-0 p-3 text-ink-700 dark:text-ink-300 uppercase tracking-wider border-r border-ink-200 dark:border-ink-800">
+              Total Outflows
+            </div>
+            {monthKeys.map(m => {
+              const outTotal = monthlyStats[m]?.totalOutflows || 0;
+              return (
+                <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 py-2.5 px-3 text-right text-negative-600 dark:text-negative-400">
+                  -{fmt(outTotal)}
+                </div>
+              );
+            })}
           </div>
 
           {/* Net Cash & Closing Bank Runway Footer */}
@@ -968,6 +959,16 @@ export function FinancialForecastView() {
         isOpen={addOutflowModalOpen}
         onAdd={newItem => setOutflows(prev => [...prev, newItem])}
         onClose={() => setAddOutflowModalOpen(false)}
+      />
+
+      {/* Reset Baseline Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmResetBaselineOpen}
+        title="Reset to spreadsheet baseline"
+        message="This will reset the forecast table to the exact 26 workstreams and liabilities from your original financial forecast spreadsheet, including Simon's referral commission tagging. Any unsaved custom modifications will be replaced."
+        confirmText="Reset to baseline"
+        onConfirm={handleResetToBaseline}
+        onCancel={() => setConfirmResetBaselineOpen(false)}
       />
 
       {/* Sync Confirmation Modal */}

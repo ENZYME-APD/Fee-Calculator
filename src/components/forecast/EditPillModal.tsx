@@ -18,6 +18,8 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
   const [label, setLabel] = useState<string>(pill ? pill.label : '');
   const [invoiceNumber, setInvoiceNumber] = useState<string>(pill?.invoiceNumber || '');
   const [notes, setNotes] = useState<string>(pill?.notes || '');
+  const [referralName, setReferralName] = useState<string>(pill?.referralName || '');
+  const [referralPercent, setReferralPercent] = useState<number>(pill?.referralPercent || 0);
   const [targetStage, setTargetStage] = useState<ForecastStage>(stage);
 
   React.useEffect(() => {
@@ -26,12 +28,16 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
       setLabel(pill.label || '');
       setInvoiceNumber(pill.invoiceNumber || '');
       setNotes(pill.notes || '');
+      setReferralName(pill.referralName || '');
+      setReferralPercent(pill.referralPercent || 0);
       setTargetStage(stage);
     } else {
       setAmount(0);
       setLabel('');
       setInvoiceNumber('');
       setNotes('');
+      setReferralName('');
+      setReferralPercent(0);
       setTargetStage(stage);
     }
   }, [pill, stage, isOpen]);
@@ -46,6 +52,8 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
       label: label.trim() || 'Milestone',
       invoiceNumber: invoiceNumber.trim() || undefined,
       notes: notes.trim() || undefined,
+      referralName: referralName.trim() || undefined,
+      referralPercent: referralPercent > 0 ? Math.round(referralPercent) : undefined,
     }, targetStage);
     onClose();
   };
@@ -153,6 +161,45 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
                 placeholder="e.g. Client wire sent"
                 className={`${fieldClass} w-full`}
               />
+            </div>
+          </div>
+
+          {/* Referral Commission Section */}
+          <div className="p-3 bg-ink-50 dark:bg-ink-800/60 rounded-xl border border-ink-200 dark:border-ink-700 flex flex-col gap-2">
+            <span className="text-xs font-bold text-ink-700 dark:text-ink-300">
+              Referral commission (outflow cut)
+            </span>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium text-ink-500 mb-1">
+                  Commissionist / person
+                </label>
+                <input
+                  type="text"
+                  value={referralName}
+                  onChange={e => setReferralName(e.target.value)}
+                  placeholder="e.g. Simon"
+                  className={`${fieldClass} w-full text-xs font-medium`}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-ink-500 mb-1">
+                  Commission % (no decimals)
+                </label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={referralPercent === 0 ? '' : referralPercent}
+                    onChange={e => setReferralPercent(parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)}
+                    placeholder="e.g. 15 or 30"
+                    className={`${fieldClass} w-full text-xs text-right font-bold`}
+                  />
+                  <span className="text-xs font-bold text-ink-400">%</span>
+                </div>
+              </div>
             </div>
           </div>
 
