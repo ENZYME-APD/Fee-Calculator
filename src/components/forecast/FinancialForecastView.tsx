@@ -4,6 +4,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Plus, 
+  Minus,
   RefreshCw, 
   Download, 
   Trash2, 
@@ -91,8 +92,16 @@ function monthKeyFromDate(ts: number): string {
  * An outflow's base amount for a month: the live Team resources + Overheads figure for a linked
  * line; otherwise the month's own entry, or the line's every-month amount.
  */
+/**
+ * The main running-costs line (burn_base) is linked to Team resources + Overheads by default;
+ * it only uses typed amounts once someone unlinks it (linkedToOverheads === false).
+ */
+function isLinkedLine(item: ForecastOutflowItem): boolean {
+  return item.linkedToOverheads ?? item.id === 'burn_base';
+}
+
 function outflowBase(item: ForecastOutflowItem, monthKey: string, linkedMonthly: number): number {
-  if (item.linkedToOverheads) return linkedMonthly;
+  if (isLinkedLine(item)) return linkedMonthly;
   return item.monthlyAmounts?.[monthKey] ?? item.defaultMonthlyAmount ?? 0;
 }
 
@@ -694,10 +703,16 @@ export function FinancialForecastView() {
             <span>Sync projects</span>
           </SecondaryButton>
 
-          {/* Add custom workstream */}
+          {/* Add a cost line (debt repayment, profit share, fixed cost) */}
+          <SecondaryButton onClick={() => setAddOutflowModalOpen(true)}>
+            <Minus size={14} />
+            <span>Add outflow</span>
+          </SecondaryButton>
+
+          {/* Add an income line (project, retainer, other income) */}
           <PrimaryButton onClick={() => setAddRowModalOpen(true)}>
             <Plus size={14} />
-            <span>Add row</span>
+            <span>Add income</span>
           </PrimaryButton>
 
           {isSaving && (
@@ -749,7 +764,7 @@ export function FinancialForecastView() {
             {rows.length === 0 && (
               <div className="px-6 py-10 text-sm text-ink-500 dark:text-ink-400 max-w-xl">
                 <p className="font-semibold text-ink-800 dark:text-ink-200 mb-1">No income rows yet</p>
-                <p>Use <span className="font-semibold">Sync projects</span> to bring in milestones from your fee proposals, or <span className="font-semibold">Add row</span> for retainers and other income. Then click a cell to add an amount.</p>
+                <p>Use <span className="font-semibold">Sync projects</span> to bring in milestones from your fee proposals, or <span className="font-semibold">Add income</span> for retainers and other income. Then click a cell to add an amount.</p>
               </div>
             )}
             {rows.map(row => {
@@ -971,7 +986,7 @@ export function FinancialForecastView() {
               className="text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
             >
               <Plus size={12} />
-              Add outflow line
+              Add outflow
             </button>
           </div>
 
@@ -1019,7 +1034,7 @@ export function FinancialForecastView() {
 
             {/* Standard fixed / debt outflows */}
             {outflows.map(item => {
-              const isLinked = !!item.linkedToOverheads;
+              const isLinked = isLinkedLine(item);
               const canLink = item.type === 'burn';
               const showAdjust = item.type === 'burn';
               return (

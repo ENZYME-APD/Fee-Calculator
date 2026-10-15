@@ -41,9 +41,9 @@ export function AddRowModal({ isOpen, onAdd, onClose }: AddRowModalProps) {
         <div className="flex justify-between items-center px-5 py-4 border-b border-ink-100 dark:border-ink-800">
           <div>
             <h2 className="text-base font-bold text-ink-900 dark:text-ink-100">
-              Add forecast row
+              Add income
             </h2>
-            <p className="text-xs text-ink-500">Custom workstream, external venture, or recurring retainer</p>
+            <p className="text-xs text-ink-500 dark:text-ink-400">A project, retainer or other income</p>
           </div>
           <button 
             type="button" 
@@ -132,7 +132,7 @@ export function AddRowModal({ isOpen, onAdd, onClose }: AddRowModalProps) {
               Cancel
             </SecondaryButton>
             <PrimaryButton type="submit">
-              Create row
+              Add income
             </PrimaryButton>
           </div>
         </form>
