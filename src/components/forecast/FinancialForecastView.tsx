@@ -53,7 +53,6 @@ import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/compon
 import { EditPillModal } from './EditPillModal';
 import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
-import { AddOutflowModal } from './AddOutflowModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -160,7 +159,6 @@ export function FinancialForecastView() {
   const [addRowModalOpen, setAddRowModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<ForecastRow | null>(null);
   const [resetRowTarget, setResetRowTarget] = useState<ForecastRow | null>(null);
-  const [addOutflowModalOpen, setAddOutflowModalOpen] = useState(false);
   const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
   const [deleteRowTarget, setDeleteRowTarget] = useState<string | null>(null);
 
@@ -506,6 +504,19 @@ export function FinancialForecastView() {
   };
 
   // Outflow amount change
+  // Add outflow: appends a plain line straight into the table and puts its name in edit mode.
+  const [editingOutflowId, setEditingOutflowId] = useState<string | null>(null);
+  const addOutflowLine = () => {
+    const id = `outflow_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    setOutflows(prev => [...prev, { id, name: 'New outflow', type: 'custom', monthlyAmounts: {} }]);
+    setEditingOutflowId(id);
+  };
+  const renameOutflow = (outflowId: string, name: string) => {
+    const clean = name.trim();
+    if (clean) setOutflows(prev => prev.map(o => (o.id === outflowId ? { ...o, name: clean } : o)));
+    setEditingOutflowId(null);
+  };
+
   // Link or unlink a line to Team resources + Overheads. Linking replaces typed month amounts
   // with the live figure; adjustments are kept.
   const handleSetLinked = (outflowId: string, linked: boolean) => {
@@ -808,7 +819,7 @@ export function FinancialForecastView() {
           </SecondaryButton>
 
           {/* Add a cost line (debt repayment, profit share, fixed cost) */}
-          <SecondaryButton onClick={() => setAddOutflowModalOpen(true)}>
+          <SecondaryButton onClick={addOutflowLine}>
             <Minus size={14} />
             <span>Add outflow</span>
           </SecondaryButton>
@@ -1201,7 +1212,7 @@ export function FinancialForecastView() {
           <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 p-3 font-semibold text-xs text-ink-700 dark:text-ink-300 flex items-center justify-between">
             <span>Outflows (monthly costs, debt and commissions)</span>
             <button
-              onClick={() => setAddOutflowModalOpen(true)}
+              onClick={addOutflowLine}
               className="text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
             >
               <Plus size={12} />
@@ -1262,8 +1273,29 @@ export function FinancialForecastView() {
               return (
               <div key={item.id} className="flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors">
                 <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-white dark:bg-ink-900 ${FROZEN_EDGE} p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between gap-3`}>
-                  <div className="min-w-0">
-                    <span className="font-semibold text-ink-800 dark:text-ink-200">{item.name}</span>
+                  <div className="min-w-0 flex-1">
+                    {editingOutflowId === item.id ? (
+                      <input
+                        autoFocus
+                        defaultValue={item.name}
+                        onFocus={e => e.currentTarget.select()}
+                        onBlur={e => renameOutflow(item.id, e.currentTarget.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                          if (e.key === 'Escape') setEditingOutflowId(null);
+                        }}
+                        className={fieldClass + ' w-full py-1 text-xs font-semibold'}
+                        aria-label="Outflow name"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setEditingOutflowId(item.id)}
+                        className="block max-w-full truncate text-left font-semibold text-ink-800 dark:text-ink-200 hover:underline decoration-dotted underline-offset-2"
+                        title="Click to rename"
+                      >
+                        {item.name}
+                      </button>
+                    )}
                     {isLinked && (
                       <div
                         className="text-[11px] text-ink-500 dark:text-ink-400 mt-0.5"
@@ -1282,42 +1314,16 @@ export function FinancialForecastView() {
                         Link to Team resources + Overheads
                       </button>
                     )}
-                    {item.initialBalance ? (
-                      <div className="text-[10px] text-ink-500 dark:text-ink-400">
-                        Debt balance: {fmt(item.initialBalance)}
-                      </div>
-                    ) : null}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Repeats in every month without its own amount (not needed when linked) */}
-                    {!isLinked && (
-                      <label className="flex items-center gap-1.5 text-[11px] font-medium text-ink-500 dark:text-ink-400" title="Applies to every month that doesn't have its own amount. Leave empty to enter months one by one.">
-                        Every month
-                        <input
-                          type="number"
-                          step="1"
-                          min="0"
-                          value={item.defaultMonthlyAmount ? item.defaultMonthlyAmount : ''}
-                          onChange={e => {
-                            const raw = e.target.value.replace(/[^0-9]/g, '');
-                            handleUpdateOutflowDefault(item.id, raw === '' ? null : parseInt(raw));
-                          }}
-                          placeholder="—"
-                          className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-900 text-ink-900 dark:text-ink-100 rounded outline-none focus:border-accent-500 text-xs"
-                          aria-label={`${item.name}: amount every month`}
-                        />
-                      </label>
-                    )}
-                    {item.id !== 'burn_base' && (
-                      <IconButton
-                        onClick={() => setOutflows(prev => prev.filter(o => o.id !== item.id))}
-                        className="opacity-0 group-hover:opacity-100 hover:text-negative-600 transition-opacity"
-                        title="Delete line"
-                      >
-                        <Trash2 size={13} />
-                      </IconButton>
-                    )}
-                  </div>
+                  {item.id !== 'burn_base' && (
+                    <IconButton
+                      onClick={() => setOutflows(prev => prev.filter(o => o.id !== item.id))}
+                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-negative-600 transition-opacity shrink-0"
+                      title="Delete line"
+                    >
+                      <Trash2 size={13} />
+                    </IconButton>
+                  )}
                 </div>
 
                 {monthKeys.map(m => {
