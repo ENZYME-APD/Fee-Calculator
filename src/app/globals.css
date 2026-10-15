@@ -7,6 +7,12 @@
 @plugin "@tailwindcss/typography";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Keyboard focus ring in the theme accent instead of the browser's default blue. */
+:focus-visible {
+  outline: 2px solid var(--accent-500);
+  outline-offset: 2px;
+}
+
 @media print {
   html, body {
     height: auto !important;

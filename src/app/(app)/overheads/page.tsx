@@ -525,7 +525,7 @@ export default function OverheadsPage() {
             <Card>
               <button 
                 onClick={() => setIsNonBillableCollapsed(!isNonBillableCollapsed)}
-                className={`w-full p-4 flex justify-between items-center hover:bg-ink-50 dark:hover:bg-ink-800/50 transition-colors text-left ${!isNonBillableCollapsed ? 'border-b border-ink-100 dark:border-ink-800' : ''}`}
+                className={`w-full p-4 flex justify-between items-center hover:bg-ink-50 dark:hover:bg-ink-800/50 transition-colors text-left focus-visible:outline-offset-[-2px] ${!isNonBillableCollapsed ? 'border-b border-ink-100 dark:border-ink-800' : ''}`}
               >
                 <div className="flex items-center gap-2">
                   {isNonBillableCollapsed ? <ChevronRight size={18} className="text-ink-500" /> : <ChevronDown size={18} className="text-ink-500" />}
@@ -628,7 +628,7 @@ export default function OverheadsPage() {
                   <Card key={cat.id}>
                     <button 
                       onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat.id]: !isCollapsed }))}
-                      className="w-full p-4 border-b border-ink-100 dark:border-ink-800 flex justify-between items-center bg-ink-50 dark:bg-ink-950 hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors text-left"
+                      className={`w-full p-4 flex justify-between items-center hover:bg-ink-50 dark:hover:bg-ink-800/50 transition-colors text-left focus-visible:outline-offset-[-2px] ${!isCollapsed ? 'border-b border-ink-100 dark:border-ink-800' : ''}`}
                     >
                       <div className="flex items-center gap-2">
                         {isCollapsed ? <ChevronRight size={18} className="text-ink-500" /> : <ChevronDown size={18} className="text-ink-500" />}
