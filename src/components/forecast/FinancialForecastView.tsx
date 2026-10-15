@@ -13,7 +13,9 @@ import {
   FolderSync,
   DollarSign,
   RotateCcw,
-  UserCheck
+  UserCheck,
+  Edit2,
+  Undo2
 } from 'lucide-react';
 import { 
   ForecastProfile, 
@@ -38,6 +40,7 @@ import { Card } from '@/components/ui/Card';
 import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
 import { EditPillModal } from './EditPillModal';
 import { AddRowModal } from './AddRowModal';
+import { EditRowModal } from './EditRowModal';
 import { AddOutflowModal } from './AddOutflowModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { 
@@ -91,6 +94,8 @@ export function FinancialForecastView() {
   const [editingPill, setEditingPill] = useState<ForecastPill | null>(null);
 
   const [addRowModalOpen, setAddRowModalOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState<ForecastRow | null>(null);
+  const [resetRowTarget, setResetRowTarget] = useState<ForecastRow | null>(null);
   const [addOutflowModalOpen, setAddOutflowModalOpen] = useState(false);
   const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
   const [confirmResetBaselineOpen, setConfirmResetBaselineOpen] = useState(false);
@@ -208,7 +213,7 @@ export function FinancialForecastView() {
 
   const referralNames = useMemo(() => Object.keys(dynamicReferrals).sort(), [dynamicReferrals]);
 
-  // Reset to original spreadsheet baseline
+  // Reset entire forecast to original spreadsheet baseline
   const handleResetToBaseline = () => {
     setStartMonthKey(SPREADSHEET_BASELINE_SETTINGS.startMonthKey);
     setVisibleMonthsCount(SPREADSHEET_BASELINE_SETTINGS.visibleMonthsCount);
@@ -218,6 +223,50 @@ export function FinancialForecastView() {
     setRows(SPREADSHEET_BASELINE_ROWS);
     setOutflows(SPREADSHEET_BASELINE_OUTFLOWS);
     setConfirmResetBaselineOpen(false);
+  };
+
+  // Reset a SINGLE row back to its original baseline state (or re-sync if from fee proposal)
+  const handleResetSingleRow = async (targetRow: ForecastRow) => {
+    setLoading(true);
+    try {
+      // 1. Check if it matches a baseline spreadsheet row
+      const baselineMatch = SPREADSHEET_BASELINE_ROWS.find(
+        b => b.id === targetRow.id || b.name.toLowerCase() === targetRow.name.toLowerCase()
+      );
+
+      if (baselineMatch) {
+        setRows(prev => prev.map(r => r.id === targetRow.id ? JSON.parse(JSON.stringify(baselineMatch)) : r));
+      } else if (targetRow.projectId) {
+        // 2. If it is linked to a Fee Proposal project, re-fetch its payment milestones from db
+        const payments = await getPayments(targetRow.projectId);
+        const projCells: Record<string, Partial<Record<ForecastStage, ForecastPill[]>>> = {};
+
+        payments.forEach((pmt, idx) => {
+          const targetMonth = monthKeys[Math.min(idx, monthKeys.length - 1)] || monthKeys[0];
+          const amount = Math.round(((pmt.percentage || 10) / 100) * 25000);
+          const stage: ForecastStage = 'possible';
+          
+          if (!projCells[targetMonth]) projCells[targetMonth] = {};
+          if (!projCells[targetMonth][stage]) projCells[targetMonth][stage] = [];
+          
+          projCells[targetMonth][stage]!.push({
+            id: `pill_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            amount,
+            label: pmt.name || 'Milestone'
+          });
+        });
+
+        setRows(prev => prev.map(r => r.id === targetRow.id ? { ...r, cells: projCells } : r));
+      } else {
+        // 3. Custom user-created row with no baseline: clear all pills
+        setRows(prev => prev.map(r => r.id === targetRow.id ? { ...r, cells: {} } : r));
+      }
+      setResetRowTarget(null);
+    } catch (err) {
+      console.error("Failed to reset row", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Sync projects from Fee Proposals
@@ -258,6 +307,7 @@ export function FinancialForecastView() {
             type: 'project',
             projectId: proj.id,
             colorTag: 'accent',
+            notes: proj.status || undefined,
             cells: projCells
           });
         }
@@ -535,9 +585,9 @@ export function FinancialForecastView() {
           </select>
 
           {/* Reset to Spreadsheet Baseline */}
-          <SecondaryButton onClick={() => setConfirmResetBaselineOpen(true)} title="Reset to original spreadsheet data">
+          <SecondaryButton onClick={() => setConfirmResetBaselineOpen(true)} title="Reset entire matrix to original spreadsheet data">
             <RotateCcw size={14} />
-            <span>Reset to baseline</span>
+            <span>Reset baseline</span>
           </SecondaryButton>
 
           {/* Sync from Projects */}
@@ -563,22 +613,27 @@ export function FinancialForecastView() {
         <Card className="min-w-fit shadow-sm">
           {/* Matrix Header */}
           <div className="bg-ink-50 dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 flex sticky top-0 z-20">
-            {/* Workstream Label Column */}
-            <div className="w-72 shrink-0 p-3.5 font-bold text-xs uppercase tracking-wider text-ink-500 border-r border-ink-200 dark:border-ink-800 flex items-center justify-between">
-              <span>Workstream / project</span>
-              <span className="text-[10px] text-ink-400 lowercase">({rows.length} rows)</span>
+            {/* Workstream Column: 280px */}
+            <div className="w-[280px] shrink-0 p-3.5 font-bold text-xs uppercase tracking-wider text-ink-500 border-r border-ink-200 dark:border-ink-800 flex items-center justify-between">
+              <span>Workstream</span>
+              <span className="text-[10px] text-ink-400 lowercase font-normal">({rows.length} rows)</span>
             </div>
 
-            {/* Month Column Headers with 3 stage sub-columns */}
+            {/* Description / Notes Column: 200px */}
+            <div className="w-[200px] shrink-0 p-3.5 font-bold text-xs uppercase tracking-wider text-ink-500 border-r border-ink-200 dark:border-ink-800 flex items-center">
+              <span>Description / notes</span>
+            </div>
+
+            {/* Month Column Headers with 3 stage sub-columns: 360px per month */}
             {monthKeys.map(m => (
-              <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0">
+              <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 flex flex-col">
                 <div className="text-center py-2 border-b border-ink-200 dark:border-ink-800 font-bold text-xs text-ink-800 dark:text-ink-200 bg-ink-100/50 dark:bg-ink-900/50">
                   {formatMonthLabel(m)}
                 </div>
-                <div className="grid grid-cols-3 text-[11px] font-semibold text-center py-1 text-ink-500 border-b border-ink-100 dark:border-ink-800">
-                  <span className="text-warning-600 dark:text-warning-400">Possible</span>
-                  <span className="text-accent-600 dark:text-accent-400 border-x border-ink-100 dark:border-ink-800">Invoiced</span>
-                  <span className="text-positive-600 dark:text-positive-400">Collections</span>
+                <div className="grid grid-cols-3 text-[11px] font-semibold text-center py-1 text-ink-500 bg-ink-50/50 dark:bg-ink-950/50">
+                  <span className="text-warning-600 dark:text-warning-400 py-0.5">Possible</span>
+                  <span className="text-accent-600 dark:text-accent-400 py-0.5 border-x border-ink-200 dark:border-ink-800">Invoiced</span>
+                  <span className="text-positive-600 dark:text-positive-400 py-0.5">Collections</span>
                 </div>
               </div>
             ))}
@@ -596,10 +651,10 @@ export function FinancialForecastView() {
 
               return (
                 <div key={row.id} className={`flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors ${tagBorder}`}>
-                  {/* Row Label Info */}
-                  <div className="w-72 shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between gap-2 overflow-hidden">
-                    <div className="overflow-hidden">
-                      <div className="font-bold text-xs text-ink-800 dark:text-ink-200 truncate">
+                  {/* Column 1: Workstream Name & Row Actions (280px) */}
+                  <div className="w-[280px] shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between gap-2 overflow-hidden">
+                    <div className="overflow-hidden min-w-0">
+                      <div className="font-bold text-xs text-ink-800 dark:text-ink-200 truncate" title={row.name}>
                         {row.name}
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
@@ -610,24 +665,49 @@ export function FinancialForecastView() {
                         }`}>
                           {row.type}
                         </span>
-                        {row.notes && (
-                          <span className="text-[10px] text-ink-400 truncate italic">
-                            {row.notes}
-                          </span>
-                        )}
                       </div>
                     </div>
 
-                    <IconButton
-                      onClick={() => setDeleteRowTarget(row.id)}
-                      className="opacity-0 group-hover:opacity-100 hover:text-negative-600 transition-opacity"
-                      title="Delete row"
-                    >
-                      <Trash2 size={13} />
-                    </IconButton>
+                    {/* Action buttons on hover: Edit, Reset, Delete */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <IconButton
+                        onClick={() => setEditingRow(row)}
+                        className="hover:text-accent-600"
+                        title="Edit workstream details"
+                      >
+                        <Edit2 size={13} />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => setResetRowTarget(row)}
+                        className="hover:text-warning-600"
+                        title="Reset row to baseline or original proposal"
+                      >
+                        <Undo2 size={13} />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => setDeleteRowTarget(row.id)}
+                        className="hover:text-negative-600"
+                        title="Delete row"
+                      >
+                        <Trash2 size={13} />
+                      </IconButton>
+                    </div>
                   </div>
 
-                  {/* 3 Stage Cells for Each Month */}
+                  {/* Column 2: Description / Notes (200px) */}
+                  <div 
+                    onClick={() => setEditingRow(row)}
+                    className="w-[200px] shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center text-xs text-ink-500 dark:text-ink-400 cursor-pointer hover:bg-ink-100/40 dark:hover:bg-ink-800/40 transition-colors overflow-hidden"
+                    title="Click to edit notes"
+                  >
+                    {row.notes ? (
+                      <span className="truncate italic">{row.notes}</span>
+                    ) : (
+                      <span className="text-ink-300 dark:text-ink-600 italic text-[11px] group-hover:inline hidden">+ Add description</span>
+                    )}
+                  </div>
+
+                  {/* 3 Stage Cells for Each Month (360px per month) */}
                   {monthKeys.map(m => {
                     const monthCell = row.cells[m] || {};
 
@@ -697,8 +777,6 @@ export function FinancialForecastView() {
                                   setActiveCellLocation({ rowId: row.id, monthKey: m, stage });
                                   setEditingPill(null);
                                   setPillModalOpen(true);
-                                daylight:
-                                  setPillModalOpen(true);
                                 }}
                                 className="w-full py-1 text-ink-300 dark:text-ink-600 hover:text-ink-600 dark:hover:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 rounded opacity-0 group-hover/cell:opacity-100 transition-opacity flex items-center justify-center text-[10px]"
                                 title="Add payment item"
@@ -718,7 +796,7 @@ export function FinancialForecastView() {
 
           {/* Subtotals by Stage */}
           <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t-2 border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div className="w-72 shrink-0 p-3 text-ink-700 dark:text-ink-300 uppercase tracking-wider border-r border-ink-200 dark:border-ink-800">
+            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 uppercase tracking-wider border-r border-ink-200 dark:border-ink-800">
               Total Inflows
             </div>
             {monthKeys.map(m => {
@@ -737,7 +815,7 @@ export function FinancialForecastView() {
           <div className="bg-ink-100/40 dark:bg-ink-950/40 border-t border-ink-200 dark:border-ink-800 divide-y divide-ink-100 dark:divide-ink-800 text-xs">
             {/* Conservative */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
-              <div className="w-72 shrink-0 px-3.5 py-1.5 font-medium border-r border-ink-200 dark:border-ink-800">
+              <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r border-ink-200 dark:border-ink-800">
                 • Conservative (100% Collections)
               </div>
               {monthKeys.map(m => (
@@ -749,7 +827,7 @@ export function FinancialForecastView() {
 
             {/* Expected */}
             <div className="flex items-center text-accent-700 dark:text-accent-300 bg-accent-50/30 dark:bg-accent-950/20 font-semibold">
-              <div className="w-72 shrink-0 px-3.5 py-1.5 border-r border-ink-200 dark:border-ink-800">
+              <div className="w-[480px] shrink-0 px-3.5 py-1.5 border-r border-ink-200 dark:border-ink-800">
                 • Expected ({invoicingConversion}% Inv + {possibleConversion}% Poss)
               </div>
               {monthKeys.map(m => (
@@ -761,7 +839,7 @@ export function FinancialForecastView() {
 
             {/* Optimistic */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
-              <div className="w-72 shrink-0 px-3.5 py-1.5 font-medium border-r border-ink-200 dark:border-ink-800">
+              <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r border-ink-200 dark:border-ink-800">
                 • Optimistic (100% of all stages)
               </div>
               {monthKeys.map(m => (
@@ -791,7 +869,7 @@ export function FinancialForecastView() {
 
               return (
                 <div key={`referral_${personName}`} className="flex group bg-ink-50/30 dark:bg-ink-900/40 hover:bg-ink-50/60 dark:hover:bg-ink-800/30 transition-colors">
-                  <div className="w-72 shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between">
+                  <div className="w-[480px] shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-1.5">
                         <UserCheck size={14} className="text-accent-600 dark:text-accent-400" />
@@ -829,7 +907,7 @@ export function FinancialForecastView() {
             {/* Standard Fixed / Debt Outflows */}
             {outflows.map(item => (
               <div key={item.id} className="flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors">
-                <div className="w-72 shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between">
+                <div className="w-[480px] shrink-0 p-3 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between">
                   <div>
                     <span className="font-semibold text-ink-800 dark:text-ink-200">{item.name}</span>
                     {item.initialBalance && (
@@ -876,7 +954,7 @@ export function FinancialForecastView() {
 
           {/* Outflow Subtotal */}
           <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div className="w-72 shrink-0 p-3 text-ink-700 dark:text-ink-300 uppercase tracking-wider border-r border-ink-200 dark:border-ink-800">
+            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 uppercase tracking-wider border-r border-ink-200 dark:border-ink-800">
               Total Outflows
             </div>
             {monthKeys.map(m => {
@@ -893,7 +971,7 @@ export function FinancialForecastView() {
           <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 text-xs">
             {/* Monthly Net Delta */}
             <div className="flex items-center font-bold">
-              <div className="w-72 shrink-0 p-3.5 border-r border-ink-200 dark:border-ink-800 text-ink-800 dark:text-ink-200">
+              <div className="w-[480px] shrink-0 p-3.5 border-r border-ink-200 dark:border-ink-800 text-ink-800 dark:text-ink-200">
                 Monthly Net Cash (Collections - Outflows)
               </div>
               {monthKeys.map(m => {
@@ -913,7 +991,7 @@ export function FinancialForecastView() {
 
             {/* Closing Runway in Banks */}
             <div className="flex items-center font-bold bg-white dark:bg-ink-900 border-t border-ink-200 dark:border-ink-800">
-              <div className="w-72 shrink-0 p-4 border-r border-ink-200 dark:border-ink-800 flex items-center gap-2 text-ink-900 dark:text-ink-100 text-sm">
+              <div className="w-[480px] shrink-0 p-4 border-r border-ink-200 dark:border-ink-800 flex items-center gap-2 text-ink-900 dark:text-ink-100 text-sm">
                 <DollarSign size={16} className="text-accent-600" />
                 <span>Closing Bank Cash</span>
               </div>
@@ -954,18 +1032,40 @@ export function FinancialForecastView() {
         onClose={() => setAddRowModalOpen(false)}
       />
 
-      {/* Add Outflow Modal */}
-      <AddOutflowModal
-        isOpen={addOutflowModalOpen}
-        onAdd={newItem => setOutflows(prev => [...prev, newItem])}
-        onClose={() => setAddOutflowModalOpen(false)}
+      {/* Edit Row Modal */}
+      <EditRowModal
+        isOpen={!!editingRow}
+        row={editingRow}
+        onSave={updatedRow => {
+          setRows(prev => prev.map(r => r.id === updatedRow.id ? updatedRow : r));
+          setEditingRow(null);
+        }}
+        onDelete={rowId => {
+          setRows(prev => prev.filter(r => r.id !== rowId));
+          setEditingRow(null);
+        }}
+        onClose={() => setEditingRow(null)}
+      />
+
+      {/* Reset Single Row Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!resetRowTarget}
+        title="Reset project row"
+        message={`Are you sure you want to reset "${resetRowTarget?.name}" back to its initial baseline milestones? Any manual changes made to this project's pills will be reverted.`}
+        confirmText="Reset row"
+        onConfirm={() => {
+          if (resetRowTarget) {
+            handleResetSingleRow(resetRowTarget);
+          }
+        }}
+        onCancel={() => setResetRowTarget(null)}
       />
 
       {/* Reset Baseline Confirmation Modal */}
       <ConfirmModal
         isOpen={confirmResetBaselineOpen}
         title="Reset to spreadsheet baseline"
-        message="This will reset the forecast table to the exact 26 workstreams and liabilities from your original financial forecast spreadsheet, including Simon's referral commission tagging. Any unsaved custom modifications will be replaced."
+        message="This will reset the entire forecast table to the exact 26 workstreams and liabilities from your original financial forecast spreadsheet, including Simon's referral commission tagging. Any unsaved custom modifications will be replaced."
         confirmText="Reset to baseline"
         onConfirm={handleResetToBaseline}
         onCancel={() => setConfirmResetBaselineOpen(false)}
