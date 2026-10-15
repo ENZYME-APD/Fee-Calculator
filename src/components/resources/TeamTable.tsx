@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { TeamMember, TeamCategory } from '@/lib/firebase/schema';
-import { Pencil, Trash2, ChevronDown, ChevronRight, Folder, Edit3 } from 'lucide-react';
+import { Pencil, Trash2, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Edit3 } from 'lucide-react';
 import { getCategories } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { BulkEditTeamModal } from './BulkEditTeamModal';
@@ -45,16 +45,15 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
 
   const isExpanded = (cat: string) => expandedCategories[cat] !== false;
 
-  const toggleAllFolders = () => {
-    const categories = Object.keys(membersByCategory);
-    const allCurrentlyExpanded = categories.every(cat => isExpanded(cat));
-    
+  const allExpanded = Object.keys(membersByCategory).every(cat => isExpanded(cat));
+
+  const setAllFolders = (expanded: boolean) => {
     const newState: Record<string, boolean> = {};
-    categories.forEach(cat => {
-      newState[cat] = !allCurrentlyExpanded;
-    });
+    Object.keys(membersByCategory).forEach(cat => { newState[cat] = expanded; });
     setExpandedCategories(newState);
   };
+
+  const toggleAllFolders = () => setAllFolders(!allExpanded);
 
   const toggleSelectGroup = (cat: string) => {
     const catMembers = membersByCategory[cat] || [];
@@ -143,12 +142,13 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
               </th>
               <th className="px-4 py-3 font-semibold whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  <Tooltip content="Toggle All Folders" position="top">
+                  <Tooltip content={allExpanded ? 'Collapse all groups (or ⌥-click a group)' : 'Expand all groups (or ⌥-click a group)'} position="top">
                     <button 
                       onClick={toggleAllFolders} 
+                      aria-label={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
                       className="p-1 hover:bg-ink-200 dark:hover:bg-ink-700 rounded transition-colors text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300"
                     >
-                      <Folder size={14} />
+                      {allExpanded ? <ChevronsDownUp size={15} /> : <ChevronsUpDown size={15} />}
                     </button>
                   </Tooltip>
                   Name
@@ -175,7 +175,7 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
               return (
                 <React.Fragment key={category}>
                   {/* Category Header */}
-                  <tr className="bg-ink-100/50 dark:bg-ink-800/50 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors cursor-pointer group" onClick={() => toggleCategory(category)}>
+                  <tr className="bg-ink-100/50 dark:bg-ink-800/50 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors cursor-pointer group" onClick={(e) => e.altKey ? setAllFolders(!isExpanded(category)) : toggleCategory(category)}>
                     <td className="px-4 py-2" onClick={e => e.stopPropagation()}>
                       <input 
                         type="checkbox" 

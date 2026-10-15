@@ -100,13 +100,14 @@
   --clay-900: #5B3022;
   --clay-950: #331910;
 
-  /* Chart series, in order. Mid-tones that read on both light and dark surfaces. */
-  --chart-1: var(--accent-600);
-  --chart-2: var(--positive-500);
-  --chart-3: var(--warning-500);
-  --chart-4: var(--negative-500);
-  --chart-5: var(--info-500);
-  --chart-6: var(--clay-500);
-  --chart-7: var(--accent-400);
-  --chart-8: var(--positive-300);
+  /* Chart series, in order. Brighter than the UI scales on purpose: charts need
+     clearly separable hues that hold up on both light and dark surfaces. */
+  --chart-1: #13A89E; /* teal */
+  --chart-2: #DC9128; /* amber */
+  --chart-3: #4A8FE0; /* blue */
+  --chart-4: #E4644E; /* coral */
+  --chart-5: #68A832; /* green */
+  --chart-6: #C08A5B; /* tan */
+  --chart-7: #45B9AB; /* light teal */
+  --chart-8: #D9AE45; /* light amber */
 }
