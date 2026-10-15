@@ -123,12 +123,12 @@ export function TeamTab({ company }: { company: Company }) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Team Management</h2>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Invite team members to join {company.name}.</p>
+        <h2 className="text-xl font-bold text-ink-900 dark:text-ink-50">Team management</h2>
+        <p className="text-ink-500 dark:text-ink-400 text-sm mt-1">Invite team members to join {company.name}.</p>
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Send New Invite</h3>
+      <div className="bg-ink-50 dark:bg-ink-800/50 rounded-2xl p-6 border border-ink-200 dark:border-ink-700">
+        <h3 className="text-sm font-bold text-ink-700 dark:text-ink-300 mb-4">Send new invite</h3>
         <form onSubmit={handleInvite} className="flex gap-4">
           <div className="flex-1">
             <input
@@ -136,7 +136,7 @@ export function TeamTab({ company }: { company: Company }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="colleague@example.com"
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 outline-none"
+              className="w-full px-4 py-2.5 rounded-xl border border-ink-300 dark:border-ink-600 bg-white dark:bg-ink-900 focus:ring-2 focus:ring-accent-500/20 outline-none"
               required
             />
           </div>
@@ -144,7 +144,7 @@ export function TeamTab({ company }: { company: Company }) {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as any)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 outline-none"
+              className="w-full px-4 py-2.5 rounded-xl border border-ink-300 dark:border-ink-600 bg-white dark:bg-ink-900 focus:ring-2 focus:ring-accent-500/20 outline-none"
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
@@ -154,7 +154,7 @@ export function TeamTab({ company }: { company: Company }) {
           <button
             type="submit"
             disabled={loading || !email}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-50"
+            className="flex items-center gap-2 bg-accent-600 hover:bg-accent-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-50"
           >
             <Mail size={16} />
             {loading ? 'Sending...' : 'Invite'}
@@ -164,13 +164,13 @@ export function TeamTab({ company }: { company: Company }) {
 
       {activeUsers.length > 0 && (
         <div>
-          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Active Team Members</h3>
+          <h3 className="text-sm font-bold text-ink-700 dark:text-ink-300 mb-4">Active team members</h3>
           <div className="space-y-3">
             {activeUsers.map(user => (
-              <div key={user.uid} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+              <div key={user.uid} className="flex items-center justify-between p-4 bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-xl">
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <Users size={18} className="text-blue-600 dark:text-blue-400" />
+                  <div className="h-10 w-10 rounded-full bg-accent-100 dark:bg-accent-900/30 flex items-center justify-center">
+                    <Users size={18} className="text-accent-600 dark:text-accent-400" />
                   </div>
                   <div className="flex flex-col gap-1 w-1/3 min-w-[200px]">
                     {editingUserId === user.uid ? (
@@ -179,29 +179,29 @@ export function TeamTab({ company }: { company: Company }) {
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
+                          className="px-2 py-1 text-sm border border-ink-300 dark:border-ink-600 rounded bg-white dark:bg-ink-800 text-ink-900 dark:text-ink-50 outline-none"
                           autoFocus
                         />
-                        <button onClick={() => handleSaveName(user.uid!)} className="text-emerald-600 hover:text-emerald-700">
+                        <button onClick={() => handleSaveName(user.uid!)} className="text-positive-600 hover:text-positive-700">
                           <Save size={16} />
                         </button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm text-slate-900 dark:text-white">{user.displayName || 'No Name'}</p>
-                        <button onClick={() => handleEditName(user)} className="text-slate-400 hover:text-blue-600">
+                        <p className="font-bold text-sm text-ink-900 dark:text-ink-50">{user.displayName || 'No Name'}</p>
+                        <button onClick={() => handleEditName(user)} className="text-ink-500 hover:text-accent-600">
                           <Edit2 size={14} />
                         </button>
                       </div>
                     )}
-                    <p className="text-xs text-slate-500">{user.email}</p>
+                    <p className="text-xs text-ink-500">{user.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <select
                     value={user.role}
                     onChange={(e) => handleRoleChange(user.uid!, e.target.value as any)}
-                    className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 outline-none"
+                    className="px-3 py-1.5 text-xs font-bold rounded-lg border border-ink-200 dark:border-ink-700 bg-ink-50 dark:bg-ink-800 text-ink-700 dark:text-ink-300 outline-none"
                   >
                     <option value="member">Member</option>
                     <option value="admin">Admin</option>
@@ -211,7 +211,7 @@ export function TeamTab({ company }: { company: Company }) {
                   <Tooltip content="Send Password Reset" position="top">
                     <button
                       onClick={() => handleResetPassword(user.email)}
-                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                      className="p-1.5 text-ink-500 hover:text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-900/20 rounded-lg transition-colors"
                     >
                       <KeyRound size={16} />
                     </button>
@@ -221,7 +221,7 @@ export function TeamTab({ company }: { company: Company }) {
                     <Tooltip content="Remove from workspace" position="top">
                       <button
                         onClick={() => handleDeleteUser(user.uid!)}
-                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                        className="p-1.5 text-ink-500 hover:text-negative-500 hover:bg-negative-50 dark:hover:bg-negative-900/20 rounded-lg transition-colors"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -236,30 +236,30 @@ export function TeamTab({ company }: { company: Company }) {
 
       {invites.length > 0 && (
         <div>
-          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Pending Invites</h3>
+          <h3 className="text-sm font-bold text-ink-700 dark:text-ink-300 mb-4">Pending invites</h3>
           <div className="space-y-3">
             {invites.map(invite => (
-              <div key={invite.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl opacity-75">
+              <div key={invite.id} className="flex items-center justify-between p-4 bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-xl opacity-75">
                 <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                    <Users size={18} className="text-slate-400" />
+                  <div className="h-10 w-10 rounded-full bg-ink-100 dark:bg-ink-800 flex items-center justify-center">
+                    <Users size={18} className="text-ink-500" />
                   </div>
                   <div>
-                    <p className="font-bold text-sm text-slate-900 dark:text-white">{invite.email}</p>
-                    <p className="text-xs text-slate-500">Role: <span className="capitalize">{invite.role}</span></p>
+                    <p className="font-bold text-sm text-ink-900 dark:text-ink-50">{invite.email}</p>
+                    <p className="text-xs text-ink-500">Role: <span className="capitalize">{invite.role}</span></p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleCopy(invite.token)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-accent-600 bg-accent-50 dark:bg-accent-900/30 rounded-lg hover:bg-accent-100 dark:hover:bg-accent-900/50 transition-colors"
                   >
                     {copied === invite.token ? <Check size={14} /> : <Copy size={14} />}
                     {copied === invite.token ? 'Copied' : 'Copy Link'}
                   </button>
                   <button
                     onClick={() => handleDelete(invite.id!)}
-                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                    className="p-1.5 text-ink-500 hover:text-negative-500 hover:bg-negative-50 dark:hover:bg-negative-900/20 rounded-lg transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>

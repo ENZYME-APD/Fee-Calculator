@@ -28,7 +28,7 @@ export function Tooltip({
     <Wrapper className={`group/tooltip relative ${className}`} style={style}>
       {children}
       <div 
-        className={`absolute ${positionClasses[position]} w-max max-w-xs z-[9999] pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-100 bg-slate-900/95 backdrop-blur-sm text-white text-[11px] font-medium tracking-wide rounded-lg py-1.5 px-3 shadow-xl border border-slate-700/50 whitespace-pre-wrap text-center hidden md:block`}
+        className={`absolute ${positionClasses[position]} w-max max-w-xs z-[9999] pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-100 bg-ink-900/95 backdrop-blur-sm text-white text-[11px] font-medium tracking-wide rounded-lg py-1.5 px-3 shadow-xl border border-ink-700/50 whitespace-pre-wrap text-center hidden md:block`}
       >
         {content}
       </div>

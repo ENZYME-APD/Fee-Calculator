@@ -24,6 +24,7 @@ import { getCategories } from '@/lib/firebase/db';
 import { useAppSettings, useAuth } from '@/lib/auth/AuthContext';
 import { TeamCategory } from '@/lib/firebase/schema';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { tc } from '@/lib/theme';
 interface AppLayoutProps {
   project?: Project | null;
   members: TeamMember[];
@@ -435,34 +436,34 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
         <div 
           id="tour-team-sidebar"
           className={cn(
-            "bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out relative shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 shrink-0 h-full",
+            "bg-white dark:bg-ink-900 border-r border-ink-200 dark:border-ink-800 flex flex-col transition-all duration-300 ease-in-out relative shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 shrink-0 h-full",
             isSidebarOpen ? "w-80" : "w-0 overflow-hidden opacity-0"
           )}
         >
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900 shrink-0 transition-colors">
-            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+          <div className="p-4 border-b border-ink-100 dark:border-ink-800 flex items-center justify-between bg-ink-50 dark:bg-ink-900 shrink-0 transition-colors">
+            <div className="flex items-center gap-2 text-ink-700 dark:text-ink-300">
               <PlusCircle size={16} />
-              <h2 className="font-bold text-sm uppercase tracking-wider">Additional Costs</h2>
+              <h2 className="font-semibold text-sm">Additional costs</h2>
             </div>
           </div>
-          <div className="p-4 flex flex-col gap-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 transition-colors">
+          <div className="p-4 flex flex-col gap-2 bg-white dark:bg-ink-900 border-b border-ink-200 dark:border-ink-800 transition-colors">
             <DraggableCostChip type="rendering" />
             <DraggableCostChip type="trip" />
             <DraggableCostChip type="consultant" />
             <DraggableCostChip type="other" />
           </div>
 
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900 shrink-0 transition-colors">
-            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+          <div className="p-4 border-b border-ink-100 dark:border-ink-800 flex items-center justify-between bg-ink-50 dark:bg-ink-900 shrink-0 transition-colors">
+            <div className="flex items-center gap-2 text-ink-700 dark:text-ink-300">
               <Users size={16} />
-              <h2 className="font-bold text-sm uppercase tracking-wider">Team Resources</h2>
+              <h2 className="font-semibold text-sm">Team resources</h2>
             </div>
             
             <div className="relative">
               <Tooltip content="Menu" position="left">
                 <button 
                   onClick={() => setIsTeamMenuOpen(!isTeamMenuOpen)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors"
+                  className="p-1.5 text-ink-500 hover:text-ink-600 dark:hover:text-ink-200 hover:bg-ink-200 dark:hover:bg-ink-800 rounded-md transition-colors"
                 >
                   <Menu size={16} />
                 </button>
@@ -471,16 +472,16 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
               {isTeamMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsTeamMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-50 overflow-hidden">
-                    <button onClick={handleExpandAll} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Open all</button>
-                    <button onClick={handleCollapseAll} className="w-full text-left px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Collapse all</button>
+                  <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-ink-800 rounded-xl shadow-lg border border-ink-200 dark:border-ink-700 py-1 z-50 overflow-hidden">
+                    <button onClick={handleExpandAll} className="w-full text-left px-4 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-700 transition-colors">Open all</button>
+                    <button onClick={handleCollapseAll} className="w-full text-left px-4 py-2 text-sm font-medium text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-700 transition-colors">Collapse all</button>
                   </div>
                 </>
               )}
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-white dark:bg-slate-900 transition-colors">
-            {members.length === 0 && <div className="text-center text-sm text-slate-400 dark:text-slate-500 p-4 font-medium border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">No team members available. Go to Team Resources to add some.</div>}
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-white dark:bg-ink-900 transition-colors">
+            {members.length === 0 && <div className="text-center text-sm text-ink-500 dark:text-ink-400 p-4 font-medium border-2 border-dashed border-ink-200 dark:border-ink-700 rounded-xl">No team members available. Go to Team Resources to add some.</div>}
             
             {Object.entries(membersByCategory)
               .sort(([catA], [catB]) => {
@@ -490,12 +491,12 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
               })
               .map(([category, catMembers]) => {
                 const displayCat = categories.find(c => c.id === category)?.name || 'Uncategorized';
-                const displayColor = categories.find(c => c.id === category)?.color || '#94a3b8';
+                const displayColor = categories.find(c => c.id === category)?.color || tc('ink', 400);
                 return (
               <div key={category} className="flex flex-col gap-1.5">
                 <button 
                   onClick={() => toggleCategory(category)}
-                  className="flex items-center justify-between w-full text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-1 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                  className="flex items-center justify-between w-full text-xs font-medium text-ink-500 dark:text-ink-400 py-1 hover:text-ink-700 dark:hover:text-ink-200 transition-colors"
                 >
                   <div className="flex items-center gap-1.5">
                     {isExpanded(category) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -522,14 +523,14 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
           {!isSidebarOpen && (
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="absolute top-4 left-4 z-30 p-2.5 bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white transition-all hover:scale-105 active:scale-95"
+              className="absolute top-4 left-4 z-30 p-2.5 bg-white dark:bg-ink-800 rounded-xl shadow-md border border-ink-200 dark:border-ink-700 text-ink-500 dark:text-ink-300 hover:text-ink-800 dark:hover:text-ink-50 transition-all hover:scale-105 active:scale-95"
             >
               <PanelLeftOpen size={20} />
             </button>
           )}
 
           {/* Canvas */}
-          <main className="flex-1 relative bg-slate-50 dark:bg-black">
+          <main className="flex-1 relative bg-ink-50 dark:bg-black">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed opacity-95 dark:opacity-20 pointer-events-none transition-opacity" />
             
             <div className="absolute inset-0 overflow-x-hidden overflow-y-auto p-8 z-10">
@@ -555,24 +556,24 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                       left={
                         <div className="flex items-center gap-4 flex-wrap">
                           <div className="flex items-baseline gap-2">
-                            <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100">{project.name}</h2>
+                            <h2 className="font-bold text-lg text-ink-800 dark:text-ink-100">{project.name}</h2>
                             <button
                               onClick={() => setIsProjectSettingsOpen(true)}
-                              className="text-slate-400 hover:text-blue-500 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+                              className="text-ink-500 hover:text-accent-500 p-1 hover:bg-accent-50 dark:hover:bg-accent-900/30 rounded-full transition-colors"
                               title="Edit Project"
                             >
                               <Edit3 size={14} />
                             </button>
                             <Link href={`/planning?project=${project.id}`}>
                               <button
-                                className="text-slate-400 hover:text-emerald-500 p-1 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-full transition-colors"
+                                className="text-ink-500 hover:text-positive-500 p-1 hover:bg-positive-50 dark:hover:bg-positive-900/30 rounded-full transition-colors"
                                 title="Open in Planner"
                               >
                                 <CalendarDays size={14} />
                               </button>
                             </Link>
                             {project.area && (
-                              <span className="text-sm font-medium text-slate-400 dark:text-slate-500 ml-2">
+                              <span className="text-sm font-medium text-ink-500 dark:text-ink-400 ml-2">
                                 {project.area} {areaUnit}
                               </span>
                             )}
@@ -584,15 +585,15 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                                 await updateProject(project.id!, { status: e.target.value });
                                 onAllocationAdded();
                               }}
-                              className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border-none outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer appearance-none text-center pr-8"
+                              className="px-3 py-1.5 text-xs font-medium rounded-md bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300 border-none outline-none focus:ring-2 focus:ring-accent-500/50 cursor-pointer appearance-none text-center pr-8"
                             >
                               <option value="Draft">Draft</option>
                               <option value="Proposed">Proposed</option>
                               <option value="Active">Active</option>
                               <option value="Completed">Completed</option>
-                              <option value="Lost">Lost/Archived</option>
+                              <option value="Lost">Lost/archived</option>
                             </select>
-                            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" />
                           </div>
                         </div>
                       }
@@ -602,7 +603,7 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
               })()}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 items-start pb-12">
                 {phases.length === 0 ? (
-                  <div className="text-slate-500 dark:text-slate-400 flex items-center justify-center w-full h-full font-medium">This project has no phases yet. Add some in the Projects tab.</div>
+                  <div className="text-ink-500 dark:text-ink-400 flex items-center justify-center w-full h-full font-medium">This project has no phases yet. Add some in the Projects tab.</div>
                 ) : (
                   phases.map((phase, index) => {
                     const phaseAllocations = localAllocations

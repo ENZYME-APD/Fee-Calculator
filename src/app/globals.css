@@ -1,4 +1,9 @@
 @import "tailwindcss";
+
+/* Active colour theme. To switch, point this at another file in src/styles/themes/
+   (e.g. classic-slate.css). Every theme defines the same token names. */
+@import "../styles/themes/warm-paper.css";
+@import "../styles/tokens.css";
 @plugin "@tailwindcss/typography";
 @custom-variant dark (&:where(.dark, .dark *));
 

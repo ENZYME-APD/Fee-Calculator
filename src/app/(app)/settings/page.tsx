@@ -38,7 +38,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600"></div>
       </div>
     );
   }
@@ -46,8 +46,8 @@ export default function SettingsPage() {
   return (
     <div className="p-8 w-full max-w-6xl mx-auto flex flex-col h-full overflow-y-auto">
       <div className="mb-6 shrink-0">
-        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 tracking-tight">Settings</h1>
-        <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">Manage your company preferences, team, and security.</p>
+        <h1 className="text-[22px] font-bold text-ink-900 dark:text-ink-50 tracking-tight">Settings</h1>
+        <p className="text-[13px] text-ink-500 dark:text-ink-400 mt-0.5">Manage your company preferences, team, and security.</p>
       </div>
 
       <div className="flex gap-8 items-start">
@@ -56,7 +56,7 @@ export default function SettingsPage() {
             <button
               onClick={() => setActiveTab('preferences')}
               className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === 'preferences' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                activeTab === 'preferences' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
               General Preferences
@@ -64,7 +64,7 @@ export default function SettingsPage() {
             <button
               onClick={() => setActiveTab('categories')}
               className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === 'categories' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                activeTab === 'categories' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
               Team Categories
@@ -72,7 +72,7 @@ export default function SettingsPage() {
             <button
               onClick={() => setActiveTab('team')}
               className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === 'team' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                activeTab === 'team' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
               Team Management
@@ -80,7 +80,7 @@ export default function SettingsPage() {
             <button
               onClick={() => setActiveTab('profile')}
               className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === 'profile' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                activeTab === 'profile' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
               My Profile
@@ -88,7 +88,7 @@ export default function SettingsPage() {
             <button
               onClick={() => setActiveTab('security')}
               className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === 'security' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                activeTab === 'security' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
               Password Management

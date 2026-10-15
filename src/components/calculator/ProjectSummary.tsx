@@ -8,6 +8,7 @@ import { InlinePercentInput } from '@/components/projects/PaymentScheduleManager
 import { Tooltip } from '@/components/ui/Tooltip';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
 
+import { DEFAULT_CATEGORY_HEX, tc } from '@/lib/theme';
 interface ProjectSummaryProps {
   project: Project;
   phases: Phase[];
@@ -184,7 +185,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
             }
           </style>
         </head>
-        <body class="p-8 bg-white text-slate-900">
+        <body class="p-8 bg-white text-ink-900">
           <div style="max-width: 1200px; margin: 0 auto;">
             ${element.innerHTML}
           </div>
@@ -203,49 +204,49 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:p-12 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-slate-50 dark:bg-slate-950 w-full max-w-7xl max-h-full rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:p-12 bg-ink-900/60 backdrop-blur-sm">
+      <div className="bg-ink-50 dark:bg-ink-950 w-full max-w-7xl max-h-full rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-800 dark:bg-slate-900 text-white shrink-0 border-b border-slate-700 dark:border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 bg-ink-800 dark:bg-ink-900 text-white shrink-0 border-b border-ink-700 dark:border-ink-800">
           <div className="flex items-center gap-3">
-            <Calculator size={20} className="text-blue-400" />
-            <h3 className="font-bold tracking-wider text-lg uppercase">{project.name} - SUMMARY & PAYMENT SCHEDULE</h3>
-            <span className="text-sm font-bold bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30 ml-4 hidden sm:inline-block">
+            <Calculator size={20} className="text-accent-400" />
+            <h3 className="font-semibold text-lg">{project.name} — Summary & payment schedule</h3>
+            <span className="text-sm font-bold bg-positive-500/20 text-positive-400 px-3 py-1 rounded-full border border-positive-500/30 ml-4 hidden sm:inline-block">
               Total Fee: {formatCurrency(projectTotalFee)}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleExportCSV} className="flex items-center gap-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
+            <button onClick={handleExportCSV} className="flex items-center gap-2 bg-accent-600/20 text-accent-400 border border-accent-500/30 hover:bg-accent-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
               <Download size={16} />
               <span>Export CSV</span>
             </button>
-            <button onClick={handleExportPDF} className="flex items-center gap-2 bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
+            <button onClick={handleExportPDF} className="flex items-center gap-2 bg-negative-600/20 text-negative-400 border border-negative-500/30 hover:bg-negative-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
               <Download size={16} />
               <span>Export PDF</span>
             </button>
-            <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-slate-700 transition-colors ml-2">
+            <button onClick={onClose} className="text-ink-500 hover:text-white p-1.5 rounded-full hover:bg-ink-700 transition-colors ml-2">
               <X size={24} />
             </button>
           </div>
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-6 overflow-y-auto flex gap-6 flex-col lg:flex-row bg-slate-50 dark:bg-slate-950">
+        <div className="p-6 overflow-y-auto flex gap-6 flex-col lg:flex-row bg-ink-50 dark:bg-ink-950">
         
         {/* Cost Summary Table */}
-        <div className="flex-[1.2] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col rounded-xl" id="project-summary-content">
-          <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
-            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">COST SUMMARY</h4>
+        <div className="flex-[1.2] bg-white dark:bg-ink-900 border border-ink-300 dark:border-ink-700 shadow-sm overflow-hidden flex flex-col rounded-xl" id="project-summary-content">
+          <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 border-b border-ink-300 dark:border-ink-700 px-4 py-2">
+            <h4 className="font-bold text-ink-800 dark:text-ink-200 text-sm">Cost summary</h4>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Project Area ({areaUnit})</span>
-                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                  <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{project.area || 0}</span>
+                <span className="text-xs font-medium text-ink-500 dark:text-ink-400">Project area ({areaUnit})</span>
+                <div className="flex items-center gap-2 bg-white dark:bg-ink-900 px-2 py-0.5 rounded border border-ink-200 dark:border-ink-700">
+                  <span className="font-bold text-ink-800 dark:text-ink-200 text-sm">{project.area || 0}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Profit Margin</span>
+                <span className="text-xs font-medium text-ink-500 dark:text-ink-400">Profit margin</span>
                 {isEditingMargin ? (
                   <form onSubmit={saveMargin} className="flex items-center gap-1">
                   <input 
@@ -253,16 +254,16 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                     step="0.1" 
                     value={marginInput} 
                     onChange={e => setMarginInput(e.target.value)}
-                    className="w-16 px-1.5 py-0.5 text-sm border border-slate-300 dark:border-slate-600 rounded text-right font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-16 px-1.5 py-0.5 text-sm border border-ink-300 dark:border-ink-600 rounded text-right font-bold text-ink-800 dark:text-ink-200 bg-ink-50 dark:bg-ink-800 focus:outline-none focus:border-accent-500"
                     autoFocus
                     onBlur={() => saveMargin()}
                   />
-                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400">%</span>
+                  <span className="text-sm font-bold text-ink-600 dark:text-ink-400">%</span>
                 </form>
                 ) : (
-                  <button onClick={() => { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} className="flex items-center gap-2 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors group">
-                    <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{profitMarginPercent}%</span>
-                    <Edit3 size={12} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
+                  <button onClick={() => { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} className="flex items-center gap-2 bg-white dark:bg-ink-900 px-2 py-0.5 rounded border border-ink-200 dark:border-ink-700 hover:border-ink-300 dark:hover:border-ink-600 transition-colors group">
+                    <span className="font-bold text-ink-800 dark:text-ink-200 text-sm">{profitMarginPercent}%</span>
+                    <Edit3 size={12} className="text-ink-500 group-hover:text-ink-600 dark:group-hover:text-ink-300" />
                   </button>
                 )}
               </div>
@@ -271,26 +272,26 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
           
           <div className="overflow-auto flex-1">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+              <thead className="bg-ink-50 dark:bg-ink-950 text-ink-600 dark:text-ink-400 border-b border-ink-200 dark:border-ink-700">
                 <tr>
-                  <th className="px-4 py-2.5 font-bold border-r border-slate-200 dark:border-slate-700">PHASE</th>
-                  <th className="px-4 py-2.5 font-bold text-right border-r border-slate-200 dark:border-slate-700">COST</th>
-                  <th className="px-4 py-2.5 font-bold text-center border-r border-slate-200 dark:border-slate-700">MULTIPLIER</th>
+                  <th className="px-4 py-2.5 font-bold border-r border-ink-200 dark:border-ink-700">PHASE</th>
+                  <th className="px-4 py-2.5 font-bold text-right border-r border-ink-200 dark:border-ink-700">COST</th>
+                  <th className="px-4 py-2.5 font-bold text-center border-r border-ink-200 dark:border-ink-700">MULTIPLIER</th>
                   <th className="px-4 py-2.5 font-bold text-right">FEE PROPOSAL</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-ink-100 dark:divide-ink-800">
                 {phaseStats.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">No phases added.</td></tr>
+                  <tr><td colSpan={4} className="px-4 py-6 text-center text-ink-500 dark:text-ink-400">No phases added.</td></tr>
                 ) : (
                   phaseStats.map(stat => {
                     const feeProposal = stat.totalCost * multiplier;
                     return (
-                      <tr key={stat.phase.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="px-4 py-2 font-semibold text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700">{stat.phase.name}</td>
-                        <td className="px-4 py-2 text-right font-medium text-slate-600 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700">{formatCurrency(stat.totalCost)}</td>
-                        <td className="px-4 py-2 text-center text-slate-500 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700">{multiplier.toFixed(2)}</td>
-                        <td className="px-4 py-2 text-right font-bold text-slate-800 dark:text-slate-200">{formatCurrency(feeProposal)}</td>
+                      <tr key={stat.phase.id} className="hover:bg-ink-50 dark:hover:bg-ink-800/50 transition-colors">
+                        <td className="px-4 py-2 font-semibold text-ink-700 dark:text-ink-300 border-r border-ink-200 dark:border-ink-700">{stat.phase.name}</td>
+                        <td className="px-4 py-2 text-right font-medium text-ink-600 dark:text-ink-400 border-r border-ink-200 dark:border-ink-700">{formatCurrency(stat.totalCost)}</td>
+                        <td className="px-4 py-2 text-center text-ink-500 dark:text-ink-400 border-r border-ink-200 dark:border-ink-700">{multiplier.toFixed(2)}</td>
+                        <td className="px-4 py-2 text-right font-bold text-ink-800 dark:text-ink-200">{formatCurrency(feeProposal)}</td>
                       </tr>
                     );
                   })
@@ -300,14 +301,14 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
           </div>
           
           {/* Cost Footer */}
-          <div className="bg-emerald-500 text-white font-bold p-3 text-sm grid grid-cols-2 gap-4 border-t border-slate-300 dark:border-slate-700">
+          <div className="bg-positive-500 text-white font-bold p-3 text-sm grid grid-cols-2 gap-4 border-t border-ink-300 dark:border-ink-700">
             <div>
               <div className="flex justify-between py-1">
-                <span>Total Cost</span>
+                <span>Total cost</span>
                 <span>{formatCurrency(projectTotalCost)}</span>
               </div>
-              <div className="flex justify-between items-center text-emerald-100/90 text-sm py-1 border-t border-emerald-400">
-                <span>Profit Margin</span>
+              <div className="flex justify-between items-center text-positive-100/90 text-sm py-1 border-t border-positive-400">
+                <span>Profit margin</span>
                 {isEditingMargin ? (
                   <form onSubmit={saveMargin} className="flex items-center">
                     <input
@@ -316,9 +317,9 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                       value={marginInput}
                       onChange={e => setMarginInput(e.target.value)}
                       onBlur={() => saveMargin()}
-                      className="w-16 px-1 py-0.5 text-right text-sm font-bold text-slate-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-16 px-1 py-0.5 text-right text-sm font-bold text-ink-900 rounded focus:outline-none focus:ring-2 focus:ring-accent-500/50"
                     />
-                    <span className="text-sm font-bold ml-1 text-emerald-100">%</span>
+                    <span className="text-sm font-bold ml-1 text-positive-100">%</span>
                   </form>
                 ) : (
                   <button onClick={() => { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} className="flex items-center gap-1 hover:text-white transition-colors group">
@@ -327,27 +328,27 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                   </button>
                 )}
               </div>
-              <div className="flex justify-between py-1 border-t border-emerald-400">
-                <span>Total Weeks</span>
+              <div className="flex justify-between py-1 border-t border-positive-400">
+                <span>Total weeks</span>
                 <span>{projectTotalWeeks}</span>
               </div>
-              <div className="flex justify-between py-1 border-t border-emerald-400">
-                <span>Avg Cost / Month</span>
+              <div className="flex justify-between py-1 border-t border-positive-400">
+                <span>Avg cost / month</span>
                 <span>{formatCurrency(projectTotalCost / (projectTotalWeeks / 4 || 1))}</span>
               </div>
               {(project.area || 0) > 0 && (
-                <div className="flex justify-between py-1 border-t border-emerald-400">
-                  <span>Avg Cost / {areaUnit}</span>
+                <div className="flex justify-between py-1 border-t border-positive-400">
+                  <span>Avg cost / {areaUnit}</span>
                   <span>{formatCurrency(projectTotalCost / project.area!)}</span>
                 </div>
               )}
             </div>
             <div className="flex flex-col items-end justify-between">
               <div className="text-right">
-                <div className="text-emerald-100 text-xs">FINAL FEE</div>
+                <div className="text-positive-100 text-xs">Final fee</div>
                 <div className="text-2xl">{formatCurrency(projectTotalFee)}</div>
                 {(project.area || 0) > 0 && (
-                  <div className="text-emerald-100 text-xs mt-1 border-t border-emerald-400/50 pt-1">
+                  <div className="text-positive-100 text-xs mt-1 border-t border-positive-400/50 pt-1">
                     {formatCurrency(projectTotalFee / project.area!)} / {areaUnit}
                   </div>
                 )}
@@ -357,10 +358,10 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
         </div>
 
         {/* Payment Schedule Table */}
-        <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col rounded-xl">
-          <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
-            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">PAYMENT SCHEDULE</h4>
-            <span className="font-bold text-blue-700 dark:text-blue-900 bg-yellow-300 px-2 py-0.5 rounded shadow-sm text-sm border border-yellow-400">
+        <div className="flex-1 bg-white dark:bg-ink-900 border border-ink-300 dark:border-ink-700 shadow-sm overflow-hidden flex flex-col rounded-xl">
+          <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 border-b border-ink-300 dark:border-ink-700 px-4 py-2">
+            <h4 className="font-bold text-ink-800 dark:text-ink-200 text-sm">PAYMENT SCHEDULE</h4>
+            <span className="font-bold text-accent-700 dark:text-accent-900 bg-warning-300 px-2 py-0.5 rounded shadow-sm text-sm border border-warning-400">
               {formatCurrency(projectTotalFee)}
             </span>
           </div>
@@ -368,7 +369,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
           <div className="overflow-auto flex-1 p-3">
             <div className="space-y-2">
               {payments.length === 0 ? (
-                <div className="text-center text-slate-400 dark:text-slate-500 py-6 text-sm">No payment schedule defined.</div>
+                <div className="text-center text-ink-500 dark:text-ink-400 py-6 text-sm">No payment schedule defined.</div>
               ) : (
                 payments.sort((a, b) => a.order - b.order).map((payment, i) => {
                   const feeAmount = (projectTotalFee * payment.percentage) / 100;
@@ -378,24 +379,24 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                   const total = linkedPhaseStat?.totalCost || 1;
 
                   // Generate alternating pastel colors like the image
-                  const colors = ['bg-green-200 border-green-300', 'bg-blue-200 border-blue-300', 'bg-pink-200 border-pink-300', 'bg-purple-200 border-purple-300', 'bg-yellow-200 border-yellow-300'];
+                  const colors = ['bg-positive-200 border-positive-300', 'bg-accent-200 border-accent-300', 'bg-clay-200 border-clay-300', 'bg-info-200 border-info-300', 'bg-warning-200 border-warning-300'];
                   const colorClass = colors[i % colors.length];
                   
-                  const darkColors = ['dark:bg-green-900/50 dark:border-green-800', 'dark:bg-blue-900/50 dark:border-blue-800', 'dark:bg-pink-900/50 dark:border-pink-800', 'dark:bg-purple-900/50 dark:border-purple-800', 'dark:bg-yellow-900/50 dark:border-yellow-800'];
+                  const darkColors = ['dark:bg-positive-900/50 dark:border-positive-800', 'dark:bg-accent-900/50 dark:border-accent-800', 'dark:bg-clay-900/50 dark:border-clay-800', 'dark:bg-info-900/50 dark:border-info-800', 'dark:bg-warning-900/50 dark:border-warning-800'];
                   const darkColorClass = darkColors[i % darkColors.length];
 
                   return (
-                    <div key={payment.id} className="flex flex-col text-sm border border-slate-200 dark:border-slate-700 rounded overflow-hidden">
+                    <div key={payment.id} className="flex flex-col text-sm border border-ink-200 dark:border-ink-700 rounded overflow-hidden">
                       <div className="flex">
-                        <div className="flex-1 px-3 py-2 font-semibold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 flex flex-col justify-center">
+                        <div className="flex-1 px-3 py-2 font-semibold text-ink-700 dark:text-ink-300 bg-ink-50 dark:bg-ink-950 flex flex-col justify-center">
                           <div>{payment.name}</div>
                           {linkedPhaseStat && (
-                            <div className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mt-0.5">
+                            <div className="text-xs text-accent-600 dark:text-accent-400 font-medium mt-0.5">
                               Phase: {linkedPhaseStat.phase.name}
                             </div>
                           )}
                         </div>
-                        <div className={`w-28 px-3 py-2 flex items-center justify-end font-medium text-slate-800 dark:text-slate-200 border-l ${colorClass} ${darkColorClass}`}>
+                        <div className={`w-28 px-3 py-2 flex items-center justify-end font-medium text-ink-800 dark:text-ink-200 border-l ${colorClass} ${darkColorClass}`}>
                           <InlinePercentInput 
                             value={payment.percentage} 
                             maxAllowed={100 - (totalPercentage - payment.percentage)}
@@ -407,26 +408,26 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                             }} 
                           />
                         </div>
-                        <div className={`w-36 px-3 py-2 flex items-center justify-end text-right font-bold text-slate-900 dark:text-white border-l ${colorClass} ${darkColorClass}`}>
+                        <div className={`w-36 px-3 py-2 flex items-center justify-end text-right font-bold text-ink-900 dark:text-ink-50 border-l ${colorClass} ${darkColorClass}`}>
                           {formatCurrency(feeAmount)}
                         </div>
                       </div>
                       
                       {/* Breakdown Bar if linked to phase */}
                       {linkedPhaseStat && (
-                        <div className="h-4 w-full flex bg-slate-100 dark:bg-slate-800">
+                        <div className="h-4 w-full flex bg-ink-100 dark:bg-ink-800">
                           {categories.map((cat, idx) => {
                             const cost = linkedPhaseStat.breakdown[cat.id!] || 0;
                             if (cost === 0) return null;
                             const percent = (cost / total) * 100;
-                            const bgColor = cat.color || '#3b82f6';
+                            const bgColor = cat.color || DEFAULT_CATEGORY_HEX;
                             return <Tooltip key={cat.id} content={`${cat.name}: ${percent.toFixed(1)}%`} className="transition-all hover:opacity-90 h-full" style={{width: `${percent}%`, backgroundColor: bgColor}} children={<></>} />
                           })}
                           {(linkedPhaseStat.breakdown['uncategorized'] || 0) > 0 && (
-                            <Tooltip content={`Uncategorized: ${(((linkedPhaseStat.breakdown['uncategorized'] || 0) / total) * 100).toFixed(1)}%`} className="bg-slate-400 transition-all hover:opacity-90 h-full" style={{width: `${((linkedPhaseStat.breakdown['uncategorized'] || 0) / total) * 100}%`}} children={<></>} />
+                            <Tooltip content={`Uncategorized: ${(((linkedPhaseStat.breakdown['uncategorized'] || 0) / total) * 100).toFixed(1)}%`} className="bg-ink-400 transition-all hover:opacity-90 h-full" style={{width: `${((linkedPhaseStat.breakdown['uncategorized'] || 0) / total) * 100}%`}} children={<></>} />
                           )}
                           {linkedPhaseStat.otherExpenses > 0 && (
-                            <Tooltip content={`Other Expenses: ${((linkedPhaseStat.otherExpenses / total) * 100).toFixed(1)}%`} className="transition-all hover:opacity-90 h-full" style={{width: `${(linkedPhaseStat.otherExpenses / total) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}} children={<></>} />
+                            <Tooltip content={`Other Expenses: ${((linkedPhaseStat.otherExpenses / total) * 100).toFixed(1)}%`} className="transition-all hover:opacity-90 h-full" style={{width: `${(linkedPhaseStat.otherExpenses / total) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || tc('warning', 400)}} children={<></>} />
                           )}
                         </div>
                       )}
@@ -438,17 +439,17 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
           </div>
           
           {/* Legend moved to bottom */}
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+          <div className="p-3 bg-ink-50 dark:bg-ink-800/50 border-t border-ink-200 dark:border-ink-700">
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] font-medium text-ink-500 dark:text-ink-400">
               {categories.map((cat, idx) => {
                 if (cat.isFixed) return null;
-                const bgColor = cat.color || '#3b82f6';
+                const bgColor = cat.color || DEFAULT_CATEGORY_HEX;
                 return (
                   <div key={cat.id} className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm" style={{backgroundColor: bgColor}}></div>{cat.name}</div>
                 );
               })}
-              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-slate-400"></div>Uncategorized</div>
-              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm" style={{backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}}></div>Other Expenses</div>
+              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm bg-ink-400"></div>Uncategorized</div>
+              <div className="flex items-center gap-1 whitespace-nowrap"><div className="w-2.5 h-2.5 rounded-sm" style={{backgroundColor: categories.find(c => c.isFixed)?.color || tc('warning', 400)}}></div>Other expenses</div>
             </div>
           </div>
         </div>

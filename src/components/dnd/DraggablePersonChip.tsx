@@ -30,11 +30,11 @@ export function DraggablePersonChip({ member }: DraggablePersonChipProps) {
       {...listeners}
       {...attributes}
       className={cn(
-        "flex items-center gap-3 p-2.5 rounded-xl border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-grab active:cursor-grabbing hover:border-blue-300 dark:hover:border-blue-700 transition-colors group",
-        isDragging && "opacity-50 ring-2 ring-blue-500 ring-offset-2 scale-95 shadow-lg"
+        "flex items-center gap-3 p-2.5 rounded-xl border bg-white dark:bg-ink-800 border-ink-200 dark:border-ink-700 cursor-grab active:cursor-grabbing hover:border-accent-300 dark:hover:border-accent-700 transition-colors group",
+        isDragging && "opacity-50 ring-2 ring-accent-500 ring-offset-2 scale-95 shadow-lg"
       )}
     >
-      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+      <div className="w-10 h-10 rounded-full bg-ink-100 dark:bg-ink-700 border border-ink-200 dark:border-ink-600 flex items-center justify-center text-ink-500 dark:text-ink-400 font-bold overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
         {member.avatarUrl ? (
           <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" draggable={false} />
         ) : (
@@ -42,15 +42,15 @@ export function DraggablePersonChip({ member }: DraggablePersonChipProps) {
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{member.name}</h3>
+        <h3 className="text-sm font-bold text-ink-800 dark:text-ink-200 truncate">{member.name}</h3>
         <div className="flex items-center gap-2">
-          <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">{member.role}</p>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+          <p className="text-[11px] font-medium text-ink-500 dark:text-ink-400 truncate">{member.role}</p>
+          <span className="text-[10px] font-bold text-ink-500 dark:text-ink-400 bg-ink-100 dark:bg-ink-700 px-1.5 py-0.5 rounded">
             {formatCurrency(member.costPerHour, 0)}/h
           </span>
         </div>
       </div>
-      <div className="text-slate-300 dark:text-slate-600 group-hover:text-slate-400 dark:group-hover:text-slate-400 transition-colors">
+      <div className="text-ink-300 dark:text-ink-600 group-hover:text-ink-400 dark:group-hover:text-ink-400 transition-colors">
         <GripVertical size={16} />
       </div>
     </div>

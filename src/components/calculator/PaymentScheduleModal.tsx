@@ -44,15 +44,15 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
   // Color Helpers
   const getPhaseColor = (index: number) => {
     const colors = [
-      { pastel: 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300', bright: 'bg-green-500 border-green-600 text-white dark:bg-green-600 dark:border-green-500' },
-      { pastel: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300', bright: 'bg-blue-500 border-blue-600 text-white dark:bg-blue-600 dark:border-blue-500' },
-      { pastel: 'bg-pink-100 border-pink-300 text-pink-800 dark:bg-pink-900/30 dark:border-pink-700 dark:text-pink-300', bright: 'bg-pink-500 border-pink-600 text-white dark:bg-pink-600 dark:border-pink-500' },
-      { pastel: 'bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-300', bright: 'bg-purple-500 border-purple-600 text-white dark:bg-purple-600 dark:border-purple-500' },
-      { pastel: 'bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300', bright: 'bg-yellow-500 border-yellow-600 text-white dark:bg-yellow-600 dark:border-yellow-500' }
+      { pastel: 'bg-positive-100 border-positive-300 text-positive-800 dark:bg-positive-900/30 dark:border-positive-700 dark:text-positive-300', bright: 'bg-positive-500 border-positive-600 text-white dark:bg-positive-600 dark:border-positive-500' },
+      { pastel: 'bg-accent-100 border-accent-300 text-accent-800 dark:bg-accent-900/30 dark:border-accent-700 dark:text-accent-300', bright: 'bg-accent-500 border-accent-600 text-white dark:bg-accent-600 dark:border-accent-500' },
+      { pastel: 'bg-clay-100 border-clay-300 text-clay-800 dark:bg-clay-900/30 dark:border-clay-700 dark:text-clay-300', bright: 'bg-clay-500 border-clay-600 text-white dark:bg-clay-600 dark:border-clay-500' },
+      { pastel: 'bg-info-100 border-info-300 text-info-800 dark:bg-info-900/30 dark:border-info-700 dark:text-info-300', bright: 'bg-info-500 border-info-600 text-white dark:bg-info-600 dark:border-info-500' },
+      { pastel: 'bg-warning-100 border-warning-300 text-warning-800 dark:bg-warning-900/30 dark:border-warning-700 dark:text-warning-300', bright: 'bg-warning-500 border-warning-600 text-white dark:bg-warning-600 dark:border-warning-500' }
     ];
     return colors[index % colors.length];
   };
-  const unlinkedColor = { pastel: 'bg-slate-100 border-slate-300 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300', bright: 'bg-slate-400 border-slate-500 text-white dark:bg-slate-600 dark:border-slate-500' };
+  const unlinkedColor = { pastel: 'bg-ink-100 border-ink-300 text-ink-800 dark:bg-ink-800 dark:border-ink-700 dark:text-ink-300', bright: 'bg-ink-400 border-ink-500 text-white dark:bg-ink-600 dark:border-ink-500' };
 
   // Timeline Data Grouping
   const unlinkedPayments = sortedPayments.filter(p => !p.phaseId);
@@ -123,7 +123,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
             }
           </style>
         </head>
-        <body class="p-8 bg-white text-slate-900">
+        <body class="p-8 bg-white text-ink-900">
           <div style="max-width: 1200px; margin: 0 auto;">
             ${element.innerHTML}
           </div>
@@ -142,47 +142,47 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:p-12 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-slate-50 dark:bg-slate-950 w-full max-w-6xl max-h-full rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:p-12 bg-ink-900/60 backdrop-blur-sm">
+      <div className="bg-ink-50 dark:bg-ink-950 w-full max-w-6xl max-h-full rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-800 dark:bg-slate-900 text-white shrink-0 border-b border-slate-700 dark:border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 bg-ink-800 dark:bg-ink-900 text-white shrink-0 border-b border-ink-700 dark:border-ink-800">
           <div className="flex items-center gap-3">
-            <FileSpreadsheet size={20} className="text-emerald-400" />
+            <FileSpreadsheet size={20} className="text-positive-400" />
             <h3 className="font-bold tracking-wider text-lg">PAYMENT SCHEDULE</h3>
-            <span className="text-sm font-bold bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full border border-blue-500/30 ml-4 hidden sm:inline-block">
+            <span className="text-sm font-bold bg-accent-500/20 text-accent-400 px-3 py-1 rounded-full border border-accent-500/30 ml-4 hidden sm:inline-block">
               Total Fee: {formatCurrency(projectTotalFee)}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleExportCSV} className="flex items-center gap-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
+            <button onClick={handleExportCSV} className="flex items-center gap-2 bg-positive-600/20 text-positive-400 border border-positive-500/30 hover:bg-positive-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
               <Download size={16} />
               <span>Export CSV</span>
             </button>
-            <button onClick={handleExportPDF} className="flex items-center gap-2 bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
+            <button onClick={handleExportPDF} className="flex items-center gap-2 bg-negative-600/20 text-negative-400 border border-negative-500/30 hover:bg-negative-600/30 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
               <Download size={16} />
               <span>Export PDF</span>
             </button>
-            <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-slate-700 transition-colors ml-2">
+            <button onClick={onClose} className="text-ink-500 hover:text-white p-1.5 rounded-full hover:bg-ink-700 transition-colors ml-2">
               <X size={24} />
             </button>
           </div>
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/50">
+        <div className="flex-1 overflow-y-auto bg-ink-50/50 dark:bg-ink-950/50">
           <div className="max-w-5xl mx-auto p-8" id="payment-schedule-content">
           
           {/* TIMELINE DIAGRAM */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm flex flex-col rounded-xl overflow-hidden mb-6">
-            <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
-              <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">SCHEDULE TIMELINE</h4>
+          <div className="bg-white dark:bg-ink-900 border border-ink-300 dark:border-ink-700 shadow-sm flex flex-col rounded-xl overflow-hidden mb-6">
+            <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 border-b border-ink-300 dark:border-ink-700 px-4 py-2">
+              <h4 className="font-bold text-ink-800 dark:text-ink-200 text-sm">SCHEDULE TIMELINE</h4>
             </div>
             
             <div className="p-4 w-full flex gap-1">
               {/* Start Payments */}
               {startPayments.length > 0 && (
-                <div className="flex flex-col gap-2 pr-2 mr-1 border-r-2 border-dashed border-slate-200 dark:border-slate-700 shrink-0">
+                <div className="flex flex-col gap-2 pr-2 mr-1 border-r-2 border-dashed border-ink-200 dark:border-ink-700 shrink-0">
                   <div className="h-10"></div> {/* Header spacer aligned to new h-10 headers */}
                   <div className="flex-1 flex flex-col gap-1 justify-center pb-1">
                     {startPayments.map(p => (
@@ -237,7 +237,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
 
               {/* End Payments */}
               {endPayments.length > 0 && (
-                <div className="flex flex-col gap-2 pl-2 ml-1 border-l-2 border-dashed border-slate-200 dark:border-slate-700 shrink-0">
+                <div className="flex flex-col gap-2 pl-2 ml-1 border-l-2 border-dashed border-ink-200 dark:border-ink-700 shrink-0">
                   <div className="h-10"></div> {/* Header spacer aligned to new h-10 headers */}
                   <div className="flex-1 flex flex-col gap-1 justify-center pb-1">
                     {endPayments.map(p => (
@@ -252,27 +252,27 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col rounded-xl">
-            <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-4 py-2">
-              <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">SCHEDULE SUMMARY</h4>
-              <span className={`text-sm font-bold px-2 py-0.5 rounded shadow-sm border ${totalPercentage === 100 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`}>
+          <div className="bg-white dark:bg-ink-900 border border-ink-300 dark:border-ink-700 shadow-sm overflow-hidden flex flex-col rounded-xl">
+            <div className="flex justify-between items-center bg-ink-100 dark:bg-ink-800 border-b border-ink-300 dark:border-ink-700 px-4 py-2">
+              <h4 className="font-bold text-ink-800 dark:text-ink-200 text-sm">Schedule summary</h4>
+              <span className={`text-sm font-bold px-2 py-0.5 rounded shadow-sm border ${totalPercentage === 100 ? 'bg-positive-100 text-positive-700 border-positive-200' : 'bg-warning-100 text-warning-700 border-warning-200'}`}>
                 Total Allocated: {totalPercentage}%
               </span>
             </div>
             
             <div className="overflow-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                <thead className="bg-ink-50 dark:bg-ink-950 text-ink-600 dark:text-ink-400 border-b border-ink-200 dark:border-ink-700">
                   <tr>
                     <th className="px-4 py-3 font-bold w-12 text-center">#</th>
-                    <th className="px-4 py-3 font-bold border-x border-slate-200 dark:border-slate-700">PAYMENT STAGE</th>
-                    <th className="px-4 py-3 font-bold border-r border-slate-200 dark:border-slate-700 text-center">% VALUE</th>
-                    <th className="px-4 py-3 font-bold text-right text-blue-600 dark:text-blue-400">FEE AMOUNT</th>
+                    <th className="px-4 py-3 font-bold border-x border-ink-200 dark:border-ink-700">PAYMENT STAGE</th>
+                    <th className="px-4 py-3 font-bold border-r border-ink-200 dark:border-ink-700 text-center">% VALUE</th>
+                    <th className="px-4 py-3 font-bold text-right text-accent-600 dark:text-accent-400">FEE AMOUNT</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-ink-100 dark:divide-ink-800">
                   {sortedPayments.length === 0 ? (
-                    <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">No payments scheduled. Go to Projects & Phases to create them.</td></tr>
+                    <tr><td colSpan={4} className="px-4 py-8 text-center text-ink-500 dark:text-ink-400">No payments scheduled. Go to Projects & Phases to create them.</td></tr>
                   ) : (
                     sortedPayments.map((payment, index) => {
                       const linkedPhase = phases.find(p => p.id === payment.phaseId);
@@ -281,18 +281,18 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                       const phaseColors = phaseIndex >= 0 ? getPhaseColor(phaseIndex) : unlinkedColor;
 
                       return (
-                        <tr key={payment.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 text-center font-bold text-slate-400">{index + 1}</td>
-                          <td className="px-4 py-3 border-x border-slate-200 dark:border-slate-700">
-                            <div className="font-semibold text-slate-700 dark:text-slate-300">{payment.name}</div>
-                            {linkedPhase && <div className="text-[10px] font-bold text-blue-500 uppercase mt-0.5 tracking-wider">Phase: {linkedPhase.name}</div>}
+                        <tr key={payment.id} className="hover:bg-ink-50 dark:hover:bg-ink-800/50 transition-colors">
+                          <td className="px-4 py-3 text-center font-bold text-ink-500">{index + 1}</td>
+                          <td className="px-4 py-3 border-x border-ink-200 dark:border-ink-700">
+                            <div className="font-semibold text-ink-700 dark:text-ink-300">{payment.name}</div>
+                            {linkedPhase && <div className="text-xs font-medium text-accent-500 mt-0.5">Phase: {linkedPhase.name}</div>}
                           </td>
-                          <td className="px-4 py-3 text-center border-r border-slate-200 dark:border-slate-700">
+                          <td className="px-4 py-3 text-center border-r border-ink-200 dark:border-ink-700">
                              <span className={`inline-block w-20 px-2 py-1 text-right font-medium border rounded shadow-sm ${phaseColors.pastel}`}>
                                {payment.percentage.toFixed(2)}%
                              </span>
                           </td>
-                          <td className="px-4 py-3 text-right font-bold text-slate-800 dark:text-slate-200 text-base">
+                          <td className="px-4 py-3 text-right font-bold text-ink-800 dark:text-ink-200 text-base">
                             {formatCurrency(feeAmount)}
                           </td>
                         </tr>
@@ -305,13 +305,13 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
             
             {/* Footer */}
             {sortedPayments.length > 0 && (
-              <div className="bg-slate-100 dark:bg-slate-800 font-bold p-4 text-sm flex justify-between items-center border-t border-slate-300 dark:border-slate-700">
-                <div className="text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Schedule</div>
+              <div className="bg-ink-100 dark:bg-ink-800 font-bold p-4 text-sm flex justify-between items-center border-t border-ink-300 dark:border-ink-700">
+                <div className="text-ink-500 dark:text-ink-400">Total schedule</div>
                 <div className="flex items-center gap-8">
-                  <div className={`text-lg ${totalPercentage === 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-500 dark:text-orange-400'}`}>
+                  <div className={`text-lg ${totalPercentage === 100 ? 'text-positive-600 dark:text-positive-400' : 'text-warning-500 dark:text-warning-400'}`}>
                     {totalPercentage.toFixed(2)}%
                   </div>
-                  <div className="text-xl text-blue-700 dark:text-blue-400">
+                  <div className="text-xl text-accent-700 dark:text-accent-400">
                     {formatCurrency((totalPercentage / 100) * projectTotalFee)}
                   </div>
                 </div>

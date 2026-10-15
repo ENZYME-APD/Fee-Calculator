@@ -64,7 +64,7 @@ export function RowMenu({ items, ariaLabel = 'More actions' }: { items: RowMenuI
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
           <div
-            className="fixed w-52 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-50"
+            className="fixed w-52 bg-white dark:bg-ink-800 rounded-xl shadow-lg border border-ink-200 dark:border-ink-700 py-1 z-50"
             style={{ top: pos.top, bottom: pos.bottom, left: pos.left }}
           >
             {items.map((item, i) => (
@@ -73,8 +73,8 @@ export function RowMenu({ items, ariaLabel = 'More actions' }: { items: RowMenuI
                 onClick={(e) => { e.stopPropagation(); setOpen(false); item.onClick(); }}
                 className={`w-full text-left px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
                   item.danger
-                    ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30'
-                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    ? 'text-negative-600 dark:text-negative-400 hover:bg-negative-50 dark:hover:bg-negative-900/30'
+                    : 'text-ink-700 dark:text-ink-200 hover:bg-ink-50 dark:hover:bg-ink-700'
                 }`}
               >
                 {item.icon} {item.label}

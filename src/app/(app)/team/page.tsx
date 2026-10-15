@@ -127,8 +127,8 @@ export default function TeamPage() {
 
   if (authLoading || (!isAdmin)) {
     return (
-      <div className="flex h-full items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex h-full items-center justify-center bg-ink-50 dark:bg-ink-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600"></div>
       </div>
     );
   }
@@ -137,8 +137,8 @@ export default function TeamPage() {
     <div className="p-8 max-w-6xl w-full mx-auto flex flex-col h-full gap-5">
       <div className="flex justify-between items-center shrink-0">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 tracking-tight">Team Resources</h1>
-          <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">Manage team members, salaries, and rates.</p>
+          <h1 className="text-[22px] font-bold text-ink-900 dark:text-ink-50 tracking-tight">Team resources</h1>
+          <p className="text-[13px] text-ink-500 dark:text-ink-400 mt-0.5">Manage team members, salaries, and rates.</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/settings?tab=categories">
@@ -157,7 +157,7 @@ export default function TeamPage() {
 
       <Card className="flex-1 min-h-0">
         {loading ? (
-          <div className="flex-1 flex items-center justify-center text-slate-500">Loading resources...</div>
+          <div className="flex-1 flex items-center justify-center text-ink-500">Loading resources...</div>
         ) : (
           <CardBody className="flex flex-col overflow-hidden">
             <TeamTable members={members} onEdit={handleEdit} onDelete={handleDelete} onBulkDelete={handleBulkDelete} onBulkEdit={handleBulkEdit} />

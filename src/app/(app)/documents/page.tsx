@@ -7,8 +7,8 @@ export const metadata = {
 
 export default function DocumentsPage() {
   return (
-    <div className="flex h-full bg-slate-50 dark:bg-slate-950 overflow-hidden w-full">
-      <Suspense fallback={<div className="p-8 text-slate-500">Loading document builder...</div>}>
+    <div className="flex h-full bg-ink-50 dark:bg-ink-950 overflow-hidden w-full">
+      <Suspense fallback={<div className="p-8 text-ink-500">Loading document builder...</div>}>
         <DocumentBuilder />
       </Suspense>
     </div>

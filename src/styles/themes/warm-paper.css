@@ -1,0 +1,112 @@
+/* Theme: Warm paper
+ * Warm off-white paper, ink-dark text, deep teal accent. Dark mode is warm charcoal.
+ * To switch theme, change the theme import in src/app/globals.css.
+ */
+/*
+ * Families (keep these names stable; every component uses them):
+ *   ink      neutrals: page, surfaces, borders, text
+ *   accent   brand colour: primary buttons, links, focus, selection
+ *   positive income, profit, "Active" status
+ *   negative losses, over-allocation, destructive actions, "Lost" status
+ *   warning  attention, "Proposed" status, totals not at 100%
+ *   info     neutral highlight, "Completed" status
+ *   clay     extra categorical hue (cost types, phase colours)
+ * Each family needs all 11 steps: 50 100 200 300 400 500 600 700 800 900 950.
+ * Dark mode uses the same scales through Tailwind's dark: variants, so
+ * 950/900/800 are the dark-mode page, surface and border colours.
+ */
+:root {
+  --ink-50: #FAF8F5;
+  --ink-100: #F3EFE9;
+  --ink-200: #E7E2DA;
+  --ink-300: #D6D0C7;
+  --ink-400: #A8A29E;
+  --ink-500: #78716C;
+  --ink-600: #57534E;
+  --ink-700: #47433E;
+  --ink-800: #35322E;
+  --ink-900: #262421;
+  --ink-950: #1A1816;
+
+  --accent-50: #EEF6F4;
+  --accent-100: #D7EDE8;
+  --accent-200: #B0DAD2;
+  --accent-300: #80C1B6;
+  --accent-400: #4FA89B;
+  --accent-500: #168377;
+  --accent-600: #0F766E;
+  --accent-700: #0E5F59;
+  --accent-800: #0F4C48;
+  --accent-900: #103F3C;
+  --accent-950: #062523;
+
+  --positive-50: #F3F7EC;
+  --positive-100: #E3EED2;
+  --positive-200: #C8DDA8;
+  --positive-300: #A6C778;
+  --positive-400: #86AE4E;
+  --positive-500: #6A9534;
+  --positive-600: #527A22;
+  --positive-700: #42621D;
+  --positive-800: #364E1C;
+  --positive-900: #2E421B;
+  --positive-950: #18240B;
+
+  --negative-50: #FDF2F0;
+  --negative-100: #FBE2DD;
+  --negative-200: #F6C4BB;
+  --negative-300: #EE9C8E;
+  --negative-400: #E27462;
+  --negative-500: #CF5240;
+  --negative-600: #B4382A;
+  --negative-700: #952D22;
+  --negative-800: #7A271F;
+  --negative-900: #66231D;
+  --negative-950: #380F0B;
+
+  --warning-50: #FDF7EB;
+  --warning-100: #FAEBCB;
+  --warning-200: #F4D493;
+  --warning-300: #ECB95A;
+  --warning-400: #DE9F36;
+  --warning-500: #C98522;
+  --warning-600: #9C6212;
+  --warning-700: #8A5413;
+  --warning-800: #714515;
+  --warning-900: #5E3A15;
+  --warning-950: #351E07;
+
+  --info-50: #F0F4F8;
+  --info-100: #DDE6EF;
+  --info-200: #BCCDDF;
+  --info-300: #93ADCA;
+  --info-400: #6E8EB3;
+  --info-500: #55749A;
+  --info-600: #445E80;
+  --info-700: #384D69;
+  --info-800: #2F4057;
+  --info-900: #29374A;
+  --info-950: #18202C;
+
+  --clay-50: #FCF3EE;
+  --clay-100: #F8E3D8;
+  --clay-200: #F0C5AF;
+  --clay-300: #E5A182;
+  --clay-400: #D77F5C;
+  --clay-500: #C26540;
+  --clay-600: #A35132;
+  --clay-700: #86422B;
+  --clay-800: #6E3826;
+  --clay-900: #5B3022;
+  --clay-950: #331910;
+
+  /* Chart series, in order. Mid-tones that read on both light and dark surfaces. */
+  --chart-1: var(--accent-600);
+  --chart-2: var(--positive-500);
+  --chart-3: var(--warning-500);
+  --chart-4: var(--negative-500);
+  --chart-5: var(--info-500);
+  --chart-6: var(--clay-500);
+  --chart-7: var(--accent-400);
+  --chart-8: var(--positive-300);
+}

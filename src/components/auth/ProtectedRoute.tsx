@@ -46,8 +46,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading || checkingCompany) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="h-screen w-screen flex items-center justify-center bg-ink-50 dark:bg-ink-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-600"></div>
       </div>
     );
   }

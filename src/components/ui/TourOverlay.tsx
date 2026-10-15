@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useTour } from '@/lib/context/TourContext';
 import { X, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 
+import { tca } from '@/lib/theme';
 export function TourOverlay() {
   const { isOpen, currentStep, currentStepIndex, nextStep, prevStep, stopTour } = useTour();
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -118,7 +119,7 @@ export function TourOverlay() {
           y="0" 
           width="100%" 
           height="100%" 
-          fill="rgba(15, 23, 42, 0.7)" 
+          fill={tca('ink', 950, 0.7)} 
           mask="url(#tour-mask)" 
         />
         {/* Border stroke around the cutout */}
@@ -129,7 +130,7 @@ export function TourOverlay() {
           height={height} 
           rx={rx} 
           fill="none"
-          stroke="rgba(59, 130, 246, 0.8)"
+          stroke={tca('accent', 500, 0.8)}
           strokeWidth="3"
           strokeDasharray="8 4"
           className="transition-all duration-500 ease-in-out animate-[spin_4s_linear_infinite]"
@@ -144,21 +145,21 @@ export function TourOverlay() {
 
       {/* Bubble */}
       <div 
-        className="absolute pointer-events-auto bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5 flex flex-col gap-3 transition-all duration-500 ease-in-out"
+        className="absolute pointer-events-auto bg-white dark:bg-ink-800 rounded-2xl shadow-2xl border border-ink-200 dark:border-ink-700 p-5 flex flex-col gap-3 transition-all duration-500 ease-in-out"
         style={{ ...bubbleStyle, width: bubbleWidth, zIndex: 2 }}
       >
         <div className="flex justify-between items-start gap-4">
-          <h3 className="font-black text-lg text-slate-800 dark:text-slate-100">{currentStep.title}</h3>
-          <button onClick={stopTour} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-full bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          <h3 className="font-black text-lg text-ink-800 dark:text-ink-100">{currentStep.title}</h3>
+          <button onClick={stopTour} className="text-ink-500 hover:text-ink-600 dark:hover:text-ink-300 p-1 rounded-full bg-ink-100 dark:bg-ink-700/50 hover:bg-ink-200 dark:hover:bg-ink-700 transition-colors">
             <X size={14} />
           </button>
         </div>
-        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+        <p className="text-sm text-ink-600 dark:text-ink-400 leading-relaxed">
           {currentStep.content}
         </p>
 
-        <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-100 dark:border-slate-700/50">
-          <div className="text-xs font-bold text-slate-400">
+        <div className="flex items-center justify-between mt-2 pt-3 border-t border-ink-100 dark:border-ink-700/50">
+          <div className="text-xs font-bold text-ink-500">
             {currentStepIndex + 1} / 8
           </div>
           
@@ -166,7 +167,7 @@ export function TourOverlay() {
             {currentStepIndex > 0 && (
               <button 
                 onClick={prevStep}
-                className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center"
+                className="px-3 py-1.5 text-xs font-bold text-ink-600 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-700 rounded-lg transition-colors flex items-center"
               >
                 <ChevronLeft size={14} className="mr-1" />
                 Back
@@ -176,13 +177,13 @@ export function TourOverlay() {
             {!currentStep.waitForClick ? (
               <button 
                 onClick={isLastStep ? stopTour : nextStep}
-                className="px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center shadow-md shadow-blue-500/20"
+                className="px-4 py-1.5 text-xs font-bold text-white bg-accent-600 hover:bg-accent-700 rounded-lg transition-colors flex items-center shadow-md shadow-accent-500/20"
               >
                 {isLastStep ? 'Finish' : 'Next'}
                 {isLastStep ? <Check size={14} className="ml-1.5" /> : <ChevronRight size={14} className="ml-1" />}
               </button>
             ) : (
-              <div className="px-3 py-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 animate-pulse bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+              <div className="px-3 py-1.5 text-xs font-bold text-accent-600 dark:text-accent-400 animate-pulse bg-accent-50 dark:bg-accent-900/20 rounded-lg border border-accent-100 dark:border-accent-800">
                 Click highlighted area to continue
               </div>
             )}

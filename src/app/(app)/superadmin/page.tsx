@@ -100,8 +100,8 @@ export default function SuperadminPage() {
 
   if (loading || isFetching) {
     return (
-      <div className="flex h-full items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex h-full items-center justify-center bg-ink-50 dark:bg-ink-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600"></div>
       </div>
     );
   }
@@ -109,22 +109,22 @@ export default function SuperadminPage() {
   if (!isSuperadmin) return null; // Fallback before redirect
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-8">
+    <div className="flex-1 overflow-y-auto bg-ink-50 dark:bg-ink-950 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
         <Card className="flex-row items-center justify-between p-6">
           <div>
-            <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2 tracking-tight">
-              <ShieldAlert className="text-rose-500" />
+            <h1 className="text-[22px] font-bold text-ink-900 dark:text-ink-50 flex items-center gap-2 tracking-tight">
+              <ShieldAlert className="text-negative-500" />
               Superadmin Dashboard
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-ink-500 dark:text-ink-400 mt-1">
               Global overview of all registered companies and users.
             </p>
           </div>
           {error && (
-            <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-semibold max-w-sm">
+            <div className="bg-negative-50 text-negative-600 px-4 py-2 rounded-lg text-sm font-semibold max-w-sm">
               {error}
             </div>
           )}
@@ -133,34 +133,34 @@ export default function SuperadminPage() {
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-5">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
+            <div className="flex items-center gap-3 text-ink-500 dark:text-ink-400 mb-2">
               <Building2 size={18} />
-              <span className="font-semibold text-sm">Total Companies</span>
+              <span className="font-semibold text-sm">Total companies</span>
             </div>
-            <div className="text-3xl font-black text-slate-800 dark:text-slate-100">{companies.length}</div>
+            <div className="text-3xl font-black text-ink-800 dark:text-ink-100">{companies.length}</div>
           </Card>
           <Card className="p-5">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
+            <div className="flex items-center gap-3 text-ink-500 dark:text-ink-400 mb-2">
               <UsersIcon size={18} />
-              <span className="font-semibold text-sm">Total Users</span>
+              <span className="font-semibold text-sm">Total users</span>
             </div>
-            <div className="text-3xl font-black text-slate-800 dark:text-slate-100">{users.length}</div>
+            <div className="text-3xl font-black text-ink-800 dark:text-ink-100">{users.length}</div>
           </Card>
           <Card className="p-5">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
+            <div className="flex items-center gap-3 text-ink-500 dark:text-ink-400 mb-2">
               <Activity size={18} />
-              <span className="font-semibold text-sm">Active Trials</span>
+              <span className="font-semibold text-sm">Active trials</span>
             </div>
-            <div className="text-3xl font-black text-slate-800 dark:text-slate-100">
+            <div className="text-3xl font-black text-ink-800 dark:text-ink-100">
               {companies.filter(c => c.subscriptionStatus === 'trialing').length}
             </div>
           </Card>
           <Card className="p-5">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
+            <div className="flex items-center gap-3 text-ink-500 dark:text-ink-400 mb-2">
               <Calendar size={18} />
-              <span className="font-semibold text-sm">Lifetime Accounts</span>
+              <span className="font-semibold text-sm">Lifetime accounts</span>
             </div>
-            <div className="text-3xl font-black text-slate-800 dark:text-slate-100">
+            <div className="text-3xl font-black text-ink-800 dark:text-ink-100">
               {companies.filter(c => c.subscriptionStatus === 'lifetime').length}
             </div>
           </Card>
@@ -170,55 +170,55 @@ export default function SuperadminPage() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold">
+              <thead className="bg-ink-50 dark:bg-ink-800/50 text-ink-500 dark:text-ink-400 font-semibold">
                 <tr>
-                  <th className="px-6 py-4">Company Name</th>
+                  <th className="px-6 py-4">Company name</th>
                   <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Created Date</th>
+                  <th className="px-6 py-4">Created date</th>
                   <th className="px-6 py-4">Users</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-ink-100 dark:divide-ink-800">
                 {companies.map(company => {
                   const companyUsers = users.filter(u => u.companyId === company.id);
                   const isTrialExpired = company.subscriptionStatus === 'trialing' && company.trialEndsAt && company.trialEndsAt < Date.now();
                   
                   return (
-                    <tr key={company.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <tr key={company.id} className="group hover:bg-ink-50 dark:hover:bg-ink-800/50 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-800 dark:text-slate-200">{company.name}</div>
-                        <div className="text-xs text-slate-400 font-mono mt-0.5">{company.id}</div>
+                        <div className="font-bold text-ink-800 dark:text-ink-200">{company.name}</div>
+                        <div className="text-xs text-ink-500 font-mono mt-0.5">{company.id}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center justify-center text-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest min-w-[100px]
-                          ${company.subscriptionStatus === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : 
-                            company.subscriptionStatus === 'trialing' ? (isTrialExpired ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400') :
-                            company.subscriptionStatus === 'lifetime' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
-                            'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
+                        <span className={`inline-flex items-center justify-center text-center px-2 py-0.5 rounded text-xs font-medium capitalize min-w-[100px]
+                          ${company.subscriptionStatus === 'active' ? 'bg-positive-100 text-positive-800 dark:bg-positive-900/30 dark:text-positive-400' : 
+                            company.subscriptionStatus === 'trialing' ? (isTrialExpired ? 'bg-negative-100 text-negative-800 dark:bg-negative-900/30 dark:text-negative-400' : 'bg-accent-100 text-accent-800 dark:bg-accent-900/30 dark:text-accent-400') :
+                            company.subscriptionStatus === 'lifetime' ? 'bg-info-100 text-info-800 dark:bg-info-900/30 dark:text-info-400' :
+                            'bg-ink-100 text-ink-800 dark:bg-ink-800 dark:text-ink-300'
                           }
                         `}>
                           {isTrialExpired ? 'Trial Expired' : company.subscriptionStatus}
                         </span>
                         {company.subscriptionStatus === 'trialing' && company.trialEndsAt && !isTrialExpired && (
-                          <div className="text-xs text-slate-500 mt-1">
+                          <div className="text-xs text-ink-500 mt-1">
                             Ends: {new Date(company.trialEndsAt).toLocaleDateString()}
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
+                      <td className="px-6 py-4 text-ink-600 dark:text-ink-400">
                         {company.createdAt ? new Date(company.createdAt).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="px-6 py-4">
                         <div className="space-y-1">
                           {companyUsers.map(u => (
                             <div key={u.uid} className="flex items-center gap-2 text-sm">
-                              <span className="font-medium text-slate-700 dark:text-slate-300">{u.displayName || 'Unknown'}</span>
-                              <span className="text-slate-400">({u.email})</span>
-                              <span className="text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500">{u.role}</span>
+                              <span className="font-medium text-ink-700 dark:text-ink-300">{u.displayName || 'Unknown'}</span>
+                              <span className="text-ink-500">({u.email})</span>
+                              <span className="text-xs font-medium bg-ink-100 dark:bg-ink-800 px-1.5 py-0.5 rounded text-ink-500 capitalize">{u.role}</span>
                             </div>
                           ))}
-                          {companyUsers.length === 0 && <span className="text-slate-400 italic">No users found</span>}
+                          {companyUsers.length === 0 && <span className="text-ink-500 italic">No users found</span>}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -226,7 +226,7 @@ export default function SuperadminPage() {
                           <button
                             onClick={() => handleExtendTrial(company.id!)}
                             disabled={isUpdating === company.id}
-                            className="text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded font-medium disabled:opacity-50 transition-colors"
+                            className="text-xs px-2 py-1 bg-accent-50 text-accent-600 hover:bg-accent-100 dark:bg-accent-900/20 dark:text-accent-400 dark:hover:bg-accent-900/40 rounded font-medium disabled:opacity-50 transition-colors"
                             title="Add 14 days"
                           >
                             +14d Trial
@@ -234,7 +234,7 @@ export default function SuperadminPage() {
                           <button
                             onClick={() => handleSetLifetime(company.id!)}
                             disabled={isUpdating === company.id}
-                            className="text-xs px-2 py-1 bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded font-medium disabled:opacity-50 transition-colors"
+                            className="text-xs px-2 py-1 bg-info-50 text-info-600 hover:bg-info-100 dark:bg-info-900/20 dark:text-info-400 dark:hover:bg-info-900/40 rounded font-medium disabled:opacity-50 transition-colors"
                             title="Grant Lifetime Access"
                           >
                             Lifetime
@@ -242,7 +242,7 @@ export default function SuperadminPage() {
                           <button
                             onClick={() => handleRevoke(company.id!)}
                             disabled={isUpdating === company.id}
-                            className="text-xs px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-900/40 rounded font-medium disabled:opacity-50 transition-colors"
+                            className="text-xs px-2 py-1 bg-negative-50 text-negative-600 hover:bg-negative-100 dark:bg-negative-900/20 dark:text-negative-400 dark:hover:bg-negative-900/40 rounded font-medium disabled:opacity-50 transition-colors"
                             title="Revoke License"
                           >
                             Revoke
@@ -254,7 +254,7 @@ export default function SuperadminPage() {
                 })}
                 {companies.length === 0 && !error && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-ink-500">
                       No companies found.
                     </td>
                   </tr>

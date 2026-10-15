@@ -70,69 +70,69 @@ export function ProfileTab() {
   return (
     <div className="space-y-8 pb-12">
       <div>
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <User size={20} className="text-blue-600" />
+        <h2 className="text-xl font-bold text-ink-800 dark:text-ink-100 flex items-center gap-2">
+          <User size={20} className="text-accent-600" />
           My Profile
         </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage your personal details.</p>
+        <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">Manage your personal details.</p>
       </div>
 
       <form onSubmit={handleUpdateProfile} className="space-y-4">
         {error && (
-          <div className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 p-3 rounded-xl text-sm font-medium">
+          <div className="bg-negative-50 dark:bg-negative-900/30 text-negative-600 dark:text-negative-400 p-3 rounded-xl text-sm font-medium">
             {error}
           </div>
         )}
         {success && (
-          <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-3 rounded-xl text-sm font-medium flex items-center gap-2">
+          <div className="bg-positive-50 dark:bg-positive-900/30 text-positive-600 dark:text-positive-400 p-3 rounded-xl text-sm font-medium flex items-center gap-2">
             <CheckCircle2 size={16} />
             {success}
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+          <label className="block text-sm font-medium text-ink-700 dark:text-ink-300 mb-1">Full name</label>
           <input 
             type="text" 
             value={displayName}
             onChange={e => setDisplayName(e.target.value)}
-            className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
+            className="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-900 text-ink-900 dark:text-ink-50 rounded-xl focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 outline-none transition-colors"
             placeholder="John Doe"
           />
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+          <label className="block text-sm font-medium text-ink-700 dark:text-ink-300 mb-1">Email address</label>
           <input 
             type="email" 
             value={auth.currentUser?.email || ''}
             disabled
-            className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-500 rounded-xl outline-none cursor-not-allowed"
+            className="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 bg-ink-50 dark:bg-ink-950 text-ink-500 dark:text-ink-400 rounded-xl outline-none cursor-not-allowed"
           />
         </div>
 
         <button 
           type="submit" 
           disabled={loading || !displayName.trim()}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl transition-colors disabled:opacity-50 mt-2"
+          className="bg-accent-600 hover:bg-accent-700 text-white font-bold py-2.5 px-6 rounded-xl transition-colors disabled:opacity-50 mt-2"
         >
           {loading ? 'Saving...' : 'Save Changes'}
         </button>
       </form>
 
-      <div className="pt-8 mt-8 border-t border-slate-200 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-red-600 dark:text-red-500 flex items-center gap-2 mb-2">
+      <div className="pt-8 mt-8 border-t border-ink-200 dark:border-ink-800">
+        <h3 className="text-lg font-bold text-negative-600 dark:text-negative-500 flex items-center gap-2 mb-2">
           <Trash2 size={20} />
           Danger Zone
         </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 max-w-2xl">
+        <p className="text-sm text-ink-500 dark:text-ink-400 mb-5 max-w-2xl">
           Once you delete your account, there is no going back. Please be certain. 
           If you are the last user in your company, this action will also permanently delete all company data, including projects, team members, and allocations.
         </p>
         <button
           onClick={() => setShowDeleteConfirm(true)}
           disabled={deleting}
-          className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 hover:bg-red-600 hover:text-white font-bold py-2.5 px-6 rounded-xl transition-colors border border-red-600/20 disabled:opacity-50"
+          className="bg-negative-50 dark:bg-negative-500/10 text-negative-600 dark:text-negative-500 hover:bg-negative-600 hover:text-white font-bold py-2.5 px-6 rounded-xl transition-colors border border-negative-600/20 disabled:opacity-50"
         >
           {deleting ? 'Deleting...' : 'Delete Account'}
         </button>

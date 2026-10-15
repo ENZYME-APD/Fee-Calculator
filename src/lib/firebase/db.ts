@@ -580,8 +580,8 @@ export const bootstrapCompanyData = async (companyId: string, ownerId: string) =
   // every new signup's sample team members pointed at a category id nothing
   // could resolve, so the UI fell back to printing the raw document id as
   // the category header.
-  const catRef1 = await addDoc(collection(db, 'categories'), { companyId, name: 'Default team 1', order: 1, color: '#3b82f6', isFixed: true, type: 'internal' });
-  const catRef2 = await addDoc(collection(db, 'categories'), { companyId, name: 'Default Team External', order: 2, color: '#10b981', isFixed: true, type: 'external' });
+  const catRef1 = await addDoc(collection(db, 'categories'), { companyId, name: 'Default team 1', order: 1, color: '#0F766E', isFixed: true, type: 'internal' });
+  const catRef2 = await addDoc(collection(db, 'categories'), { companyId, name: 'Default Team External', order: 2, color: '#527A22', isFixed: true, type: 'external' });
 
   // Create sample team members
   const member1 = await addDoc(collection(db, 'teamMembers'), { companyId, name: 'Alice (Sample)', position: 'Partner', type: 'Employee', salary: 10000, overheads: 2000, costPerHour: 75, currency: 'USD', category: catRef1.id, isSample: true });

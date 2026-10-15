@@ -77,55 +77,55 @@ export function PreferencesTab({ company }: { company: Company }) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Global Preferences</h2>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Configure default units and formatting used across your company.</p>
+        <h2 className="text-xl font-bold text-ink-900 dark:text-ink-50">Global preferences</h2>
+        <p className="text-ink-500 dark:text-ink-400 text-sm mt-1">Configure default units and formatting used across your company.</p>
       </div>
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-sm font-bold text-ink-700 dark:text-ink-300 mb-2">
             Default Currency
           </label>
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            className="w-full bg-ink-50 dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-lg px-4 py-2.5 text-ink-900 dark:text-ink-50 focus:ring-2 focus:ring-accent-500 outline-none transition-all"
           >
             {CURRENCIES.map(c => (
               <option key={c.code} value={c.code}>{c.name}</option>
             ))}
           </select>
-          <p className="text-xs text-slate-500 mt-2">This currency will be used for all financial summaries and fee proposals.</p>
+          <p className="text-xs text-ink-500 mt-2">This currency will be used for all financial summaries and fee proposals.</p>
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-sm font-bold text-ink-700 dark:text-ink-300 mb-2">
             Area Unit
           </label>
           <select
             value={areaUnit}
             onChange={(e) => setAreaUnit(e.target.value as 'sqm' | 'sqft')}
-            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            className="w-full bg-ink-50 dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-lg px-4 py-2.5 text-ink-900 dark:text-ink-50 focus:ring-2 focus:ring-accent-500 outline-none transition-all"
           >
             {AREA_UNITS.map(u => (
               <option key={u.code} value={u.code}>{u.name}</option>
             ))}
           </select>
-          <p className="text-xs text-slate-500 mt-2">Used when defining project sizes and calculating rates per unit.</p>
+          <p className="text-xs text-ink-500 mt-2">Used when defining project sizes and calculating rates per unit.</p>
         </div>
       </div>
 
-      <div className="pt-4 flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-8">
+      <div className="pt-4 flex items-center gap-4 border-b border-ink-200 dark:border-ink-800 pb-8">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 bg-accent-600 hover:bg-accent-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors disabled:opacity-50"
         >
           {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
           Save Preferences
         </button>
         {message && (
-          <span className={`text-sm font-medium ${message.includes('success') ? 'text-emerald-600' : 'text-rose-600'}`}>
+          <span className={`text-sm font-medium ${message.includes('success') ? 'text-positive-600' : 'text-negative-600'}`}>
             {message}
           </span>
         )}
@@ -133,12 +133,12 @@ export function PreferencesTab({ company }: { company: Company }) {
 
       <div className="pt-4 space-y-4">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Sample Data</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">If your workspace was populated with sample projects and team members, you can safely remove them here.</p>
+          <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50">Sample data</h3>
+          <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">If your workspace was populated with sample projects and team members, you can safely remove them here.</p>
         </div>
         <button
           onClick={() => setShowConfirm(true)}
-          className="px-4 py-2 bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400 font-bold rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors text-sm border border-rose-200 dark:border-rose-800/50"
+          className="px-4 py-2 bg-negative-50 text-negative-600 dark:bg-negative-900/20 dark:text-negative-400 font-bold rounded-lg hover:bg-negative-100 dark:hover:bg-negative-900/40 transition-colors text-sm border border-negative-200 dark:border-negative-800/50"
         >
           Clear Sample Data
         </button>

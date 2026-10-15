@@ -38,20 +38,20 @@ export default function InvitePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-ink-50 dark:bg-ink-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-600"></div>
       </div>
     );
   }
 
   if (error || !invite || !company) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 text-center border border-slate-200 dark:border-slate-800">
-          <AlertCircle size={48} className="mx-auto text-rose-500 mb-6" />
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Invalid Invite</h1>
-          <p className="text-slate-500 dark:text-slate-400 mb-8">{error || 'Invite not found.'}</p>
-          <Link href="/login" className="text-blue-600 hover:underline font-bold">
+      <div className="min-h-screen bg-ink-50 dark:bg-ink-950 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white dark:bg-ink-900 rounded-2xl shadow-xl p-8 text-center border border-ink-200 dark:border-ink-800">
+          <AlertCircle size={48} className="mx-auto text-negative-500 mb-6" />
+          <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50 mb-2">Invalid invite</h1>
+          <p className="text-ink-500 dark:text-ink-400 mb-8">{error || 'Invite not found.'}</p>
+          <Link href="/login" className="text-accent-600 hover:underline font-bold">
             Go to Login
           </Link>
         </div>
@@ -60,39 +60,39 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
-        <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <Users size={32} className="text-blue-600 dark:text-blue-400" />
+    <div className="min-h-screen bg-ink-50 dark:bg-ink-950 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white dark:bg-ink-900 rounded-2xl shadow-xl p-8 border border-ink-200 dark:border-ink-800">
+        <div className="h-16 w-16 bg-accent-100 dark:bg-accent-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <Users size={32} className="text-accent-600 dark:text-accent-400" />
         </div>
         
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white text-center mb-2">
+        <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-50 text-center mb-2">
           You've been invited!
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-center mb-8">
-          You have been invited to join <span className="font-bold text-slate-900 dark:text-slate-200">{company.name}</span> on Enzyme APD Fee Calculator.
+        <p className="text-ink-500 dark:text-ink-400 text-center mb-8">
+          You have been invited to join <span className="font-bold text-ink-900 dark:text-ink-200">{company.name}</span> on Enzyme APD Fee Calculator.
         </p>
 
         <div className="space-y-4 mb-8">
-          <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-            <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
+          <div className="flex items-center gap-3 p-4 bg-ink-50 dark:bg-ink-800/50 rounded-xl border border-ink-200 dark:border-ink-700">
+            <CheckCircle2 size={20} className="text-positive-500 shrink-0" />
             <div>
-              <p className="text-sm font-bold text-slate-900 dark:text-white">Email Address</p>
-              <p className="text-xs text-slate-500">{invite.email}</p>
+              <p className="text-sm font-bold text-ink-900 dark:text-ink-50">Email address</p>
+              <p className="text-xs text-ink-500">{invite.email}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-            <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
+          <div className="flex items-center gap-3 p-4 bg-ink-50 dark:bg-ink-800/50 rounded-xl border border-ink-200 dark:border-ink-700">
+            <CheckCircle2 size={20} className="text-positive-500 shrink-0" />
             <div>
-              <p className="text-sm font-bold text-slate-900 dark:text-white">Role</p>
-              <p className="text-xs text-slate-500 capitalize">{invite.role}</p>
+              <p className="text-sm font-bold text-ink-900 dark:text-ink-50">Role</p>
+              <p className="text-xs text-ink-500 capitalize">{invite.role}</p>
             </div>
           </div>
         </div>
 
         <Link 
           href={`/login?invite=${token}`}
-          className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-600/20 text-center"
+          className="block w-full py-3 px-4 bg-accent-600 hover:bg-accent-700 text-white font-bold rounded-xl transition-all shadow-md shadow-accent-600/20 text-center"
         >
           Accept Invite & Create Account
         </Link>

@@ -82,11 +82,11 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800">
-        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800">
-          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">{initialData ? 'Edit' : 'Add'} Team Member</h2>
-          <button type="button" onClick={onClose} className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-ink-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-ink-100 dark:border-ink-800">
+        <div className="flex justify-between items-center p-6 border-b border-ink-100 dark:border-ink-800">
+          <h2 className="text-xl font-bold text-ink-800 dark:text-ink-200">{initialData ? 'Edit' : 'Add'} Team Member</h2>
+          <button type="button" onClick={onClose} className="p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -94,23 +94,23 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
-              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              <label className="block text-sm font-medium text-ink-700 dark:text-ink-300 mb-1">Full name</label>
+              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 text-ink-800 dark:text-ink-200 rounded-xl focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500" />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Position</label>
-              <input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              <label className="block text-sm font-medium text-ink-700 dark:text-ink-300 mb-1">Position</label>
+              <input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full px-3 py-2 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 text-ink-800 dark:text-ink-200 rounded-xl focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500" />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
+              <label className="block text-sm font-medium text-ink-700 dark:text-ink-300 mb-1">Category</label>
               <select
                 value={formData.category || ''}
                 onChange={e => setFormData({...formData, category: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 text-ink-800 dark:text-ink-200 rounded-xl focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500"
               >
-                <option value="">-- Select Category --</option>
+                <option value="">-- Select category --</option>
                 {categories.filter(c => !c.isFixed).map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
@@ -118,13 +118,13 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monthly Salary ({currencyCode})</label>
-              <input required type="number" min="0" value={formData.salary} onChange={e => handleFinancialChange('salary', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              <label className="block text-sm font-medium text-ink-700 dark:text-ink-300 mb-1">Monthly salary ({currencyCode})</label>
+              <input required type="number" min="0" value={formData.salary} onChange={e => handleFinancialChange('salary', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 text-ink-800 dark:text-ink-200 rounded-xl focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500" />
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Overheads ({currencyCode})</label>
+                <label className="block text-sm font-medium text-ink-700 dark:text-ink-300">Monthly overheads ({currencyCode})</label>
                 {formData.isOverheadsManuallyOverridden && calculatedOverhead !== null && (
                   <button 
                     type="button" 
@@ -132,24 +132,24 @@ export function TeamMemberForm({ isOpen, onClose, onSaved, initialData }: TeamMe
                       const baseCost = (formData.salary! + calculatedOverhead) / 160;
                       setFormData({ ...formData, overheads: calculatedOverhead, isOverheadsManuallyOverridden: false, costPerHour: baseCost });
                     }}
-                    className="text-xs font-bold text-blue-500 hover:text-blue-600 transition-colors"
+                    className="text-xs font-bold text-accent-500 hover:text-accent-600 transition-colors"
                   >
                     Reset to Sync
                   </button>
                 )}
               </div>
-              <input required type="number" min="0" value={formData.overheads} onChange={e => handleFinancialChange('overheads', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              <input required type="number" min="0" value={formData.overheads} onChange={e => handleFinancialChange('overheads', parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 text-ink-800 dark:text-ink-200 rounded-xl focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cost / Hour ({currencyCode})</label>
-              <input readOnly type="number" step="0.01" value={formData.costPerHour} className="w-full px-3 py-2 border border-rose-200 dark:border-rose-900/30 bg-rose-50/70 dark:bg-rose-950/70 text-rose-700 dark:text-rose-400 rounded-xl focus:outline-none cursor-not-allowed opacity-80" />
+              <label className="block text-sm font-medium text-ink-700 dark:text-ink-300 mb-1">Cost / hour ({currencyCode})</label>
+              <input readOnly type="number" step="0.01" value={formData.costPerHour} className="w-full px-3 py-2 border border-negative-200 dark:border-negative-900/30 bg-negative-50/70 dark:bg-negative-950/70 text-negative-700 dark:text-negative-400 rounded-xl focus:outline-none cursor-not-allowed opacity-80" />
             </div>
           </div>
           
-          <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 mt-6">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">Cancel</button>
-            <button type="submit" disabled={loading} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 rounded-xl disabled:opacity-50 transition-colors shadow-sm shadow-blue-600/20">
+          <div className="pt-4 flex justify-end gap-3 border-t border-ink-100 dark:border-ink-800 mt-6">
+            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 rounded-xl transition-colors">Cancel</button>
+            <button type="submit" disabled={loading} className="px-5 py-2.5 text-sm font-medium text-white bg-accent-600 dark:bg-accent-600 hover:bg-accent-700 dark:hover:bg-accent-700 rounded-xl disabled:opacity-50 transition-colors shadow-sm shadow-accent-600/20">
               {loading ? 'Saving...' : 'Save Member'}
             </button>
           </div>

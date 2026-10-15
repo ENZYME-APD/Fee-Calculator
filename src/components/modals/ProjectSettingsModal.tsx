@@ -45,73 +45,73 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave }: Proje
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-900/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-ink-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <form onSubmit={handleSubmit}>
-          <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex justify-between items-center p-6 border-b border-ink-100 dark:border-ink-800">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-xl text-blue-600 dark:text-blue-400">
+              <div className="bg-accent-100 dark:bg-accent-900/30 p-2 rounded-xl text-accent-600 dark:text-accent-400">
                 <Settings size={24} />
               </div>
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Project Settings</h2>
+              <h2 className="text-xl font-bold text-ink-800 dark:text-ink-200">Project settings</h2>
             </div>
-            <button type="button" onClick={onClose} className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+            <button type="button" onClick={onClose} className="p-1.5 text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 rounded-full transition-colors">
               <X size={20} />
             </button>
           </div>
           
-          <div className="p-6 bg-slate-50/50 dark:bg-slate-950/50 space-y-4">
+          <div className="p-6 bg-ink-50/50 dark:bg-ink-950/50 space-y-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Project Name</label>
+              <label className="block text-sm font-bold text-ink-700 dark:text-ink-300 mb-1.5">Project name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none text-slate-900 dark:text-white transition-all shadow-sm font-semibold"
+                className="w-full px-4 py-3 bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-xl focus:ring-2 focus:ring-accent-500/20 outline-none text-ink-900 dark:text-ink-50 transition-all shadow-sm font-semibold"
                 required
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Status</label>
+                <label className="block text-sm font-bold text-ink-700 dark:text-ink-300 mb-1.5">Status</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none text-slate-900 dark:text-white transition-all shadow-sm font-semibold appearance-none"
+                  className="w-full px-4 py-3 bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-xl focus:ring-2 focus:ring-accent-500/20 outline-none text-ink-900 dark:text-ink-50 transition-all shadow-sm font-semibold appearance-none"
                 >
                   <option value="Draft">Draft</option>
                   <option value="Proposed">Proposed</option>
                   <option value="Active">Active</option>
                   <option value="Completed">Completed</option>
-                  <option value="Lost">Lost/Archived</option>
+                  <option value="Lost">Lost/archived</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Project Area</label>
+                <label className="block text-sm font-bold text-ink-700 dark:text-ink-300 mb-1.5">Project area</label>
                 <input
                   type="number"
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
                   placeholder="e.g. 5000"
-                  className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none text-slate-900 dark:text-white transition-all shadow-sm font-semibold"
+                  className="w-full px-4 py-3 bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-xl focus:ring-2 focus:ring-accent-500/20 outline-none text-ink-900 dark:text-ink-50 transition-all shadow-sm font-semibold"
                 />
               </div>
             </div>
           </div>
           
-          <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-white dark:bg-slate-900">
+          <div className="p-6 border-t border-ink-100 dark:border-ink-800 flex justify-end gap-3 bg-white dark:bg-ink-900">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="px-5 py-2.5 rounded-xl font-bold text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="px-5 py-2.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-colors flex items-center gap-2 disabled:opacity-70"
+              className="px-5 py-2.5 rounded-xl font-bold text-white bg-accent-600 hover:bg-accent-700 shadow-md shadow-accent-600/20 transition-colors flex items-center gap-2 disabled:opacity-70"
             >
               <Check size={18} />
               {isSaving ? 'Saving...' : 'Save Settings'}

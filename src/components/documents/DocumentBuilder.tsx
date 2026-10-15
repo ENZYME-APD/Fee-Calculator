@@ -27,17 +27,17 @@ function SidebarTemplateItem({ template, onInsert, onDelete }: { template: Saved
       {...attributes}
       {...listeners}
       onClick={onInsert}
-      className={`w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all cursor-grab active:cursor-grabbing group flex items-start justify-between ${isDragging ? 'opacity-50 ring-2 ring-emerald-500' : ''}`}
+      className={`w-full text-left px-4 py-3 rounded-xl bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 shadow-sm hover:shadow-md hover:border-positive-200 dark:hover:border-positive-800/50 transition-all cursor-grab active:cursor-grabbing group flex items-start justify-between ${isDragging ? 'opacity-50 ring-2 ring-positive-500' : ''}`}
     >
       <div className="flex flex-col overflow-hidden pointer-events-none">
-        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{template.templateName}</span>
-        <span className="text-[10px] uppercase tracking-wider text-slate-400 mt-1">{template.type.replace('_', ' ')}</span>
+        <span className="text-sm font-medium text-ink-700 dark:text-ink-300 truncate">{template.templateName}</span>
+        <span className="text-xs text-ink-500 mt-1">{template.type.replace('_', ' ').replace(/^./, (c) => c.toUpperCase())}</span>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="p-1.5 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-md transition-colors" title="Drag or Click to Insert">
+        <div className="p-1.5 text-positive-500 hover:bg-positive-50 dark:hover:bg-positive-900/30 rounded-md transition-colors" title="Drag or Click to Insert">
           <Plus size={14} />
         </div>
-        <div onPointerDown={(e) => e.stopPropagation()} onClick={onDelete} className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-md transition-colors" title="Delete Template">
+        <div onPointerDown={(e) => e.stopPropagation()} onClick={onDelete} className="p-1.5 text-negative-400 hover:text-negative-600 hover:bg-negative-50 dark:hover:bg-negative-900/30 rounded-md transition-colors" title="Delete Template">
           <Trash2 size={14} />
         </div>
       </div>
@@ -352,7 +352,7 @@ export function DocumentBuilder() {
     window.print();
   };
 
-  if (loading) return <div className="p-8 text-slate-500">Loading document builder...</div>;
+  if (loading) return <div className="p-8 text-ink-500">Loading document builder...</div>;
 
   if (dbCompany?.tier !== 'pro' && dbCompany?.subscriptionStatus !== 'lifetime') {
     return <ProUpgradePrompt 
@@ -363,21 +363,21 @@ export function DocumentBuilder() {
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-    <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-full w-full bg-ink-50 dark:bg-ink-950">
       
       {/* Templates Sidebar */}
-      <div className="w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 h-full print:hidden">
+      <div className="w-72 bg-white dark:bg-ink-900 border-r border-ink-200 dark:border-ink-800 flex flex-col shrink-0 h-full print:hidden">
         <div className="flex flex-col h-full">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <Bookmark size={18} className="text-emerald-500" />
+          <div className="p-4 border-b border-ink-200 dark:border-ink-800 shrink-0">
+            <h3 className="font-bold text-ink-800 dark:text-ink-200 flex items-center gap-2">
+              <Bookmark size={18} className="text-positive-500" />
               Saved Templates
             </h3>
-            <p className="text-xs text-slate-500 mt-1">Click to append to document</p>
+            <p className="text-xs text-ink-500 mt-1">Click to append to document</p>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {savedBlocks.length === 0 ? (
-              <div className="text-center p-4 text-sm text-slate-400">
+              <div className="text-center p-4 text-sm text-ink-500">
                 No templates saved yet. Click the bookmark icon on any block to save it.
               </div>
             ) : (
@@ -394,15 +394,15 @@ export function DocumentBuilder() {
         </div>
       </div>
 <div className="flex-1 flex flex-col h-full relative">
-        <div className="flex items-center justify-between px-6 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 shadow-sm print:hidden">
+        <div className="flex items-center justify-between px-6 py-3 bg-white dark:bg-ink-900 border-b border-ink-200 dark:border-ink-800 shrink-0 shadow-sm print:hidden">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold shrink-0">
-              <FileText size={18} className="text-blue-600 dark:text-blue-400" />
-              <span className="text-sm uppercase tracking-wider">Document Builder</span>
+            <div className="flex items-center gap-2 text-ink-700 dark:text-ink-300 font-bold shrink-0">
+              <FileText size={18} className="text-accent-600 dark:text-accent-400" />
+              <span className="text-sm">Document builder</span>
             </div>
             <div className="w-[300px] flex items-center">
               <select
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors cursor-pointer"
+                className="w-full bg-ink-50 dark:bg-ink-800 border border-ink-200 dark:border-ink-700 text-ink-800 dark:text-ink-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-accent-500/20 outline-none transition-colors cursor-pointer"
                 value={activeProjectId || ''}
                 onChange={(e) => {
                   const newId = e.target.value;
@@ -423,7 +423,7 @@ export function DocumentBuilder() {
                   .filter(p => !p.isTemplate && (showLost || p.status !== "Lost"))
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(p => (
-                    <option key={p.id} value={p.id}>{p.name}{p.status === 'Lost' ? ' (Lost/Archived)' : ''}</option>
+                    <option key={p.id} value={p.id}>{p.name}{p.status === 'Lost' ? ' (Lost/archived)' : ''}</option>
                   ))}
               </select>
             </div>
@@ -431,10 +431,10 @@ export function DocumentBuilder() {
             <button
               type="button"
               onClick={() => setShowLost(!showLost)}
-              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="text-xs text-ink-500 hover:text-ink-600 dark:hover:text-ink-300 flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
             >
               {showLost ? <EyeOff size={14} /> : <Eye size={14} />}
-              <span>{showLost ? 'Hide Lost/Archived' : 'Show Lost/Archived'}</span>
+              <span>{showLost ? 'Hide Lost/archived' : 'Show Lost/archived'}</span>
             </button>
           </div>
 
@@ -443,13 +443,13 @@ export function DocumentBuilder() {
               <button
                 onClick={handleExportWord}
                 disabled={isExporting}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg font-bold text-sm transition-colors shadow-sm"
               >
                 <Download size={16} /> Export to Word
               </button>
               <button
                 onClick={handleExportPdf}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-bold text-sm transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 hover:bg-ink-50 dark:hover:bg-ink-700 text-ink-700 dark:text-ink-300 rounded-lg font-bold text-sm transition-colors shadow-sm"
               >
                 <Printer size={16} /> Print PDF
               </button>
@@ -457,29 +457,29 @@ export function DocumentBuilder() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 print:p-0 print:bg-white bg-slate-100 dark:bg-slate-950">
+        <div className="flex-1 overflow-y-auto p-8 print:p-0 print:bg-white bg-ink-100 dark:bg-ink-950">
           {!activeProjectId ? (
-            <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 h-full">
+            <div className="flex flex-col items-center justify-center text-ink-500 dark:text-ink-400 h-full">
               <FileText size={48} className="mb-4 opacity-20" />
               <p className="text-lg font-medium">Select a project to build its proposal document</p>
             </div>
           ) : blocks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 h-[60vh] max-w-md mx-auto text-center">
-              <LayoutTemplate size={48} className="mb-4 text-blue-500 opacity-50" />
-              <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">No Document Blocks</h3>
+            <div className="flex flex-col items-center justify-center text-ink-500 dark:text-ink-400 h-[60vh] max-w-md mx-auto text-center">
+              <LayoutTemplate size={48} className="mb-4 text-accent-500 opacity-50" />
+              <h3 className="text-xl font-bold text-ink-700 dark:text-ink-300 mb-2">No document blocks</h3>
               <p className="text-sm mb-6">Generate a default proposal layout automatically pulling data from your fee estimates.</p>
               <button 
                 onClick={handleGenerateDefaults}
-                className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md"
+                className="px-6 py-3 bg-accent-600 text-white font-bold rounded-xl hover:bg-accent-700 transition-colors shadow-md"
               >
                 Generate Default Proposal
               </button>
             </div>
           ) : (
-            <div className="w-full max-w-[850px] mx-auto bg-white dark:bg-slate-900 print:shadow-none shadow-xl border border-slate-200 dark:border-slate-800 print:border-none min-h-[1100px] p-16 print:p-0 relative">
+            <div className="w-full max-w-[850px] mx-auto bg-white dark:bg-ink-900 print:shadow-none shadow-xl border border-ink-200 dark:border-ink-800 print:border-none min-h-[1100px] p-16 print:p-0 relative">
               
               
-              <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-12">
+              <h1 className="text-4xl font-black text-ink-900 dark:text-ink-50 mb-12">
                 Fee Proposal: {projects.find(p => p.id === activeProjectId)?.name}
               </h1>
 
@@ -535,9 +535,9 @@ export function DocumentBuilder() {
     </div>
     <DragOverlay>
       {activeDragId && activeDragId.toString().startsWith('template-') ? (
-        <div className="w-64 px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-emerald-500 shadow-2xl opacity-90 cursor-grabbing">
+        <div className="w-64 px-4 py-3 rounded-xl bg-white dark:bg-ink-800 border border-positive-500 shadow-2xl opacity-90 cursor-grabbing">
           <div className="flex flex-col overflow-hidden">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">Dragging Template...</span>
+            <span className="text-sm font-medium text-ink-700 dark:text-ink-300 truncate">Dragging Template...</span>
           </div>
         </div>
       ) : null}

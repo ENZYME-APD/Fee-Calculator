@@ -47,16 +47,16 @@ export const InlinePercentInput = ({ value, onChange, maxAllowed }: { value: num
   };
 
   return (
-    <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 overflow-hidden focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-colors">
+    <div className="flex items-center bg-ink-50 dark:bg-ink-800 rounded-md border border-ink-200 dark:border-ink-700 overflow-hidden focus-within:border-accent-400 focus-within:ring-1 focus-within:ring-accent-400 transition-colors">
       <input 
         type="number"
         value={val}
         onChange={e => setVal(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="w-14 text-right bg-transparent text-sm font-bold text-slate-700 dark:text-slate-300 px-1 py-1 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none m-0"
+        className="w-14 text-right bg-transparent text-sm font-bold text-ink-700 dark:text-ink-300 px-1 py-1 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none m-0"
       />
-      <span className="text-slate-500 text-sm font-bold pr-2 flex-shrink-0">%</span>
+      <span className="text-ink-500 text-sm font-bold pr-2 flex-shrink-0">%</span>
     </div>
   );
 };
@@ -383,14 +383,14 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
 
   const totalPercentage = payments.reduce((sum, p) => sum + p.percentage, 0);
 
-  if (loading) return <div className="p-8 flex-1 text-slate-500 flex items-center justify-center">Loading payments...</div>;
+  if (loading) return <div className="p-8 flex-1 text-ink-500 flex items-center justify-center">Loading payments...</div>;
 
   return (
     <Card className="flex-1">
-      <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-3">
+      <CardHeader className="bg-ink-50/50 dark:bg-ink-900/50 flex flex-col gap-3">
         <div className="min-w-0">
-          <h2 className="font-semibold text-sm text-slate-800 dark:text-slate-100">Payment Schedule</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Milestones must total 100%.</p>
+          <h2 className="font-semibold text-sm text-ink-800 dark:text-ink-100">Payment schedule</h2>
+          <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">Milestones must total 100%.</p>
         </div>
         <div className="flex gap-1.5">
           <SecondaryButton onClick={handleUseTemplate} className="h-auto py-1.5 px-2.5 flex-1">
@@ -405,9 +405,9 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
         </div>
       </CardHeader>
 
-      <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+      <div className="p-3 border-b border-ink-100 dark:border-ink-800">
         {projectName && (
-          <span className="inline-block px-2 py-0.5 text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-md mb-2">
+          <span className="inline-block px-2 py-0.5 text-[11px] font-semibold bg-ink-100 dark:bg-ink-800 text-ink-500 dark:text-ink-400 rounded-md mb-2">
             {projectName}
           </span>
         )}
@@ -416,7 +416,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
           <div className="flex gap-2 items-center">
             <input type="number" required min="0" max={Math.max(0, 100 - totalPercentage)} step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="%" className={fieldClass + ' w-24 text-center shrink-0'} />
             <select value={newPhaseId} onChange={e => setNewPhaseId(e.target.value)} className={fieldClass + ' flex-1'}>
-              <option value="">(No Phase)</option>
+              <option value="">(No phase)</option>
               {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <PrimaryButton type="submit"><Plus size={15} /> Add</PrimaryButton>
@@ -425,16 +425,16 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
       </div>
 
       <CardBody className="overflow-y-auto relative">
-        <div className="flex justify-between items-center px-4 py-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Allocated</span>
-          <span className={`text-sm font-bold ${totalPercentage === 100 ? 'text-emerald-600' : totalPercentage > 100 ? 'text-rose-600' : 'text-orange-500'}`}>
+        <div className="flex justify-between items-center px-4 py-2 border-b border-ink-100 dark:border-ink-800 bg-ink-50/50 dark:bg-ink-900/40">
+          <span className="text-xs font-medium text-ink-500">Total allocated</span>
+          <span className={`text-sm font-bold ${totalPercentage === 100 ? 'text-positive-600' : totalPercentage > 100 ? 'text-negative-600' : 'text-warning-500'}`}>
             {totalPercentage.toFixed(2)}%
           </span>
         </div>
 
         {payments.length === 0 ? (
-          <div className="text-center text-slate-400 dark:text-slate-600 py-8 flex flex-col items-center gap-2">
-            <FileSpreadsheet size={36} className="text-slate-200 dark:text-slate-700" />
+          <div className="text-center text-ink-500 dark:text-ink-600 py-8 flex flex-col items-center gap-2">
+            <FileSpreadsheet size={36} className="text-ink-200 dark:text-ink-700" />
             <p className="text-sm">No payments scheduled.</p>
           </div>
         ) : (
@@ -443,18 +443,18 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
 
             if (editingId === payment.id) {
               return (
-                <div key={payment.id} className="p-3 border-b border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
+                <div key={payment.id} className="p-3 border-b border-accent-200 dark:border-accent-900 bg-accent-50/50 dark:bg-accent-900/10">
                   <form onSubmit={handleEditSave} className="flex-1 flex flex-col gap-2">
                     <input type="text" autoFocus required value={editName} onChange={e => setEditName(e.target.value)} className={fieldClass + ' w-full'} />
                     <div className="flex gap-2 items-center justify-between">
                       <input type="number" required min="0" max={Math.max(0, 100 - (totalPercentage - payment.percentage))} step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className={fieldClass + ' w-24 text-center shrink-0'} />
                       <select value={editPhaseId} onChange={e => setEditPhaseId(e.target.value)} className={fieldClass + ' flex-1'}>
-                        <option value="">(No Phase)</option>
+                        <option value="">(No phase)</option>
                         {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                       <div className="flex gap-1 shrink-0">
                         <IconButton type="button" onClick={() => setEditingId(null)}><X size={14} /></IconButton>
-                        <IconButton type="submit" className="text-emerald-600 dark:text-emerald-400"><Check size={14} /></IconButton>
+                        <IconButton type="submit" className="text-positive-600 dark:text-positive-400"><Check size={14} /></IconButton>
                       </div>
                     </div>
                   </form>
@@ -468,17 +468,17 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
               <Row key={payment.id}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-400 w-5 shrink-0">{index + 1}.</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm truncate">{payment.name}</span>
+                    <span className="text-xs font-bold text-ink-500 w-5 shrink-0">{index + 1}.</span>
+                    <span className="font-semibold text-ink-800 dark:text-ink-200 text-sm truncate">{payment.name}</span>
                   </div>
                   <div className="ml-7 flex items-center gap-2 mt-0.5">
                     {linkedPhase && (
-                      <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                      <span className="text-xs font-medium text-accent-600 dark:text-accent-400">
                         {linkedPhase.name}
                       </span>
                     )}
                     {amount !== null && (
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                      <span className="text-[11px] text-ink-500 dark:text-ink-400">
                         ≈ {formatCurrency ? formatCurrency(amount) : amount.toFixed(2)}
                       </span>
                     )}

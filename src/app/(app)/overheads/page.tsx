@@ -14,6 +14,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, L
 import { SecondaryButton, PrimaryButton } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
+import { tc, CHART_COLORS } from '@/lib/theme';
 const DEFAULT_CATEGORIES: OverheadCategory[] = [
   { id: 'cat-1', name: 'Consultants & Corp', items: [
     { id: 'item-1-1', name: 'Ada', yearlyCost: 0, isActive: true },
@@ -53,7 +54,7 @@ const DEFAULT_CATEGORIES: OverheadCategory[] = [
   ]}
 ];
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+const COLORS = CHART_COLORS;
 
 export default function OverheadsPage() {
   const { user, dbUser, loading: authLoading } = useAuth();
@@ -378,12 +379,12 @@ export default function OverheadsPage() {
   if (loading) return <div className="p-8 text-white">Loading...</div>;
 
   return (
-    <div className="flex flex-col h-full w-full p-8 text-slate-900 dark:text-white">
+    <div className="flex flex-col h-full w-full p-8 text-ink-900 dark:text-ink-50">
       <div className="max-w-7xl mx-auto w-full flex flex-col h-full min-h-0">
         <div className="flex items-center justify-between mb-6 shrink-0">
           <div>
-            <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 tracking-tight">Overheads Calculator</h1>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">Set target income and overhead costs to derive team hourly rates.</p>
+            <h1 className="text-[22px] font-bold text-ink-900 dark:text-ink-50 tracking-tight">Overheads calculator</h1>
+            <p className="text-[13px] text-ink-500 dark:text-ink-400 mt-0.5">Set target income and overhead costs to derive team hourly rates.</p>
           </div>
           <div className="flex items-center gap-2">
             <SecondaryButton onClick={() => fileInputRef.current?.click()}>
@@ -395,12 +396,12 @@ export default function OverheadsPage() {
               <Download size={14} />
               Export
             </SecondaryButton>
-            <PrimaryButton onClick={handleSyncToTeam} disabled={syncing} className="bg-emerald-600 hover:bg-emerald-700">
+            <PrimaryButton onClick={handleSyncToTeam} disabled={syncing} className="bg-positive-600 hover:bg-positive-700">
               <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
               {syncing ? 'Syncing...' : 'Sync to Team'}
             </PrimaryButton>
 
-            {saving && <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5"><RefreshCw size={12} className="animate-spin" /> Saving...</span>}
+            {saving && <span className="text-xs font-semibold text-ink-500 flex items-center gap-1.5"><RefreshCw size={12} className="animate-spin" /> Saving...</span>}
           </div>
         </div>
 
@@ -409,10 +410,10 @@ export default function OverheadsPage() {
           <div className="lg:col-span-1 h-full overflow-y-auto pr-2 pb-8 custom-scrollbar">
             <div className="space-y-4 lg:mt-[52px]">
             <Card className="p-4">
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Global Metrics</h3>
+              <h3 className="text-xs font-medium text-ink-500 mb-4">Global metrics</h3>
               <div className="space-y-3 mb-6">
-                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase">Target Income</label>
+                <div className="flex justify-between items-center bg-ink-50 dark:bg-ink-950 px-3 py-2 rounded-lg border border-ink-100 dark:border-ink-800">
+                  <label className="text-xs font-medium text-ink-500">Target income</label>
                   <input 
                     type="text" 
                     value={yearlyIncomeTarget ? yearlyIncomeTarget.toLocaleString() : ''}
@@ -423,8 +424,8 @@ export default function OverheadsPage() {
                     className="w-24 bg-transparent text-right outline-none font-bold text-sm"
                   />
                 </div>
-                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase">Work Hrs/Yr</label>
+                <div className="flex justify-between items-center bg-ink-50 dark:bg-ink-950 px-3 py-2 rounded-lg border border-ink-100 dark:border-ink-800">
+                  <label className="text-xs font-medium text-ink-500">Work hrs/yr</label>
                   <input 
                     type="text" 
                     value={workingHoursPerYear ? workingHoursPerYear.toLocaleString() : ''}
@@ -437,38 +438,38 @@ export default function OverheadsPage() {
                 </div>
               </div>
 
-              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Summary</h3>
+              <h3 className="text-xs font-medium text-ink-500 mb-4">Summary</h3>
               
               <div className="grid grid-cols-2 gap-4 mb-2">
                 <div>
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total/Yr</div>
-                  <div className="text-xl font-bold text-rose-500">${computedStats.totalOverheadsYearly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                  <div className="text-xs font-medium text-ink-500 mb-1">Total/yr</div>
+                  <div className="text-xl font-bold text-negative-500">${computedStats.totalOverheadsYearly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Monthly Burn</div>
+                  <div className="text-xs font-medium text-ink-500 mb-1">Monthly burn</div>
                   <div className="text-xl font-bold">${(computedStats.totalOverheadsYearly / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Multiplier</div>
-                  <div className="text-xl font-bold text-blue-500">{computedStats.multiplier.toFixed(2)}x</div>
+                  <div className="text-xs font-medium text-ink-500 mb-1">Multiplier</div>
+                  <div className="text-xl font-bold text-accent-500">{computedStats.multiplier.toFixed(2)}x</div>
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">% of Income</div>
+                  <div className="text-xs font-medium text-ink-500 mb-1">% of income</div>
                   <div className="text-xl font-bold">{(computedStats.overheadPercentVsIncome * 100).toFixed(1)}%</div>
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Core Staff</div>
+                  <div className="text-xs font-medium text-ink-500 mb-1">Core staff</div>
                   <div className="text-xl font-bold">{computedStats.coreTeamCount}</div>
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mthly / Staff</div>
-                  <div className="text-xl font-bold text-emerald-500">${computedStats.monthlyOverheadPerPerson.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                  <div className="text-xs font-medium text-ink-500 mb-1">Mthly / staff</div>
+                  <div className="text-xl font-bold text-positive-500">${computedStats.monthlyOverheadPerPerson.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                 </div>
               </div>
             </Card>
 
             <Card className="p-4">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Breakdown</h3>
+              <h3 className="text-sm font-semibold text-ink-500 mb-4">Breakdown</h3>
               <div className="h-32 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -487,7 +488,7 @@ export default function OverheadsPage() {
                     </Pie>
                     <RechartsTooltip 
                       formatter={(value: any) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                      contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '8px', color: '#fff' }}
+                      contentStyle={{ backgroundColor: tc('ink', 900), border: 'none', borderRadius: '8px', color: tc('ink', 50) }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -497,7 +498,7 @@ export default function OverheadsPage() {
                   <div key={d.name} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-slate-600 dark:text-slate-400 truncate max-w-[100px]">{d.name}</span>
+                      <span className="text-ink-600 dark:text-ink-400 truncate max-w-[100px]">{d.name}</span>
                     </div>
                     <span className="font-bold">${d.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                   </div>
@@ -512,10 +513,10 @@ export default function OverheadsPage() {
           </div>
           <div className="lg:col-span-3 flex flex-col h-full min-h-0">
             <div className="flex justify-between items-center bg-transparent shrink-0 mb-6">
-              <h2 className="text-xl font-bold">Expense Categories</h2>
+              <h2 className="text-xl font-bold">Expense categories</h2>
               <div className="flex items-center gap-2">
-                <SecondaryButton onClick={handleExpandAll}>Expand All</SecondaryButton>
-                <SecondaryButton onClick={handleCollapseAll}>Collapse All</SecondaryButton>
+                <SecondaryButton onClick={handleExpandAll}>Expand all</SecondaryButton>
+                <SecondaryButton onClick={handleCollapseAll}>Collapse all</SecondaryButton>
               </div>
             </div>
             
@@ -524,13 +525,13 @@ export default function OverheadsPage() {
             <Card>
               <button 
                 onClick={() => setIsNonBillableCollapsed(!isNonBillableCollapsed)}
-                className={`w-full p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left ${!isNonBillableCollapsed ? 'border-b border-slate-100 dark:border-slate-800' : ''}`}
+                className={`w-full p-4 flex justify-between items-center hover:bg-ink-50 dark:hover:bg-ink-800/50 transition-colors text-left ${!isNonBillableCollapsed ? 'border-b border-ink-100 dark:border-ink-800' : ''}`}
               >
                 <div className="flex items-center gap-2">
-                  {isNonBillableCollapsed ? <ChevronRight size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
-                  <h2 className="font-bold text-base">1. Non-Billable Time (Salaries)</h2>
+                  {isNonBillableCollapsed ? <ChevronRight size={18} className="text-ink-500" /> : <ChevronDown size={18} className="text-ink-500" />}
+                  <h2 className="font-bold text-base">1. Non-billable time (salaries)</h2>
                 </div>
-                <div className="text-sm font-bold text-slate-500">
+                <div className="text-sm font-bold text-ink-500">
                   ${computedStats.nonBillableSalaries.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               </button>
@@ -539,12 +540,12 @@ export default function OverheadsPage() {
                 <div className="p-0">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-500 uppercase">
-                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">Team Member</th>
-                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">Yearly Salary</th>
-                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">Task Description</th>
-                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">% Non-Billable</th>
-                        <th className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-right">Burden ($/yr)</th>
+                      <tr className="bg-ink-50 dark:bg-ink-950 text-xs font-medium text-ink-500">
+                        <th className="px-4 py-2 border-b border-ink-100 dark:border-ink-800">Team member</th>
+                        <th className="px-4 py-2 border-b border-ink-100 dark:border-ink-800">Yearly salary</th>
+                        <th className="px-4 py-2 border-b border-ink-100 dark:border-ink-800">Task description</th>
+                        <th className="px-4 py-2 border-b border-ink-100 dark:border-ink-800">% Non-billable</th>
+                        <th className="px-4 py-2 border-b border-ink-100 dark:border-ink-800 text-right">Burden ($/yr)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -570,8 +571,8 @@ export default function OverheadsPage() {
                         }
                         return (
                           <React.Fragment key={categoryId}>
-                            <tr className="bg-slate-100/50 dark:bg-slate-800/50">
-                              <td colSpan={5} className="px-4 py-1.5 font-bold text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <tr className="bg-ink-100/50 dark:bg-ink-800/50">
+                              <td colSpan={5} className="px-4 py-1.5 font-medium text-xs text-ink-500 dark:text-ink-400">
                                 {categoryName}
                               </td>
                             </tr>
@@ -580,16 +581,16 @@ export default function OverheadsPage() {
                               const pct = m.nonBillablePercentage || 0;
                               const burden = yearly * (pct / 100);
                               return (
-                                <tr key={m.id} className="border-b border-slate-50 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/20">
+                                <tr key={m.id} className="border-b border-ink-50 dark:border-ink-800/50 last:border-0 hover:bg-ink-50 dark:hover:bg-ink-800/20">
                                   <td className="px-4 py-2 text-sm font-medium pl-8">{m.name}</td>
-                                  <td className="px-4 py-2 text-sm text-slate-500">${yearly.toLocaleString()}</td>
+                                  <td className="px-4 py-2 text-sm text-ink-500">${yearly.toLocaleString()}</td>
                                   <td className="px-4 py-2 text-sm">
                                     <input 
                                       type="text"
                                       value={m.nonBillableDescription || ''}
                                       onChange={e => handleMemberChange(m.id!, m.nonBillablePercentage || 0, e.target.value)}
                                       placeholder="e.g. Admin, BD..."
-                                      className="w-full bg-transparent border-b border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-blue-500 px-1 py-1 text-sm outline-none transition-colors"
+                                      className="w-full bg-transparent border-b border-transparent hover:border-ink-200 dark:hover:border-ink-700 focus:border-accent-500 px-1 py-1 text-sm outline-none transition-colors"
                                     />
                                   </td>
                                   <td className="px-4 py-2 text-sm">
@@ -599,12 +600,12 @@ export default function OverheadsPage() {
                                         min="0" max="100" 
                                         value={pct}
                                         onChange={e => handleMemberChange(m.id!, Number(e.target.value), m.nonBillableDescription)}
-                                        className="w-16 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-blue-500 px-2 py-1 text-sm rounded outline-none"
+                                        className="w-16 bg-white dark:bg-ink-950 border border-ink-200 dark:border-ink-700 focus:border-accent-500 px-2 py-1 text-sm rounded outline-none"
                                       />
-                                      <span className="text-sm font-bold text-slate-500">%</span>
+                                      <span className="text-sm font-bold text-ink-500">%</span>
                                     </div>
                                   </td>
-                                  <td className="px-4 py-2 text-sm text-right font-bold text-rose-500/80">${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                  <td className="px-4 py-2 text-sm text-right font-bold text-negative-500/80">${burden.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                                 </tr>
                               );
                             })}
@@ -627,13 +628,13 @@ export default function OverheadsPage() {
                   <Card key={cat.id}>
                     <button 
                       onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat.id]: !isCollapsed }))}
-                      className="w-full p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors text-left"
+                      className="w-full p-4 border-b border-ink-100 dark:border-ink-800 flex justify-between items-center bg-ink-50 dark:bg-ink-950 hover:bg-ink-100 dark:hover:bg-ink-800/50 transition-colors text-left"
                     >
                       <div className="flex items-center gap-2">
-                        {isCollapsed ? <ChevronRight size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+                        {isCollapsed ? <ChevronRight size={18} className="text-ink-500" /> : <ChevronDown size={18} className="text-ink-500" />}
                         <h2 className="font-bold text-base">{catIdx + 2}. {cat.name}</h2>
                       </div>
-                      <div className="text-sm font-bold text-slate-500">
+                      <div className="text-sm font-bold text-ink-500">
                         ${catTotal.toLocaleString()}
                       </div>
                     </button>
@@ -641,15 +642,15 @@ export default function OverheadsPage() {
                     {!isCollapsed && (
                       <div className="p-4 flex-1">
                         {cat.items.length === 0 ? (
-                          <div className="text-sm text-slate-400 italic mb-4">No items yet.</div>
+                          <div className="text-sm text-ink-500 italic mb-4">No items yet.</div>
                         ) : (
                           <div className="space-y-3 mb-4">
                             
-                          <div className="flex items-center gap-3 px-1 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          <div className="flex items-center gap-3 px-1 mb-2 text-xs font-medium text-ink-500">
                             <div className="w-3"></div>
                             <div className="flex-1 min-w-0 pl-1">Expense</div>
                             <div className="w-20 text-right">Monthly</div>
-                            <div className="w-24 text-right pr-6">Yearly Total</div>
+                            <div className="w-24 text-right pr-6">Yearly total</div>
                           </div>
                           {cat.items.map(item => (
 
@@ -658,36 +659,36 @@ export default function OverheadsPage() {
                                   type="checkbox" 
                                   checked={item.isActive}
                                   onChange={e => updateItem(cat.id, item.id, { isActive: e.target.checked })}
-                                  className="rounded border-slate-300"
+                                  className="rounded border-ink-300"
                                 />
                                 <input 
                                   type="text"
                                   value={item.name}
                                   onChange={e => updateItem(cat.id, item.id, { name: e.target.value })}
                                   placeholder="Expense name"
-                                  className="flex-1 min-w-0 bg-transparent border-b border-slate-200 dark:border-slate-700 focus:border-blue-500 px-1 py-1 text-sm outline-none"
+                                  className="flex-1 min-w-0 bg-transparent border-b border-ink-200 dark:border-ink-700 focus:border-accent-500 px-1 py-1 text-sm outline-none"
                                 />
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <span className="text-slate-400 text-sm">$</span>
+                                  <span className="text-ink-500 text-sm">$</span>
                                   <input 
                                     type="number"
                                     value={Math.round((item.yearlyCost || 0) / 12) || ''}
                                     onChange={e => updateItem(cat.id, item.id, { yearlyCost: Number(e.target.value) * 12 })}
-                                    className="w-16 bg-transparent border-b border-slate-200 dark:border-slate-700 focus:border-blue-500 px-1 py-1 text-sm outline-none text-right"
+                                    className="w-16 bg-transparent border-b border-ink-200 dark:border-ink-700 focus:border-accent-500 px-1 py-1 text-sm outline-none text-right"
                                     placeholder="0"
                                   />
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <span className="text-slate-400 text-sm">$</span>
+                                  <span className="text-ink-500 text-sm">$</span>
                                   <input 
                                     type="number"
                                     value={item.yearlyCost || ''}
                                     onChange={e => updateItem(cat.id, item.id, { yearlyCost: Number(e.target.value) })}
-                                    className="w-20 bg-transparent border-b border-slate-200 dark:border-slate-700 focus:border-blue-500 px-1 py-1 text-sm font-bold outline-none text-right text-slate-700 dark:text-slate-200"
+                                    className="w-20 bg-transparent border-b border-ink-200 dark:border-ink-700 focus:border-accent-500 px-1 py-1 text-sm font-bold outline-none text-right text-ink-700 dark:text-ink-200"
                                     placeholder="0"
                                   />
                                 </div>
-                                <button onClick={() => removeItem(cat.id, item.id)} className="text-slate-400 hover:text-red-500 shrink-0 ml-2">
+                                <button onClick={() => removeItem(cat.id, item.id)} className="text-ink-500 hover:text-negative-500 shrink-0 ml-2">
                                   <Trash2 size={14} />
                                 </button>
                               </div>
@@ -697,7 +698,7 @@ export default function OverheadsPage() {
                         
                         <button 
                           onClick={() => addCategoryItem(cat.id)}
-                          className="flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700"
+                          className="flex items-center gap-1 text-sm font-bold text-accent-600 hover:text-accent-700"
                         >
                           <Plus size={14} /> Add Item
                         </button>

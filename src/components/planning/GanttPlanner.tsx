@@ -256,7 +256,7 @@ export function GanttPlanner() {
     setIsSyncing(false);
   };
 
-  if (loading) return <div className="p-8 text-slate-500">Loading planner...</div>;
+  if (loading) return <div className="p-8 text-ink-500">Loading planner...</div>;
 
   if (dbCompany?.tier !== 'pro' && dbCompany?.subscriptionStatus !== 'lifetime') {
     return <ProUpgradePrompt 
@@ -269,16 +269,16 @@ export function GanttPlanner() {
     
   return (
       <div className="flex h-full gap-6 mx-auto w-full p-8 items-center justify-center" style={{ maxWidth: '1600px' }}>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center max-w-2xl shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-500/10 to-transparent"></div>
-          <div className="h-20 w-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600 dark:text-blue-400">
+        <div className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-3xl p-12 text-center max-w-2xl shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-accent-500/10 to-transparent"></div>
+          <div className="h-20 w-20 bg-accent-100 dark:bg-accent-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-accent-600 dark:text-accent-400">
             <CalendarDays size={40} />
           </div>
-          <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 mb-4 tracking-tight">Project Planning <span className="text-blue-600 dark:text-blue-400">Pro</span></h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
+          <h2 className="text-3xl font-black text-ink-800 dark:text-ink-100 mb-4 tracking-tight">Project planning <span className="text-accent-600 dark:text-accent-400">Pro</span></h2>
+          <p className="text-lg text-ink-600 dark:text-ink-400 mb-8 leading-relaxed">
             Turn your fee proposals into actionable timelines. Assign tasks, drag-and-drop schedules, and ensure your team stays within the budgeted hours.
           </p>
-          <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-blue-500/30 transition-all flex items-center gap-2 mx-auto">
+          <button className="bg-gradient-to-r from-accent-600 to-accent-600 hover:from-accent-700 hover:to-accent-700 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-accent-500/30 transition-all flex items-center gap-2 mx-auto">
             <Lock size={18} />
             Upgrade to Pro
           </button>
@@ -290,16 +290,16 @@ export function GanttPlanner() {
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       {/* Top Project Selector Bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between z-30 shrink-0 shadow-sm transition-colors duration-300">
+      <div className="bg-white dark:bg-ink-900 border-b border-ink-200 dark:border-ink-800 px-6 py-3 flex items-center justify-between z-30 shrink-0 shadow-sm transition-colors duration-300">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold">
-            <CalendarDays size={18} className="text-blue-600 dark:text-blue-400" />
-            <span className="text-sm uppercase tracking-wider">Project Planning</span>
+          <div className="flex items-center gap-2 text-ink-700 dark:text-ink-300 font-bold">
+            <CalendarDays size={18} className="text-accent-600 dark:text-accent-400" />
+            <span className="text-sm">Project planning</span>
           </div>
 
           <div className="w-[300px] flex items-center">
             <select
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors cursor-pointer"
+              className="w-full bg-ink-50 dark:bg-ink-800 border border-ink-200 dark:border-ink-700 text-ink-800 dark:text-ink-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-accent-500/20 outline-none transition-colors cursor-pointer"
               value={activeProjectId || ''}
               onChange={(e) => {
                 const newId = e.target.value;
@@ -320,7 +320,7 @@ export function GanttPlanner() {
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(p => (
                   <option key={p.id} value={p.id}>
-                    {p.name} {p.status === 'Lost' ? ' (Lost/Archived)' : ''}
+                    {p.name} {p.status === 'Lost' ? ' (Lost/archived)' : ''}
                   </option>
                 ))}
             </select>
@@ -329,28 +329,28 @@ export function GanttPlanner() {
           <button 
             type="button"
             onClick={() => setShowLost(!showLost)} 
-            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="text-xs text-ink-500 hover:text-ink-600 dark:hover:text-ink-300 flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
           >
             {showLost ? <EyeOff size={14} /> : <Eye size={14} />}
-            <span>{showLost ? 'Hide Lost/Archived' : 'Show Lost/Archived'}</span>
+            <span>{showLost ? 'Hide Lost/archived' : 'Show Lost/archived'}</span>
           </button>
         </div>
 
         {activeProjectId && (
           <button
             onClick={() => router.push(`/dashboard?project=${activeProjectId}`)}
-            className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-lg flex items-center gap-1.5 transition-colors"
+            className="text-xs font-semibold text-ink-600 dark:text-ink-300 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-ink-100 dark:hover:bg-ink-800 p-2 rounded-lg flex items-center gap-1.5 transition-colors"
             title="Open Fee Proposal"
           >
             <Calculator size={15} />
-            <span className="hidden sm:inline">Fee Proposal</span>
+            <span className="hidden sm:inline">Fee proposal</span>
           </button>
         )}
       </div>
 
       {/* Grid Canvas Area */}
-      <div className="flex-1 overflow-hidden p-6 bg-slate-50 dark:bg-slate-950 flex flex-col">
-        <div className="flex-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden transition-colors">
+      <div className="flex-1 overflow-hidden p-6 bg-ink-50 dark:bg-ink-950 flex flex-col">
+        <div className="flex-1 bg-white dark:bg-ink-950 rounded-2xl border border-ink-200 dark:border-ink-800 shadow-sm flex flex-col overflow-hidden transition-colors">
           {activeProjectId ? (
             <div className="flex flex-col h-full overflow-hidden">
               {/* Summary Header */}
@@ -371,23 +371,23 @@ export function GanttPlanner() {
                  const isOverBudget = diff < 0;
 
                  return (
-                   <div className="flex items-start md:items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0 gap-6 flex-wrap md:flex-nowrap">
+                   <div className="flex items-start md:items-center justify-between p-6 border-b border-ink-200 dark:border-ink-800 bg-ink-50/50 dark:bg-ink-900/50 shrink-0 gap-6 flex-wrap md:flex-nowrap">
                      <div className="min-w-[200px] flex-1">
-                       <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 line-clamp-2">{project.name}</h2>
-                       <p className="text-sm text-slate-500 mt-1">Resource & Task Planning</p>
+                       <h2 className="text-xl font-bold text-ink-800 dark:text-ink-100 line-clamp-2">{project.name}</h2>
+                       <p className="text-sm text-ink-500 mt-1">Resource & task planning</p>
                      </div>
                      <div className="flex items-center gap-6">
                        
-                       <div className="flex flex-row items-center gap-3 border-r border-slate-200 dark:border-slate-700 pr-6 mr-2">
+                       <div className="flex flex-row items-center gap-3 border-r border-ink-200 dark:border-ink-700 pr-6 mr-2">
                           <button 
                              onClick={handleSyncBudget}
                              disabled={isSyncing}
-                             className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-white hover:bg-emerald-600 transition-colors bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-md border border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap"
+                             className="flex items-center gap-2 text-xs font-semibold text-positive-600 dark:text-positive-400 hover:text-white hover:bg-positive-600 transition-colors bg-positive-50 dark:bg-positive-900/30 px-3 py-1.5 rounded-md border border-positive-200 dark:border-positive-800 shadow-sm whitespace-nowrap"
                              title="Overwrite budget with planner tasks"
                           >
                              <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} /> Update
                           </button>
-                          <button onClick={handleResetToBudget} disabled={isResetting || loading} className="flex items-center gap-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-900/50 bg-rose-50 dark:bg-rose-900/30 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:opacity-50 whitespace-nowrap">
+                          <button onClick={handleResetToBudget} disabled={isResetting || loading} className="flex items-center gap-2 text-xs font-semibold text-negative-600 dark:text-negative-400 hover:text-negative-700 hover:bg-negative-100 dark:hover:bg-negative-900/50 bg-negative-50 dark:bg-negative-900/30 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:opacity-50 whitespace-nowrap">
                             <Undo2 size={16} className={isResetting ? "animate-spin" : ""} /> Reset
                           </button>
                           <button
@@ -395,22 +395,22 @@ export function GanttPlanner() {
                                if (collapsedPhases.size > 0) setCollapsedPhases(new Set());
                                else setCollapsedPhases(new Set(phases.map(p => p.id!)));
                              }}
-                             className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-white dark:bg-slate-900 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm whitespace-nowrap"
+                             className="flex items-center gap-2 text-xs font-semibold text-ink-600 dark:text-ink-300 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-ink-50 dark:hover:bg-ink-800 transition-colors bg-white dark:bg-ink-900 px-3 py-1.5 rounded-md border border-ink-200 dark:border-ink-700 shadow-sm whitespace-nowrap"
                           >
                              {collapsedPhases.size > 0 ? <><ChevronsRight size={16}/> Expand</> : <><ChevronsLeft size={16} /> Collapse</>}
                           </button>
                        </div>
-                       <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Budgeted Cost</span>
-                          <span className="text-lg font-bold text-slate-700 dark:text-slate-300">{formatCurrency(budgetedCost)}</span>
+                       <div className="flex flex-col items-end border-r border-ink-200 dark:border-ink-700 pr-6">
+                          <span className="text-xs font-medium text-ink-500 mb-0.5">Budgeted cost</span>
+                          <span className="text-lg font-bold text-ink-700 dark:text-ink-300">{formatCurrency(budgetedCost)}</span>
                        </div>
-                       <div className="flex flex-col items-end border-r border-slate-200 dark:border-slate-700 pr-6">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Planned Cost</span>
-                          <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(plannedCost)}</span>
+                       <div className="flex flex-col items-end border-r border-ink-200 dark:border-ink-700 pr-6">
+                          <span className="text-xs font-medium text-ink-500 mb-0.5">Planned cost</span>
+                          <span className="text-lg font-bold text-accent-600 dark:text-accent-400">{formatCurrency(plannedCost)}</span>
                        </div>
                        <div className="flex flex-col items-end">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Variance</span>
-                          <span className={`text-lg font-bold ${isOverBudget ? 'text-rose-500' : 'text-emerald-500'}`}>
+                          <span className="text-xs font-medium text-ink-500 mb-0.5">Variance</span>
+                          <span className={`text-lg font-bold ${isOverBudget ? 'text-negative-500' : 'text-positive-500'}`}>
                             {isOverBudget ? '-' : '+'}{formatCurrency(Math.abs(diff))}
                           </span>
                        </div>
@@ -435,8 +435,8 @@ export function GanttPlanner() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 gap-4 transition-colors">
-              <CalendarDays size={48} className="text-slate-200 dark:text-slate-800" />
+            <div className="flex-1 flex flex-col items-center justify-center text-ink-500 dark:text-ink-600 gap-4 transition-colors">
+              <CalendarDays size={48} className="text-ink-200 dark:text-ink-800" />
               <p>Select a project to view the planner.</p>
             </div>
           )}

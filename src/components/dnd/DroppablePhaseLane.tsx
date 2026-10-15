@@ -13,6 +13,7 @@ import { DraggablePhaseAllocationChip, ExtendedAllocation } from './DraggablePha
 import { getAllocationRate } from '@/lib/utils/allocationCost';
 import { DraggablePhaseCostChip } from './DraggablePhaseCostChip';
 
+import { DEFAULT_CATEGORY_HEX, tc } from '@/lib/theme';
 interface DroppablePhaseLaneProps {
   phase: Phase;
   allocations: (Allocation & { member: TeamMember })[];
@@ -104,45 +105,45 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col w-full bg-slate-50/70 dark:bg-slate-900/70 rounded-2xl border-2 border-dashed p-5 transition-all snap-center",
-        isOver ? "border-blue-400 bg-blue-50/70 dark:bg-blue-900/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+        "flex flex-col w-full bg-ink-50/70 dark:bg-ink-900/70 rounded-2xl border-2 border-dashed p-5 transition-all snap-center",
+        isOver ? "border-accent-400 bg-accent-50/70 dark:bg-accent-900/20" : "border-ink-200 dark:border-ink-800 hover:border-ink-300 dark:hover:border-ink-700"
       )}
     >
-      <div className="flex justify-between items-start mb-3 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
+      <div className="flex justify-between items-start mb-3 pb-3 border-b border-ink-200/60 dark:border-ink-800/60">
         <div className="flex-1 pr-4 min-w-0">
-          <h3 className="font-bold text-base leading-tight text-slate-800 dark:text-slate-200 break-words mb-1.5">{phase.name}</h3>
-          <span className="inline-block px-1.5 py-0.5 bg-slate-200/50 dark:bg-slate-700/50 rounded text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          <h3 className="font-bold text-base leading-tight text-ink-800 dark:text-ink-200 break-words mb-1.5">{phase.name}</h3>
+          <span className="inline-block px-1.5 py-0.5 bg-ink-200/50 dark:bg-ink-700/50 rounded text-xs font-medium text-ink-500 dark:text-ink-400">
             {phase.durationWeeks} {phase.durationWeeks === 1 ? 'Week' : 'Weeks'}
           </span>
         </div>
         <div className="text-right shrink-0">
-          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Total Cost</div>
-          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{formatCurrency(totalCost)}</span>
+          <div className="text-xs font-medium text-ink-500 mb-0.5">Total cost</div>
+          <span className="text-sm font-bold text-ink-700 dark:text-ink-300">{formatCurrency(totalCost)}</span>
         </div>
       </div>
       
-      <div className="mb-5 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-        <div className="flex justify-between items-center text-[10px] font-bold px-2 py-1 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-          <span className="text-blue-600 dark:text-blue-400">Team: {formatCurrency(baseCost)}</span>
-          <span className="text-orange-500 dark:text-orange-400">Other: {formatCurrency(addedCost)}</span>
+      <div className="mb-5 bg-white dark:bg-ink-800 p-3 rounded-xl border border-ink-200 dark:border-ink-700">
+        <div className="flex justify-between items-center text-[10px] font-bold px-2 py-1 bg-ink-50 dark:bg-ink-900 border-b border-ink-200 dark:border-ink-700">
+          <span className="text-accent-600 dark:text-accent-400">Team: {formatCurrency(baseCost)}</span>
+          <span className="text-warning-500 dark:text-warning-400">Other: {formatCurrency(addedCost)}</span>
         </div>
-        <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
+        <div className="h-2.5 w-full bg-ink-100 dark:bg-ink-700 rounded-full overflow-hidden flex shadow-inner">
           {categories.map((cat, idx) => {
             if (cat.isFixed) return null;
             const cost = breakdown[cat.id!] || 0;
             if (cost === 0) return null;
             const percent = (cost / totalCost) * 100;
-            const bgColor = cat.color || '#3b82f6';
+            const bgColor = cat.color || DEFAULT_CATEGORY_HEX;
             return <Tooltip key={cat.id} content={`${cat.name}: ${percent.toFixed(1)}%`} className="h-full hover:opacity-90 transition-all" style={{width: `${percent}%`, backgroundColor: bgColor}} children={<></>} />
           })}
           {(breakdown['uncategorized'] || 0) > 0 && (
-            <Tooltip content={`Uncategorized: ${(((breakdown['uncategorized'] || 0) / totalCost) * 100).toFixed(1)}%`} className="h-full bg-slate-400 transition-all hover:opacity-90" style={{width: `${((breakdown['uncategorized'] || 0) / totalCost) * 100}%`}} children={<></>} />
+            <Tooltip content={`Uncategorized: ${(((breakdown['uncategorized'] || 0) / totalCost) * 100).toFixed(1)}%`} className="h-full bg-ink-400 transition-all hover:opacity-90" style={{width: `${((breakdown['uncategorized'] || 0) / totalCost) * 100}%`}} children={<></>} />
           )}
           {otherExpenses > 0 && (
-            <Tooltip content={`Other Expenses: ${((otherExpenses / totalCost) * 100).toFixed(1)}%`} className="h-full transition-all hover:opacity-90" style={{width: `${(otherExpenses / totalCost) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || '#fb923c'}} children={<></>} />
+            <Tooltip content={`Other Expenses: ${((otherExpenses / totalCost) * 100).toFixed(1)}%`} className="h-full transition-all hover:opacity-90" style={{width: `${(otherExpenses / totalCost) * 100}%`, backgroundColor: categories.find(c => c.isFixed)?.color || tc('warning', 400)}} children={<></>} />
           )}
         </div>
-        <div className="flex w-full mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+        <div className="flex w-full mt-1 text-[10px] font-medium text-ink-500 dark:text-ink-400">
           {categories.map((cat, idx) => {
             if (cat.isFixed) return null;
             const cost = breakdown[cat.id!] || 0;
@@ -198,8 +199,8 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
               ))}
               
               {external.length > 0 && (
-                <div className="mt-1 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col gap-3">
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">External Resources</h4>
+                <div className="mt-1 pt-3 border-t border-ink-200/60 dark:border-ink-800/60 flex flex-col gap-3">
+                  <h4 className="text-xs font-medium text-ink-500 pl-1">External resources</h4>
                   {external.map((allocation) => (
                     <DraggablePhaseAllocationChip
                       key={allocation.id}
@@ -218,8 +219,8 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
         })()}
         
         {projectCosts.length > 0 && (
-          <div className="mt-2 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col gap-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Project Costs</h4>
+          <div className="mt-2 pt-3 border-t border-ink-200/60 dark:border-ink-800/60 flex flex-col gap-3">
+            <h4 className="text-xs font-medium text-ink-500 pl-1">Project costs</h4>
             {projectCosts.map((cost) => (
               <DraggablePhaseCostChip
                 key={cost.id}
@@ -235,7 +236,7 @@ export function DroppablePhaseLane({ phase, allocations, projectCosts = [], onUp
         )}
         
         {allocations.length === 0 && projectCosts.length === 0 && (
-          <div className="flex items-center justify-center h-full min-h-[150px] text-slate-400 dark:text-slate-500 text-sm font-medium border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+          <div className="flex items-center justify-center h-full min-h-[150px] text-ink-500 dark:text-ink-400 text-sm font-medium border-2 border-dashed border-ink-200 dark:border-ink-700 rounded-xl bg-ink-50/50 dark:bg-ink-800/30">
             Drop team members or costs here
           </div>
         )}

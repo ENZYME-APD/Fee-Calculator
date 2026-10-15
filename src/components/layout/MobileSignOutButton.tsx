@@ -16,7 +16,7 @@ export function MobileSignOutButton() {
   return (
     <button 
       onClick={handleSignOut}
-      className="mt-6 flex items-center justify-center gap-2 w-full px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+      className="mt-6 flex items-center justify-center gap-2 w-full px-6 py-3 bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 text-ink-700 dark:text-ink-300 font-bold rounded-xl shadow-sm hover:bg-ink-50 dark:hover:bg-ink-700 transition-colors"
     >
       <LogOut size={18} />
       Sign Out & View Website

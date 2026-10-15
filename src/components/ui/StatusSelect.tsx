@@ -30,13 +30,13 @@ export function StatusSelect({
         value={status}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'appearance-none bg-transparent border-none outline-none text-[11px] font-bold uppercase tracking-wider cursor-pointer pr-3.5 -ml-0.5',
+          'appearance-none bg-transparent border-none outline-none text-xs font-medium cursor-pointer pr-3.5 -ml-0.5',
           cfg.text
         )}
       >
         {STATUS_OPTIONS.map((s) => (
-          <option key={s} value={s} className="text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 normal-case font-medium">
-            {s === 'Lost' ? 'Lost/Archived' : s}
+          <option key={s} value={s} className="text-ink-900 dark:text-ink-100 bg-white dark:bg-ink-800 normal-case font-medium">
+            {s === 'Lost' ? 'Lost/archived' : s}
           </option>
         ))}
       </select>

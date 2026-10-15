@@ -74,25 +74,25 @@ export function SecurityTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Lock size={20} className="text-slate-500" />
+        <h2 className="text-xl font-bold text-ink-900 dark:text-ink-50 flex items-center gap-2">
+          <Lock size={20} className="text-ink-500" />
           Security Settings
         </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage your password and security preferences.</p>
+        <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">Manage your password and security preferences.</p>
       </div>
 
-      <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
-        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">Change Password</h3>
+      <div className="bg-ink-50 dark:bg-ink-900/50 rounded-xl border border-ink-200 dark:border-ink-800 p-6">
+        <h3 className="text-lg font-bold text-ink-800 dark:text-ink-200 mb-4">Change password</h3>
         
         {error && (
-          <div className="bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 p-4 rounded-xl text-sm font-medium mb-6 flex items-start gap-2">
+          <div className="bg-negative-50 dark:bg-negative-900/30 border border-negative-200 dark:border-negative-800/50 text-negative-600 dark:text-negative-400 p-4 rounded-xl text-sm font-medium mb-6 flex items-start gap-2">
             <AlertCircle size={16} className="mt-0.5 shrink-0" />
             <p>{error}</p>
           </div>
         )}
         
         {success && (
-          <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 p-4 rounded-xl text-sm font-medium mb-6 flex items-start gap-2">
+          <div className="bg-positive-50 dark:bg-positive-900/30 border border-positive-200 dark:border-positive-800/50 text-positive-600 dark:text-positive-400 p-4 rounded-xl text-sm font-medium mb-6 flex items-start gap-2">
             <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
             <p>{success}</p>
           </div>
@@ -101,12 +101,12 @@ export function SecurityTab() {
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Current Password</label>
+              <label className="block text-sm font-medium text-ink-700 dark:text-ink-300">Current password</label>
               <button 
                 type="button" 
                 onClick={handleResetPassword}
                 disabled={loading}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium disabled:opacity-50"
+                className="text-xs text-accent-600 dark:text-accent-400 hover:underline font-medium disabled:opacity-50"
               >
                 Forgot password?
               </button>
@@ -116,31 +116,31 @@ export function SecurityTab() {
               required 
               value={currentPassword}
               onChange={e => setCurrentPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
+              className="w-full px-4 py-2 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 text-ink-900 dark:text-ink-50 rounded-lg focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 outline-none transition-colors"
               placeholder="••••••••"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">New Password</label>
+            <label className="block text-sm font-medium text-ink-700 dark:text-ink-300 mb-1">New password</label>
             <input 
               type="password" 
               required 
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
+              className="w-full px-4 py-2 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 text-ink-900 dark:text-ink-50 rounded-lg focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 outline-none transition-colors"
               placeholder="••••••••"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirm New Password</label>
+            <label className="block text-sm font-medium text-ink-700 dark:text-ink-300 mb-1">Confirm new password</label>
             <input 
               type="password" 
               required 
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors"
+              className="w-full px-4 py-2 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-950 text-ink-900 dark:text-ink-50 rounded-lg focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 outline-none transition-colors"
               placeholder="••••••••"
             />
           </div>
@@ -149,7 +149,7 @@ export function SecurityTab() {
             <button 
               type="submit" 
               disabled={loading}
-              className="px-6 py-2.5 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 bg-ink-900 dark:bg-accent-600 hover:bg-ink-800 dark:hover:bg-accent-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
             >
               {loading ? 'Updating...' : 'Update Password'}
             </button>

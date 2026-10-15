@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Folder, CircleDollarSign, TrendingUp, Users, PieChart as PieChartIcon, List } from 'lucide-react';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
 
+import { tc, tca, CHART_COLORS } from '@/lib/theme';
 export function OverviewDashboard() {
   const { dbUser } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -63,21 +64,21 @@ export function OverviewDashboard() {
   const CustomTooltip = ({ active, payload, label, formatter }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-700/50 dark:border-slate-800/50 p-3 rounded-xl shadow-xl min-w-[140px]">
-          {label && <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">{label}</p>}
+        <div className="bg-ink-900/95 dark:bg-ink-950/95 backdrop-blur-md border border-ink-700/50 dark:border-ink-800/50 p-3 rounded-xl shadow-xl min-w-[140px]">
+          {label && <p className="text-ink-500 text-xs font-medium mb-2">{label}</p>}
           <div className="flex flex-col gap-1.5">
             {payload.map((entry: any, index: number) => (
               <div key={`item-${index}`} className="flex items-center gap-2 text-xs">
                 <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                <span className="text-slate-300 font-medium truncate max-w-[150px]">{entry.name}:</span>
+                <span className="text-ink-300 font-medium truncate max-w-[150px]">{entry.name}:</span>
                 <span className="text-white font-bold ml-auto pl-2">
                   {formatter ? formatter(entry.value, entry.name) : entry.value}
                 </span>
               </div>
             ))}
             {payload.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-slate-700/50 flex justify-between items-center text-xs">
-                <span className="text-slate-400 font-bold uppercase">Total:</span>
+              <div className="mt-2 pt-2 border-t border-ink-700/50 flex justify-between items-center text-xs">
+                <span className="text-ink-500 font-semibold">Total:</span>
                 <span className="text-white font-bold">
                   {formatter ? formatter(payload.reduce((sum: number, p: any) => sum + p.value, 0)) : payload.reduce((sum: number, p: any) => sum + p.value, 0)}
                 </span>
@@ -99,11 +100,11 @@ export function OverviewDashboard() {
     return (
       <g transform={`translate(${x},${y})`}>
         {data.showMonth && (
-          <text x={0} y={0} dy={12} textAnchor="middle" fill="#94a3b8" fontSize={11} fontWeight="bold">
+          <text x={0} y={0} dy={12} textAnchor="middle" fill={tc('ink', 400)} fontSize={11} fontWeight="bold">
             {data.monthYearStr}
           </text>
         )}
-        <text x={0} y={0} dy={26} textAnchor="middle" fill="#64748b" fontSize={10}>
+        <text x={0} y={0} dy={26} textAnchor="middle" fill={tc('ink', 500)} fontSize={10}>
           {data.weekStr}
         </text>
       </g>
@@ -114,15 +115,15 @@ export function OverviewDashboard() {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md border border-slate-700/50 dark:border-slate-800/50 p-3 rounded-xl shadow-xl min-w-[140px]">
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">{data.name}</p>
+        <div className="bg-ink-900/95 dark:bg-ink-950/95 backdrop-blur-md border border-ink-700/50 dark:border-ink-800/50 p-3 rounded-xl shadow-xl min-w-[140px]">
+          <p className="text-ink-500 text-xs font-medium mb-2">{data.name}</p>
           <div className="flex flex-col gap-1.5 text-xs">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-300 font-medium">Total Fee:</span>
+              <span className="text-ink-300 font-medium">Total fee:</span>
               <span className="text-white font-bold">{formatCurrency(data.totalFee)}</span>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-300 font-medium">Margin:</span>
+              <span className="text-ink-300 font-medium">Margin:</span>
               <span className="text-white font-bold">{data.margin.toFixed(1)}%</span>
             </div>
           </div>
@@ -203,7 +204,7 @@ export function OverviewDashboard() {
     setScatterData(projectStats.filter(p => p.totalFee > 0));
 
     // Calculate Timeline
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#14b8a6', '#f43f5e'];
+    const colors = CHART_COLORS;
     const pColors: Record<string, string> = {};
     const pNames: string[] = [];
     
@@ -413,7 +414,7 @@ export function OverviewDashboard() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600"></div>
       </div>
     );
   }
@@ -432,74 +433,74 @@ export function OverviewDashboard() {
     return acc;
   }, {})).map(([_, data]: any) => data).sort((a: any, b: any) => b.totalGenerated - a.totalGenerated);
 
-  const DONUT_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#f43f5e', '#06b6d4'];
+  const DONUT_COLORS = CHART_COLORS;
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full h-full overflow-y-auto">
       <div className="mb-8">
-        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 mb-1 tracking-tight">Overview Dashboard</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="text-[22px] font-bold text-ink-900 dark:text-ink-50 mb-1 tracking-tight">Overview dashboard</h1>
+        <p className="text-sm text-ink-500 dark:text-ink-400">
           Showing data for <strong>Proposed</strong> and <strong>Active</strong> projects only. You can change a project's status in the Projects tab.
         </p>
       </div>
       
       {/* Top KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-          <div className="p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl">
+        <div className="bg-white dark:bg-ink-900 rounded-2xl p-6 border border-ink-200 dark:border-ink-800 flex items-center gap-4">
+          <div className="p-4 bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400 rounded-2xl">
             <Folder size={24} />
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Pipeline (Draft/Proposed)</p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">{formatCurrency(kpis.pipelineValue)}</p>
+            <p className="text-sm font-bold text-ink-500 dark:text-ink-400">Pipeline (draft/proposed)</p>
+            <p className="text-2xl font-black text-ink-900 dark:text-ink-50">{formatCurrency(kpis.pipelineValue)}</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-          <div className="p-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+        <div className="bg-white dark:bg-ink-900 rounded-2xl p-6 border border-ink-200 dark:border-ink-800 flex items-center gap-4">
+          <div className="p-4 bg-positive-100 dark:bg-positive-900/30 text-positive-600 dark:text-positive-400 rounded-2xl">
             <CircleDollarSign size={24} />
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Active Value</p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">{formatCurrency(kpis.activeValue)}</p>
+            <p className="text-sm font-bold text-ink-500 dark:text-ink-400">Active value</p>
+            <p className="text-2xl font-black text-ink-900 dark:text-ink-50">{formatCurrency(kpis.activeValue)}</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-          <div className="p-4 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl">
+        <div className="bg-white dark:bg-ink-900 rounded-2xl p-6 border border-ink-200 dark:border-ink-800 flex items-center gap-4">
+          <div className="p-4 bg-info-100 dark:bg-info-900/30 text-info-600 dark:text-info-400 rounded-2xl">
             <TrendingUp size={24} />
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Avg. Margin</p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">{kpis.avgMargin.toFixed(1)}%</p>
+            <p className="text-sm font-bold text-ink-500 dark:text-ink-400">Avg. margin</p>
+            <p className="text-2xl font-black text-ink-900 dark:text-ink-50">{kpis.avgMargin.toFixed(1)}%</p>
           </div>
         </div>
       </div>
       
       {/* Global Date Filters */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 bg-white dark:bg-ink-900 rounded-2xl p-4 border border-ink-200 dark:border-ink-800">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Timeline Range:</span>
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg ml-2">
+          <span className="text-sm font-bold text-ink-500 dark:text-ink-400">Timeline range:</span>
+          <div className="flex items-center bg-ink-100 dark:bg-ink-800 p-1 rounded-lg ml-2">
             <button
               onClick={() => setRange(1)}
-              className="px-3 py-1.5 text-xs font-bold rounded-md transition-all text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-700 shadow-sm"
+              className="px-3 py-1.5 text-xs font-bold rounded-md transition-all text-ink-600 hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-200 hover:bg-white dark:hover:bg-ink-700 shadow-sm"
             >
               1 Month
             </button>
             <button
               onClick={() => setRange(3)}
-              className="px-3 py-1.5 text-xs font-bold rounded-md transition-all text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-700 shadow-sm"
+              className="px-3 py-1.5 text-xs font-bold rounded-md transition-all text-ink-600 hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-200 hover:bg-white dark:hover:bg-ink-700 shadow-sm"
             >
               3 Months
             </button>
             <button
               onClick={() => setRange(6)}
-              className="px-3 py-1.5 text-xs font-bold rounded-md transition-all text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-700 shadow-sm"
+              className="px-3 py-1.5 text-xs font-bold rounded-md transition-all text-ink-600 hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-200 hover:bg-white dark:hover:bg-ink-700 shadow-sm"
             >
               6 Months
             </button>
             <button
               onClick={() => setRange(12)}
-              className="px-3 py-1.5 text-xs font-bold rounded-md transition-all text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-700 shadow-sm"
+              className="px-3 py-1.5 text-xs font-bold rounded-md transition-all text-ink-600 hover:text-ink-900 dark:text-ink-400 dark:hover:text-ink-200 hover:bg-white dark:hover:bg-ink-700 shadow-sm"
             >
               12 Months
             </button>
@@ -507,20 +508,20 @@ export function OverviewDashboard() {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-slate-500 uppercase">From:</label>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none" />
+            <label className="text-xs font-medium text-ink-500">From:</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="px-3 py-1.5 bg-ink-50 dark:bg-ink-800 border border-ink-200 dark:border-ink-700 rounded-lg text-sm text-ink-700 dark:text-ink-200 focus:ring-2 focus:ring-accent-500/20 outline-none" />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-slate-500 uppercase">To:</label>
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none" />
+            <label className="text-xs font-medium text-ink-500">To:</label>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-3 py-1.5 bg-ink-50 dark:bg-ink-800 border border-ink-200 dark:border-ink-700 rounded-lg text-sm text-ink-700 dark:text-ink-200 focus:ring-2 focus:ring-accent-500/20 outline-none" />
           </div>
         </div>
       </div>
 
       {/* Projected Fee Income Timeline */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-8 flex flex-col">
+      <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 p-6 mb-8 flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Projected Fee Income</h2>
+          <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200">Projected fee income</h2>
         </div>
         
         <div className="h-[400px] w-full">
@@ -540,7 +541,7 @@ export function OverviewDashboard() {
             
             if (filteredData.length === 0) {
               return (
-                <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500 italic">
+                <div className="w-full h-full flex items-center justify-center text-ink-500 dark:text-ink-400 italic">
                   No projected payments in this timeframe.
                 </div>
               );
@@ -549,14 +550,14 @@ export function OverviewDashboard() {
             return (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={filteredData} margin={{ top: 20, right: 20, left: 20, bottom: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} vertical={false} />
-                  <XAxis dataKey="label" stroke="#64748b" interval={0} height={60} tick={renderCustomAxisTick(filteredData)} tickMargin={10} />
-                  <YAxis stroke="#64748b" tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={tc('ink', 400)} opacity={0.35} vertical={false} />
+                  <XAxis dataKey="label" stroke={tc('ink', 500)} interval={0} height={60} tick={renderCustomAxisTick(filteredData)} tickMargin={10} />
+                  <YAxis stroke={tc('ink', 500)} tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12 }} />
                   <RechartsTooltip 
-                    cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '3 3' }} 
+                    cursor={{ stroke: tca('ink', 400, 0.3), strokeWidth: 1, strokeDasharray: '3 3' }} 
                     content={<CustomTooltip formatter={(value: any) => formatCurrency(Number(value))} />}
                   />
-                  <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: '#64748b' }} />
+                  <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: tc('ink', 500) }} />
                   {projectNames.map(name => (
                     <Bar key={name} dataKey={name} stackId="a" fill={projectColors[name]} radius={[2, 2, 0, 0]} />
                   ))}
@@ -569,7 +570,7 @@ export function OverviewDashboard() {
 
       {/* Monthly Invoice Summary */}
       <div className="mb-8">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">Monthly Projected Invoices</h2>
+        <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200 mb-4">Monthly projected invoices</h2>
         <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
           {(() => {
             const startMs = getLocalTime(startDate);
@@ -577,12 +578,12 @@ export function OverviewDashboard() {
             const filteredMonths = monthlyInvoiceData.filter(m => m.dateValue >= startMs && m.dateValue <= endMs);
             
             if (filteredMonths.length === 0) {
-              return <div className="text-sm text-slate-500 italic">No invoices in this timeframe.</div>;
+              return <div className="text-sm text-ink-500 italic">No invoices in this timeframe.</div>;
             }
             return filteredMonths.map(m => (
-              <div key={m.bucketKey} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 min-w-[160px] flex flex-col gap-1 shrink-0">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{m.label}</span>
-                <span className="text-xl font-black text-slate-900 dark:text-white">{formatCurrency(m.totalValue)}</span>
+              <div key={m.bucketKey} className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-2xl p-4 min-w-[160px] flex flex-col gap-1 shrink-0">
+                <span className="text-xs font-medium text-ink-500">{m.label}</span>
+                <span className="text-xl font-black text-ink-900 dark:text-ink-50">{formatCurrency(m.totalValue)}</span>
               </div>
             ));
           })()}
@@ -590,19 +591,19 @@ export function OverviewDashboard() {
       </div>
 
       {/* Monthly Cashflow Comparison */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-8 flex flex-col">
+      <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 p-6 mb-8 flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Monthly Cashflow</h2>
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+          <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200">Monthly cashflow</h2>
+          <div className="flex items-center bg-ink-100 dark:bg-ink-800 p-1 rounded-lg">
             <button
               onClick={() => setCashflowView('bar')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${cashflowView === 'bar' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${cashflowView === 'bar' ? 'bg-white dark:bg-ink-700 text-ink-800 dark:text-ink-50 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-300'}`}
             >
               Income vs Expenses
             </button>
             <button
               onClick={() => setCashflowView('line')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${cashflowView === 'line' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${cashflowView === 'line' ? 'bg-white dark:bg-ink-700 text-ink-800 dark:text-ink-50 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-300'}`}
             >
               Net Profit
             </button>
@@ -616,27 +617,27 @@ export function OverviewDashboard() {
             const filteredMonths = monthlyInvoiceData.filter(m => m.dateValue >= startMs && m.dateValue <= endMs);
             
             if (filteredMonths.length === 0) {
-              return <div className="w-full h-full flex items-center justify-center text-slate-400">No data.</div>;
+              return <div className="w-full h-full flex items-center justify-center text-ink-500">No data.</div>;
             }
 
             if (cashflowView === 'line') {
                return (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={filteredMonths} margin={{ top: 20, right: 20, left: 20, bottom: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} vertical={false} />
-                      <XAxis dataKey="label" stroke="#64748b" tickMargin={10} />
-                      <YAxis stroke="#64748b" tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={tc('ink', 400)} opacity={0.35} vertical={false} />
+                      <XAxis dataKey="label" stroke={tc('ink', 500)} tickMargin={10} />
+                      <YAxis stroke={tc('ink', 500)} tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12 }} />
                       <RechartsTooltip 
-                        cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }}
+                        cursor={{ fill: tca('ink', 400, 0.15) }}
                         content={({ active, payload, label }) => {
                           if (active && payload && payload.length) {
                             const data = payload[0].payload;
                             return (
-                              <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 p-3 rounded-xl shadow-xl min-w-[160px]">
-                                <p className="text-slate-400 text-xs font-bold uppercase mb-2">{label}</p>
+                              <div className="bg-ink-900/95 backdrop-blur-md border border-ink-700 p-3 rounded-xl shadow-xl min-w-[160px]">
+                                <p className="text-ink-500 text-xs font-medium mb-2">{label}</p>
                                 <div className="flex justify-between gap-4">
-                                  <span className="text-slate-300 font-medium text-xs">Net Profit:</span>
-                                  <span className={`font-bold text-xs ${data.netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(data.netProfit)}</span>
+                                  <span className="text-ink-300 font-medium text-xs">Net profit:</span>
+                                  <span className={`font-bold text-xs ${data.netProfit >= 0 ? 'text-positive-400' : 'text-negative-400'}`}>{formatCurrency(data.netProfit)}</span>
                                 </div>
                               </div>
                             );
@@ -644,8 +645,8 @@ export function OverviewDashboard() {
                           return null;
                         }}
                       />
-                      <ReferenceLine y={0} stroke="#64748b" />
-                      <Line type="monotone" dataKey="netProfit" name="Net Profit" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                      <ReferenceLine y={0} stroke={tc('ink', 500)} />
+                      <Line type="monotone" dataKey="netProfit" name="Net Profit" stroke={tc('accent', 600)} strokeWidth={3} dot={{ r: 4, fill: tc('accent', 600), strokeWidth: 0 }} activeDot={{ r: 6 }} />
                     </LineChart>
                   </ResponsiveContainer>
                );
@@ -654,39 +655,39 @@ export function OverviewDashboard() {
             return (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={filteredMonths} margin={{ top: 20, right: 20, left: 20, bottom: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} vertical={false} />
-                  <XAxis dataKey="label" stroke="#64748b" tickMargin={10} />
-                  <YAxis stroke="#64748b" tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={tc('ink', 400)} opacity={0.35} vertical={false} />
+                  <XAxis dataKey="label" stroke={tc('ink', 500)} tickMargin={10} />
+                  <YAxis stroke={tc('ink', 500)} tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12 }} />
                   <RechartsTooltip 
-                    cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }}
+                    cursor={{ fill: tca('ink', 400, 0.15) }}
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload;
                         return (
-                          <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 p-3 rounded-xl shadow-xl min-w-[200px]">
-                            <p className="text-slate-400 text-xs font-bold uppercase mb-3 border-b border-slate-800 pb-2">{label}</p>
+                          <div className="bg-ink-900/95 backdrop-blur-md border border-ink-700 p-3 rounded-xl shadow-xl min-w-[200px]">
+                            <p className="text-ink-500 text-xs font-medium mb-3 border-b border-ink-800 pb-2">{label}</p>
                             <div className="flex flex-col gap-2 text-xs">
                               <div className="flex justify-between gap-4">
-                                <span className="text-emerald-400 font-bold">Income:</span>
+                                <span className="text-positive-400 font-bold">Income:</span>
                                 <span className="text-white font-bold">{formatCurrency(data.totalValue)}</span>
                               </div>
                               <div className="flex justify-between gap-4">
-                                <span className="text-red-400 font-bold">Total Expenses:</span>
+                                <span className="text-negative-400 font-bold">Total expenses:</span>
                                 <span className="text-white font-bold">{formatCurrency(data.totalExpenses)}</span>
                               </div>
-                              <div className="pl-4 flex flex-col gap-1 border-l-2 border-slate-800 mt-1 mb-1">
+                              <div className="pl-4 flex flex-col gap-1 border-l-2 border-ink-800 mt-1 mb-1">
                                 <div className="flex justify-between gap-4">
-                                  <span className="text-slate-400">Team Salaries:</span>
-                                  <span className="text-slate-300">{formatCurrency(data.teamExpenses)}</span>
+                                  <span className="text-ink-500">Team salaries:</span>
+                                  <span className="text-ink-300">{formatCurrency(data.teamExpenses)}</span>
                                 </div>
                                 <div className="flex justify-between gap-4">
-                                  <span className="text-slate-400">Phase Costs:</span>
-                                  <span className="text-slate-300">{formatCurrency(data.projectExpenses)}</span>
+                                  <span className="text-ink-500">Phase costs:</span>
+                                  <span className="text-ink-300">{formatCurrency(data.projectExpenses)}</span>
                                 </div>
                               </div>
-                              <div className="flex justify-between gap-4 pt-2 border-t border-slate-800">
-                                <span className="text-slate-300 font-bold">Net Profit:</span>
-                                <span className={`font-bold ${data.netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(data.netProfit)}</span>
+                              <div className="flex justify-between gap-4 pt-2 border-t border-ink-800">
+                                <span className="text-ink-300 font-bold">Net profit:</span>
+                                <span className={`font-bold ${data.netProfit >= 0 ? 'text-positive-400' : 'text-negative-400'}`}>{formatCurrency(data.netProfit)}</span>
                               </div>
                             </div>
                           </div>
@@ -695,10 +696,10 @@ export function OverviewDashboard() {
                       return null;
                     }}
                   />
-                  <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: '#64748b' }} />
-                  <Bar dataKey="totalValue" name="Invoiced Income" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="teamExpenses" name="Team Salaries" stackId="expenses" fill="#f43f5e" />
-                  <Bar dataKey="projectExpenses" name="Project Expenses" stackId="expenses" fill="#fb923c" radius={[4, 4, 0, 0]} />
+                  <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: tc('ink', 500) }} />
+                  <Bar dataKey="totalValue" name="Invoiced Income" fill={tc('positive', 500)} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="teamExpenses" name="Team Salaries" stackId="expenses" fill={tc('negative', 500)} />
+                  <Bar dataKey="projectExpenses" name="Project Expenses" stackId="expenses" fill={tc('warning', 400)} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             );
@@ -707,9 +708,9 @@ export function OverviewDashboard() {
       </div>
 
       {/* Team Occupancy Grid */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-8 flex flex-col">
+      <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 p-6 mb-8 flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Team Occupancy</h2>
+          <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200">Team occupancy</h2>
         </div>
         
         {(() => {
@@ -718,7 +719,7 @@ export function OverviewDashboard() {
           const filteredWeeks = occupancyData.filter(d => d.dateValue >= startMs && d.dateValue <= endMs);
           
           if (filteredWeeks.length === 0) {
-            return <div className="w-full h-40 flex items-center justify-center text-slate-400">No data.</div>;
+            return <div className="w-full h-40 flex items-center justify-center text-ink-500">No data.</div>;
           }
 
           const getInitials = (name: string) => {
@@ -731,11 +732,11 @@ export function OverviewDashboard() {
           return (
             <div className="w-full overflow-x-auto pt-8 pb-12 hide-scrollbar -mt-8">
               <div className="inline-block min-w-full align-middle">
-                <div className="border border-slate-200 dark:border-slate-800 rounded-xl">
-                  <table className="min-w-full divide-y divide-slate-200 dark:border-slate-800 text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-900/50">
+                <div className="border border-ink-200 dark:border-ink-800 rounded-xl">
+                  <table className="min-w-full divide-y divide-ink-200 dark:border-ink-800 text-sm">
+                    <thead className="bg-ink-50 dark:bg-ink-900/50">
                       <tr>
-                        <th className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900/95 backdrop-blur-sm py-3 px-4 text-left font-bold text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] rounded-tl-xl">
+                        <th className="sticky left-0 z-20 bg-ink-50 dark:bg-ink-900/95 backdrop-blur-sm py-3 px-4 text-left font-bold text-ink-600 dark:text-ink-300 border-r border-ink-200 dark:border-ink-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] rounded-tl-xl">
                           Team Member
                         </th>
                         {filteredWeeks.map((week, idx) => {
@@ -749,20 +750,20 @@ export function OverviewDashboard() {
                           const weekStr = parts[1];
                           
                           return (
-                            <th key={week.bucketKey} className={`py-2 px-3 text-center border-b border-slate-200 dark:border-slate-800 min-w-[120px] ${idx === filteredWeeks.length - 1 ? 'rounded-tr-xl' : ''}`}>
+                            <th key={week.bucketKey} className={`py-2 px-3 text-center border-b border-ink-200 dark:border-ink-800 min-w-[120px] ${idx === filteredWeeks.length - 1 ? 'rounded-tr-xl' : ''}`}>
                               <div className="flex flex-col items-center gap-1 group relative">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{monthStr}</span>
+                                <span className="text-xs font-medium text-ink-500">{monthStr}</span>
                                 <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-slate-700 dark:text-slate-200">{weekStr}</span>
+                                  <span className="font-bold text-ink-700 dark:text-ink-200">{weekStr}</span>
                                   {overAllocated.length > 0 && (
                                     <div className="relative cursor-help z-50">
-                                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max bg-slate-900 text-white text-xs rounded-lg py-2 px-3 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-xl border border-slate-700">
-                                        <p className="font-bold mb-1 text-red-400 border-b border-slate-700 pb-1 uppercase tracking-wider">Over-allocated:</p>
+                                      <div className="w-2 h-2 rounded-full bg-negative-500 animate-pulse"></div>
+                                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max bg-ink-900 text-white text-xs rounded-lg py-2 px-3 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-xl border border-ink-700">
+                                        <p className="font-semibold mb-1 text-negative-400 border-b border-ink-700 pb-1">Over-allocated:</p>
                                         {overAllocated.map((oa, i) => (
                                           <div key={i} className="flex justify-between gap-4 my-1">
                                             <span>{oa.member?.name || 'Unknown'}</span>
-                                            <span className="font-mono text-red-300">{oa.percent.toFixed(0)}%</span>
+                                            <span className="font-mono text-negative-300">{oa.percent.toFixed(0)}%</span>
                                           </div>
                                         ))}
                                       </div>
@@ -775,12 +776,12 @@ export function OverviewDashboard() {
                         })}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-950">
+                    <tbody className="divide-y divide-ink-200 dark:divide-ink-800 bg-white dark:bg-ink-950">
                       {teamMembers.map((member, memberIdx) => {
                         return (
-                          <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                            <td className={`sticky left-0 z-10 bg-white dark:bg-slate-950/95 backdrop-blur-sm py-3 px-4 text-left border-r border-slate-200 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] max-w-[200px] ${memberIdx === teamMembers.length - 1 ? 'rounded-bl-xl' : ''}`}>
-                              <Tooltip content={member.name} wrapper="div" className="truncate font-bold text-slate-800 dark:text-slate-200 w-full">
+                          <tr key={member.id} className="hover:bg-ink-50 dark:hover:bg-ink-900/50 transition-colors">
+                            <td className={`sticky left-0 z-10 bg-white dark:bg-ink-950/95 backdrop-blur-sm py-3 px-4 text-left border-r border-ink-200 dark:border-ink-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] max-w-[200px] ${memberIdx === teamMembers.length - 1 ? 'rounded-bl-xl' : ''}`}>
+                              <Tooltip content={member.name} wrapper="div" className="truncate font-bold text-ink-800 dark:text-ink-200 w-full">
                                 {member.name}
                               </Tooltip>
                             </td>
@@ -796,18 +797,18 @@ export function OverviewDashboard() {
                               }
                               
                               if (allocs.length === 0) {
-                                return <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 border-r border-slate-100 dark:border-slate-900/30 ${memberIdx === teamMembers.length - 1 && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}></td>;
+                                return <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 border-r border-ink-100 dark:border-ink-900/30 ${memberIdx === teamMembers.length - 1 && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}></td>;
                               }
                               
                               const isOver = memberData?.totalPercent > 100;
                               
                               return (
-                                <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 align-middle border-r border-slate-100 dark:border-slate-900/30 ${memberIdx === teamMembers.length - 1 && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}>
+                                <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 align-middle border-r border-ink-100 dark:border-ink-900/30 ${memberIdx === teamMembers.length - 1 && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}>
                                   <div className="flex flex-wrap gap-1.5 justify-center">
                                     {allocs.map((alloc, i) => {
                                       return (
                                         <Link key={i} href={`/dashboard?project=${alloc.projectId}`}>
-                                          <Tooltip content={`${alloc.projectName}\nResource: ${member.name}\nProject: ${alloc.percent.toFixed(0)}%\nTotal Weekly: ${memberData?.totalPercent.toFixed(0)}%`} wrapper="div" className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold border transition-colors cursor-pointer ${isOver ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50 hover:bg-red-300 dark:hover:bg-red-900/70' : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'}`}>
+                                          <Tooltip content={`${alloc.projectName}\nResource: ${member.name}\nProject: ${alloc.percent.toFixed(0)}%\nTotal Weekly: ${memberData?.totalPercent.toFixed(0)}%`} wrapper="div" className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold border transition-colors cursor-pointer ${isOver ? 'bg-negative-100 text-negative-700 border-negative-200 dark:bg-negative-900/30 dark:text-negative-400 dark:border-negative-800/50 hover:bg-negative-300 dark:hover:bg-negative-900/70' : 'bg-ink-100 text-ink-700 border-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:border-ink-700 hover:bg-ink-200 dark:hover:bg-ink-600'}`}>
                                             <span className="max-w-[80px] truncate">{alloc.projectName}</span>
                                             <span className={`text-[10px] ${isOver ? 'opacity-80' : 'opacity-50'}`}>{alloc.percent.toFixed(0)}%</span>
                                           </Tooltip>
@@ -832,23 +833,23 @@ export function OverviewDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Scatter Plot */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-6">Profit Margin vs Fee Size</h2>
+        <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 p-6">
+          <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200 mb-6">Profit margin vs fee size</h2>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
-                <XAxis type="number" dataKey="totalFee" name="Total Fee" tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} stroke="#64748b" />
-                <YAxis type="number" dataKey="margin" name="Margin" unit="%" stroke="#64748b" />
+                <CartesianGrid strokeDasharray="3 3" stroke={tc('ink', 400)} opacity={0.35} />
+                <XAxis type="number" dataKey="totalFee" name="Total Fee" tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} stroke={tc('ink', 500)} />
+                <YAxis type="number" dataKey="margin" name="Margin" unit="%" stroke={tc('ink', 500)} />
                 <ZAxis type="category" dataKey="name" name="Project" />
                 <RechartsTooltip 
-                  cursor={{ strokeDasharray: '3 3', stroke: 'rgba(148, 163, 184, 0.4)' }} 
+                  cursor={{ strokeDasharray: '3 3', stroke: tca('ink', 400, 0.4) }} 
                   animationDuration={150}
                   content={<CustomScatterTooltip />}
                 />
                 <Scatter name="Projects" data={scatterData}>
                   {scatterData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={projectColors[entry.name] || '#3b82f6'} />
+                    <Cell key={`cell-${index}`} fill={projectColors[entry.name] || tc('accent', 600)} />
                   ))}
                 </Scatter>
               </ScatterChart>
@@ -858,22 +859,22 @@ export function OverviewDashboard() {
 
         {/* Leaderboard (If Admin) */}
         {dbUser?.role === 'admin' && (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 p-6 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Users size={20} className="text-blue-500" />
+              <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200 flex items-center gap-2">
+                <Users size={20} className="text-accent-500" />
                 Proposal Leaderboard
               </h2>
-              <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              <div className="flex bg-ink-100 dark:bg-ink-800 rounded-lg p-1">
                 <button 
                   onClick={() => setLeaderboardView('list')}
-                  className={`p-1.5 rounded-md transition-colors ${leaderboardView === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                  className={`p-1.5 rounded-md transition-colors ${leaderboardView === 'list' ? 'bg-white dark:bg-ink-700 shadow-sm text-accent-600 dark:text-accent-400' : 'text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300'}`}
                 >
                   <List size={16} />
                 </button>
                 <button 
                   onClick={() => setLeaderboardView('chart')}
-                  className={`p-1.5 rounded-md transition-colors ${leaderboardView === 'chart' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                  className={`p-1.5 rounded-md transition-colors ${leaderboardView === 'chart' ? 'bg-white dark:bg-ink-700 shadow-sm text-accent-600 dark:text-accent-400' : 'text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300'}`}
                 >
                   <PieChartIcon size={16} />
                 </button>
@@ -882,13 +883,13 @@ export function OverviewDashboard() {
             <div className="flex-1 overflow-y-auto pr-2 space-y-3">
               {leaderboardView === 'list' ? (
                 leaderboardData.map((data: any) => (
-                  <div key={data.name as string} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                  <div key={data.name as string} className="flex items-center justify-between p-4 bg-ink-50 dark:bg-ink-800/50 rounded-2xl border border-ink-100 dark:border-ink-700/50">
                     <div>
-                      <p className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{data.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{data.projects} projects generated</p>
+                      <p className="font-bold text-ink-800 dark:text-ink-200 truncate max-w-[200px]">{data.name}</p>
+                      <p className="text-xs text-ink-500 dark:text-ink-400">{data.projects} projects generated</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-blue-600 dark:text-blue-400">{formatCurrency(data.totalGenerated)}</p>
+                      <p className="font-black text-accent-600 dark:text-accent-400">{formatCurrency(data.totalGenerated)}</p>
                     </div>
                   </div>
                 ))

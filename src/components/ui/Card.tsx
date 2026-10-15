@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 // the same way instead of drifting slightly per page.
 export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn('bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col transition-colors', className)}>
+    <div className={cn('bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-2xl overflow-hidden flex flex-col transition-colors', className)}>
       {children}
     </div>
   );
@@ -15,7 +15,7 @@ export function Card({ className, children }: { className?: string; children: Re
 
 export function CardHeader({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn('px-5 py-4 border-b border-slate-100 dark:border-slate-800', className)}>
+    <div className={cn('px-5 py-4 border-b border-ink-100 dark:border-ink-800', className)}>
       {children}
     </div>
   );
@@ -36,9 +36,9 @@ export function Row({ className, children, onClick, active }: { className?: stri
     <div
       onClick={onClick}
       className={cn(
-        'flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-b-0 group transition-colors',
+        'flex items-center gap-3 px-4 py-2.5 border-b border-ink-100 dark:border-ink-800 last:border-b-0 group transition-colors',
         onClick && 'cursor-pointer',
-        active ? 'bg-blue-50 dark:bg-blue-900/20' : onClick && 'hover:bg-slate-50 dark:hover:bg-slate-800/50',
+        active ? 'bg-accent-50 dark:bg-accent-900/20' : onClick && 'hover:bg-ink-50 dark:hover:bg-ink-800/50',
         className
       )}
     >

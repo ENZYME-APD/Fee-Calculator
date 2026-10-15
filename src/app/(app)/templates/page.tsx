@@ -155,7 +155,7 @@ export default function TemplatesPage() {
   );
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="h-full flex flex-col bg-ink-50 dark:bg-ink-950 transition-colors duration-300">
       <div className="flex-1 overflow-hidden relative">
         <ProjectManager isTemplateMode={true} headerActions={seedAction} />
       </div>

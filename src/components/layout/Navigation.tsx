@@ -42,16 +42,16 @@ export function Navigation() {
   const isAdmin = dbUser?.role === 'admin' || isSuperadmin;
 
   const navItems = [
-    { name: 'Overview Dashboard', href: '/overview', icon: PieChart },
-    { name: 'Projects & Phases', href: '/projects', icon: FolderKanban },
-    { name: 'Fee Proposal', href: '/dashboard', icon: Calculator },
-    { name: 'Project Planning', href: '/planning', icon: CalendarDays },
-    { name: 'Document Builder', href: '/documents', icon: FileText },
+    { name: 'Overview dashboard', href: '/overview', icon: PieChart },
+    { name: 'Projects & phases', href: '/projects', icon: FolderKanban },
+    { name: 'Fee proposal', href: '/dashboard', icon: Calculator },
+    { name: 'Project planning', href: '/planning', icon: CalendarDays },
+    { name: 'Document builder', href: '/documents', icon: FileText },
     // Team Resources / Overheads expose salaries and overhead costs, so only
     // admins (or superadmins) see these in the nav at all.
     ...(isAdmin ? [
-      { name: 'Team Resources', href: '/team', icon: Users },
-      { name: 'Overheads Calculator', href: '/overheads', icon: Building },
+      { name: 'Team resources', href: '/team', icon: Users },
+      { name: 'Overheads calculator', href: '/overheads', icon: Building },
     ] : []),
     { name: 'Templates', href: '/templates', icon: LayoutTemplate },
     { name: 'Documentation', href: '/docs', icon: BookOpen },
@@ -64,10 +64,10 @@ export function Navigation() {
   }
   
   return (
-    <div className="w-64 bg-slate-900 dark:bg-slate-950 text-slate-300 flex flex-col h-screen shrink-0 border-r border-slate-800 z-50 transition-colors duration-300 print:hidden">
+    <div className="w-64 bg-ink-900 dark:bg-ink-950 text-ink-300 flex flex-col h-screen shrink-0 border-r border-ink-800 z-50 transition-colors duration-300 print:hidden">
       <div className="p-6 pb-2">
         <img src="/logo-light.png" alt="Enzyme APD" className="h-10 w-auto mb-1" />
-        <h1 className="text-sm font-black tracking-widest text-slate-200 uppercase bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Fee Calculator</h1>
+        <h1 className="text-sm font-semibold text-accent-300">Fee Calculator</h1>
       </div>
       <nav className="flex-1 px-4 space-y-2 mt-6">
         {navItems.map((item) => {
@@ -80,42 +80,42 @@ export function Navigation() {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm",
                 isActive 
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-900/20" 
-                  : "hover:bg-slate-800 hover:text-white"
+                  ? "bg-accent-600 text-white shadow-md shadow-accent-900/20" 
+                  : "hover:bg-ink-800 hover:text-white"
               )}
             >
-              <item.icon size={18} className={isActive ? "text-white" : "text-slate-400"} />
+              <item.icon size={18} className={isActive ? "text-white" : "text-ink-500"} />
               {item.name}
             </Link>
           );
         })}
       </nav>
       
-      <div className="p-4 border-t border-slate-800 space-y-2">
+      <div className="p-4 border-t border-ink-800 space-y-2">
         {user && (
           <div className="px-4 py-2 mb-2">
-            {companyName && <p className="text-sm font-bold text-slate-200 truncate mb-0.5">{companyName}</p>}
-            <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            {companyName && <p className="text-sm font-bold text-ink-200 truncate mb-0.5">{companyName}</p>}
+            <p className="text-xs text-ink-500 truncate">{user.email}</p>
             <div className="flex items-center gap-2 mt-0.5">
-              {dbUser && <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{dbUser.role}</p>}
-              {isLifetime && <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-400/30 tracking-widest shadow-sm">UNLIMITED</span>}
+              {dbUser && <p className="text-xs font-medium text-ink-400 capitalize">{dbUser.role}</p>}
+              {isLifetime && <span className="bg-accent-600 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">Unlimited</span>}
             </div>
           </div>
         )}
         
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all font-medium text-sm hover:bg-slate-800 hover:text-white"
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all font-medium text-sm hover:bg-ink-800 hover:text-white"
         >
           {mounted && theme === 'dark' ? (
             <>
-              <Sun size={18} className="text-yellow-400" />
-              <span>Light Mode</span>
+              <Sun size={18} className="text-warning-400" />
+              <span>Light mode</span>
             </>
           ) : (
             <>
-              <Moon size={18} className="text-slate-400" />
-              <span>Dark Mode</span>
+              <Moon size={18} className="text-ink-500" />
+              <span>Dark mode</span>
             </>
           )}
         </button>
@@ -123,10 +123,10 @@ export function Navigation() {
         {user && (
           <button
             onClick={() => signOut(auth)}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all font-medium text-sm text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all font-medium text-sm text-negative-400 hover:bg-negative-500/10 hover:text-negative-300"
           >
             <LogOut size={18} />
-            <span>Sign Out</span>
+            <span>Sign out</span>
           </button>
         )}
       </div>

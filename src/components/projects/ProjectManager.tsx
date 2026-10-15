@@ -406,7 +406,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
     await Promise.all(newPhases.map(p => updatePhase(p.id!, { order: p.order })));
   };
 
-  if (loading) return <div className="p-8 text-slate-500">Loading projects...</div>;
+  if (loading) return <div className="p-8 text-ink-500">Loading projects...</div>;
 
   const activeProject = projects.find(p => p.id === activeProjectId);
   const { totalCost, profitMarginPercent, totalFee } = computeProjectFinancials(activeProject, phases, allocations, projectCosts, teamMembers);
@@ -430,10 +430,10 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
     <div className="flex flex-col h-full gap-5 mx-auto w-full p-8" style={{ maxWidth: '1600px' }}>
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+          <h1 className="text-[22px] font-bold text-ink-900 dark:text-ink-50 tracking-tight">
             {isTemplateMode ? 'Project Templates' : 'Projects & Phases'}
           </h1>
-          <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-[13px] text-ink-500 dark:text-ink-400 mt-0.5">
             {isTemplateMode ? 'Manage reusable project structures.' : 'Manage projects, phases, and payment milestones.'}
           </p>
         </div>
@@ -446,17 +446,17 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push(`/dashboard?project=${activeProject.id}`)}
-                className="font-bold text-base text-slate-800 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left flex items-center gap-1.5 group"
+                className="font-bold text-base text-ink-800 dark:text-ink-100 hover:text-accent-600 dark:hover:text-accent-400 transition-colors text-left flex items-center gap-1.5 group"
                 title="Open Fee Proposal"
               >
                 {activeProject.name}
-                <Calculator size={15} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" />
+                <Calculator size={15} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent-500" />
               </button>
               <StatusSelect
                 status={activeProject.status || 'Draft'}
                 onChange={(status) => activeProject.id && updateProject(activeProject.id, { status }).then(loadProjects)}
               />
-              {activeProject.area && <span className="text-xs text-slate-400">· {activeProject.area} {areaUnit}</span>}
+              {activeProject.area && <span className="text-xs text-ink-500">· {activeProject.area} {areaUnit}</span>}
             </div>
           }
           totalCost={totalCost}
@@ -469,9 +469,9 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
       <div className="flex gap-5 flex-1 min-h-0 overflow-hidden">
         {/* Projects List */}
         <Card className="flex-1">
-          <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-2.5">
+          <CardHeader className="bg-ink-50/50 dark:bg-ink-900/50 flex flex-col gap-2.5">
             <div className="flex justify-between items-center">
-              <h2 className="font-semibold text-sm text-slate-800 dark:text-slate-100">{isTemplateMode ? 'Templates' : 'Projects'}</h2>
+              <h2 className="font-semibold text-sm text-ink-800 dark:text-ink-100">{isTemplateMode ? 'Templates' : 'Projects'}</h2>
               <select
                 value={`${sortBy}-${sortOrder}`}
                 onChange={(e) => {
@@ -479,10 +479,10 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                   setSortBy(newSortBy as 'date' | 'name' | 'status');
                   setSortOrder(newSortOrder as 'asc' | 'desc');
                 }}
-                className="px-2 py-1 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-md text-[11px] font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors cursor-pointer"
+                className="px-2 py-1 border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-900 text-ink-600 dark:text-ink-300 rounded-md text-[11px] font-medium focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors cursor-pointer"
               >
-                <option value="date-desc">Newest First</option>
-                <option value="date-asc">Oldest First</option>
+                <option value="date-desc">Newest first</option>
+                <option value="date-asc">Oldest first</option>
                 <option value="name-asc">Name (A-Z)</option>
                 <option value="name-desc">Name (Z-A)</option>
                 {!isTemplateMode && (
@@ -503,10 +503,10 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                       key={id}
                       type="button"
                       onClick={() => toggleStatusFilter(id)}
-                      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border transition-colors ${
+                      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border transition-colors ${
                         isActive
-                          ? 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                          : 'border-transparent text-slate-400 dark:text-slate-600 hover:text-slate-500'
+                          ? 'border-ink-200 dark:border-ink-700 bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-300'
+                          : 'border-transparent text-ink-500 dark:text-ink-600 hover:text-ink-500'
                       }`}
                     >
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot} ${!isActive && 'opacity-40'}`} />
@@ -518,7 +518,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
             )}
           </CardHeader>
 
-          <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="p-3 border-b border-ink-100 dark:border-ink-800">
             <form onSubmit={handleCreateProject} className="flex flex-col gap-2">
               {!isTemplateMode && templates.length > 0 && (
                 <select
@@ -526,7 +526,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                   onChange={(e) => setSelectedTemplateId(e.target.value)}
                   className={fieldClass + ' w-full'}
                 >
-                  <option value="">No Template</option>
+                  <option value="">No template</option>
                   <optgroup label="Templates">
                     {templates.map(t => (
                       <option key={t.id} value={t.id}>{t.name}</option>
@@ -549,14 +549,14 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
             </form>
           </div>
 
-          <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-            <Search size={14} className="text-slate-400 shrink-0" />
+          <div className="px-3 py-2 border-b border-ink-100 dark:border-ink-800 flex items-center gap-2">
+            <Search size={14} className="text-ink-500 shrink-0" />
             <input
               type="text"
               placeholder={isTemplateMode ? "Search templates..." : "Search projects..."}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none"
+              className="flex-1 bg-transparent text-sm text-ink-800 dark:text-ink-200 placeholder:text-ink-400 focus:outline-none"
             />
             {searchQuery && (
               <IconButton onClick={() => setSearchQuery('')}>
@@ -569,7 +569,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
             {sortedProjects.map(p => {
               if (editingProjectId === p.id) {
                 return (
-                  <div key={p.id} className="p-3 border-b border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
+                  <div key={p.id} className="p-3 border-b border-accent-200 dark:border-accent-900 bg-accent-50/50 dark:bg-accent-900/10">
                     <form onSubmit={handleEditProjectSave} className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <input
@@ -577,36 +577,36 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                           autoFocus
                           value={editingProjectName}
                           onChange={e => setEditingProjectName(e.target.value)}
-                          className="flex-1 px-2 py-1 text-sm border-b border-blue-400 dark:border-blue-600 focus:outline-none font-semibold text-blue-900 dark:text-blue-300 bg-transparent"
+                          className="flex-1 px-2 py-1 text-sm border-b border-accent-400 dark:border-accent-600 focus:outline-none font-semibold text-accent-900 dark:text-accent-300 bg-transparent"
                         />
                         <IconButton type="button" onClick={() => setEditingProjectId(null)}><X size={14} /></IconButton>
-                        <IconButton type="submit" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700"><Check size={14} /></IconButton>
+                        <IconButton type="submit" className="text-positive-600 dark:text-positive-400 hover:text-positive-700"><Check size={14} /></IconButton>
                       </div>
                       {!isTemplateMode && (
                         <div className="flex gap-2 items-center text-xs">
                           <select
                             value={editingProjectStatus}
                             onChange={e => setEditingProjectStatus(e.target.value)}
-                            className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                            className="px-2 py-1 border border-ink-200 dark:border-ink-700 rounded-md bg-white dark:bg-ink-800 text-ink-700 dark:text-ink-300"
                           >
                             <option value="Draft">Draft</option>
                             <option value="Proposed">Proposed</option>
                             <option value="Active">Active</option>
                             <option value="Completed">Completed</option>
-                            <option value="Lost">Lost/Archived</option>
+                            <option value="Lost">Lost/archived</option>
                           </select>
                           <input
                             type="date"
                             value={new Date(editingProjectStartDate).toISOString().split('T')[0]}
                             onChange={e => setEditingProjectStartDate(new Date(e.target.value).getTime())}
-                            className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                            className="px-2 py-1 border border-ink-200 dark:border-ink-700 rounded-md bg-white dark:bg-ink-800 text-ink-700 dark:text-ink-300"
                           />
                           <select
                             value={editingProjectOwnerId}
                             onChange={e => setEditingProjectOwnerId(e.target.value)}
-                            className="px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 w-28 truncate"
+                            className="px-2 py-1 border border-ink-200 dark:border-ink-700 rounded-md bg-white dark:bg-ink-800 text-ink-700 dark:text-ink-300 w-28 truncate"
                           >
-                            <option value="">No Originator</option>
+                            <option value="">No originator</option>
                             {companyUsers.map(u => (
                               <option key={u.uid} value={u.uid}>{u.displayName || u.email}</option>
                             ))}
@@ -620,9 +620,9 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
 
               return (
                 <Row key={p.id} onClick={() => setActiveProjectId(p.id!)} active={activeProjectId === p.id}>
-                  <Folder size={16} className={`shrink-0 ${activeProjectId === p.id ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`} />
+                  <Folder size={16} className={`shrink-0 ${activeProjectId === p.id ? "text-accent-600 dark:text-accent-400" : "text-ink-500 dark:text-ink-400"}`} />
                   <div className="flex-1 min-w-0">
-                    <div className={`font-semibold text-sm truncate ${activeProjectId === p.id ? "text-blue-900 dark:text-blue-300" : "text-slate-700 dark:text-slate-300"}`}>{p.name}</div>
+                    <div className={`font-semibold text-sm truncate ${activeProjectId === p.id ? "text-accent-900 dark:text-accent-300" : "text-ink-700 dark:text-ink-300"}`}>{p.name}</div>
                     {!isTemplateMode && (
                       <StatusSelect
                         status={p.status || 'Draft'}
@@ -634,7 +634,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 relative">
                     {!isTemplateMode && (
                       <Tooltip content="Open Fee Proposal">
-                        <IconButton onClick={(e) => { e.stopPropagation(); router.push(`/dashboard?project=${p.id}`); }} className="hover:text-blue-600 dark:hover:text-blue-400">
+                        <IconButton onClick={(e) => { e.stopPropagation(); router.push(`/dashboard?project=${p.id}`); }} className="hover:text-accent-600 dark:hover:text-accent-400">
                           <Calculator size={14} />
                         </IconButton>
                       </Tooltip>
@@ -652,7 +652,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                           onClick: () => p.id && handleSaveAsTemplate(p.id, { stopPropagation() {} } as React.MouseEvent),
                         }] : []),
                         {
-                          label: 'Project Planning',
+                          label: 'Project planning',
                           icon: <CalendarDays size={14} />,
                           onClick: () => router.push('/planning?project=' + p.id),
                         },
@@ -673,8 +673,8 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                 </Row>
               );
             })}
-            {projects.length === 0 && <div className="text-slate-400 text-center py-8 text-sm">No projects created yet.</div>}
-            {projects.length > 0 && sortedProjects.length === 0 && <div className="text-slate-400 text-center py-8 text-sm">No projects matching "{searchQuery}".</div>}
+            {projects.length === 0 && <div className="text-ink-500 text-center py-8 text-sm">No projects created yet.</div>}
+            {projects.length > 0 && sortedProjects.length === 0 && <div className="text-ink-500 text-center py-8 text-sm">No projects matching "{searchQuery}".</div>}
           </CardBody>
         </Card>
 
@@ -682,11 +682,11 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
         <Card className="flex-[1.3]">
           {activeProjectId ? (
             <>
-              <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50">
-                <h2 className="font-semibold text-sm text-slate-800 dark:text-slate-100">Phases</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{phases.length} phase{phases.length === 1 ? '' : 's'} · {phases.reduce((s, p) => s + p.durationWeeks, 0)} weeks total</p>
+              <CardHeader className="bg-ink-50/50 dark:bg-ink-900/50">
+                <h2 className="font-semibold text-sm text-ink-800 dark:text-ink-100">Phases</h2>
+                <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">{phases.length} phase{phases.length === 1 ? '' : 's'} · {phases.reduce((s, p) => s + p.durationWeeks, 0)} weeks total</p>
               </CardHeader>
-              <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="p-3 border-b border-ink-100 dark:border-ink-800">
                 <form onSubmit={handleCreatePhase} className="flex gap-2 items-center">
                   <input type="text" required value={newPhaseName} onChange={e => setNewPhaseName(e.target.value)} placeholder="Phase name, e.g. Schematic Design" className={fieldClass + ' flex-1 min-w-0'} />
                   <input type="number" required min="0.5" step="0.5" value={newPhaseDuration} onChange={e => setNewPhaseDuration(e.target.value)} placeholder="Wks" className={fieldClass + ' w-24 text-center shrink-0'} />
@@ -697,38 +697,38 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
               </div>
               <CardBody className="overflow-y-auto">
                 {phases.length === 0 ? (
-                  <div className="text-center text-slate-400 dark:text-slate-600 py-12 flex flex-col items-center gap-2">
-                    <Folder size={40} className="text-slate-200 dark:text-slate-700" />
+                  <div className="text-center text-ink-500 dark:text-ink-600 py-12 flex flex-col items-center gap-2">
+                    <Folder size={40} className="text-ink-200 dark:text-ink-700" />
                     <p className="text-sm">No phases added yet.</p>
                   </div>
                 ) : (
                   phases.map((phase, index) => {
                     if (editingPhaseId === phase.id) {
                       return (
-                        <div key={phase.id} className="p-3 border-b border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10 flex items-center gap-3">
-                          <span className="font-mono text-[11px] text-slate-400 w-6 shrink-0">#{phase.order}</span>
+                        <div key={phase.id} className="p-3 border-b border-accent-200 dark:border-accent-900 bg-accent-50/50 dark:bg-accent-900/10 flex items-center gap-3">
+                          <span className="font-mono text-[11px] text-ink-500 w-6 shrink-0">#{phase.order}</span>
                           <form onSubmit={handleEditPhaseSave} className="flex-1 flex flex-col gap-2">
                             <input
                               type="text"
                               autoFocus
                               value={editingPhaseName}
                               onChange={e => setEditingPhaseName(e.target.value)}
-                              className="w-full px-2 py-1 text-sm border-b border-blue-400 dark:border-blue-600 bg-transparent focus:outline-none font-semibold text-slate-800 dark:text-slate-200"
+                              className="w-full px-2 py-1 text-sm border-b border-accent-400 dark:border-accent-600 bg-transparent focus:outline-none font-semibold text-ink-800 dark:text-ink-200"
                             />
                             <div className="flex gap-2 items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-slate-500">WKS:</span>
+                                <span className="text-xs font-bold text-ink-500">Weeks:</span>
                                 <input
                                   type="number"
                                   min="0.5" step="0.5"
                                   value={editingPhaseDuration}
                                   onChange={e => setEditingPhaseDuration(e.target.value)}
-                                  className="w-16 px-2 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-950 text-center text-slate-800 dark:text-slate-200"
+                                  className="w-16 px-2 py-1 text-sm border border-ink-200 dark:border-ink-700 rounded-md bg-white dark:bg-ink-950 text-center text-ink-800 dark:text-ink-200"
                                 />
                               </div>
                               <div className="flex gap-1">
                                 <IconButton type="button" onClick={() => setEditingPhaseId(null)}><X size={14} /></IconButton>
-                                <IconButton type="submit" className="text-emerald-600 dark:text-emerald-400"><Check size={14} /></IconButton>
+                                <IconButton type="submit" className="text-positive-600 dark:text-positive-400"><Check size={14} /></IconButton>
                               </div>
                             </div>
                           </form>
@@ -738,11 +738,11 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
 
                     return (
                       <Row key={phase.id}>
-                        <span className="font-mono text-[11px] text-slate-400 w-6 shrink-0">#{phase.order}</span>
+                        <span className="font-mono text-[11px] text-ink-500 w-6 shrink-0">#{phase.order}</span>
                         <Tooltip content={phase.name} wrapper="span" className="flex-1 min-w-0 inline-block">
-                          <span className="font-semibold text-sm text-slate-800 dark:text-slate-200 truncate block">{phase.name}</span>
+                          <span className="font-semibold text-sm text-ink-800 dark:text-ink-200 truncate block">{phase.name}</span>
                         </Tooltip>
-                        <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium shrink-0">
+                        <span className="flex items-center gap-1 text-ink-500 dark:text-ink-400 text-xs font-medium shrink-0">
                           <Clock size={12} />
                           {phase.durationWeeks} {phase.durationWeeks === 1 ? 'wk' : 'wks'}
                         </span>
@@ -753,7 +753,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                           <IconButton onClick={() => handleMovePhase(index, 'down')} disabled={index === phases.length - 1} aria-label="Move Down">
                             <ChevronDown size={14} />
                           </IconButton>
-                          <IconButton onClick={() => setSettingsPhaseId(phase.id!)} className="hover:text-blue-600 dark:hover:text-blue-400" aria-label="Edit Phase">
+                          <IconButton onClick={() => setSettingsPhaseId(phase.id!)} className="hover:text-accent-600 dark:hover:text-accent-400" aria-label="Edit Phase">
                             <Pencil size={14} />
                           </IconButton>
                           <RowMenu
@@ -779,8 +779,8 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
               </CardBody>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 gap-3">
-              <Folder size={40} className="text-slate-200 dark:text-slate-800" />
+            <div className="flex-1 flex flex-col items-center justify-center text-ink-500 dark:text-ink-600 gap-3">
+              <Folder size={40} className="text-ink-200 dark:text-ink-800" />
               <p className="text-sm">Select or create a project to manage its phases.</p>
             </div>
           )}
@@ -799,8 +799,8 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
             formatCurrency={formatCurrency}
           />
         ) : (
-          <Card className="flex-1 items-center justify-center text-slate-400">
-            <Folder size={40} className="text-slate-200 dark:text-slate-800 mb-3" />
+          <Card className="flex-1 items-center justify-center text-ink-500">
+            <Folder size={40} className="text-ink-200 dark:text-ink-800 mb-3" />
             <p className="text-sm">Select a project to manage its payment schedule.</p>
           </Card>
         )}

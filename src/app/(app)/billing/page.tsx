@@ -23,7 +23,7 @@ export default function BillingPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600"></div>
       </div>
     );
   }
@@ -31,8 +31,8 @@ export default function BillingPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto flex flex-col h-full overflow-y-auto w-full">
       <div className="mb-6 shrink-0">
-        <h1 className="text-[22px] font-bold text-slate-900 dark:text-slate-50 tracking-tight">Billing & Subscription</h1>
-        <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">Manage your company's subscription and billing details.</p>
+        <h1 className="text-[22px] font-bold text-ink-900 dark:text-ink-50 tracking-tight">Billing & subscription</h1>
+        <p className="text-[13px] text-ink-500 dark:text-ink-400 mt-0.5">Manage your company's subscription and billing details.</p>
       </div>
 
       <Card>

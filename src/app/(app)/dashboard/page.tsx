@@ -144,30 +144,30 @@ export default function Home() {
     e.target.value = '';
   };
 
-  if (loading) return <div className="p-8 text-slate-500">Loading calculator data...</div>;
+  if (loading) return <div className="p-8 text-ink-500">Loading calculator data...</div>;
 
   if (projects.length === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 gap-4 bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
-        <Folder size={48} className="text-slate-300 dark:text-slate-700" />
-        <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200">No Projects Found</h2>
+      <div className="h-full flex flex-col items-center justify-center text-ink-500 dark:text-ink-400 gap-4 bg-ink-50 dark:bg-ink-900 transition-colors duration-300">
+        <Folder size={48} className="text-ink-300 dark:text-ink-700" />
+        <h2 className="text-xl font-bold text-ink-700 dark:text-ink-200">No projects found</h2>
         <p>Go to the Projects & Phases tab to create one.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col relative bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="h-full flex flex-col relative bg-ink-50 dark:bg-ink-950 transition-colors duration-300">
       {/* Top Toolbar — same shape as Project Planning and Document Builder */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between z-30 shrink-0 shadow-sm transition-colors duration-300">
+      <div className="bg-white dark:bg-ink-900 border-b border-ink-200 dark:border-ink-800 px-6 py-3 flex items-center justify-between z-30 shrink-0 shadow-sm transition-colors duration-300">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold shrink-0">
-            <Calculator size={18} className="text-blue-600 dark:text-blue-400" />
-            <span className="text-sm uppercase tracking-wider">Fee Proposal</span>
+          <div className="flex items-center gap-2 text-ink-700 dark:text-ink-300 font-bold shrink-0">
+            <Calculator size={18} className="text-accent-600 dark:text-accent-400" />
+            <span className="text-sm">Fee proposal</span>
           </div>
           <div className="w-[300px]">
           <select
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors cursor-pointer"
+            className="w-full bg-ink-50 dark:bg-ink-800 border border-ink-200 dark:border-ink-700 text-ink-800 dark:text-ink-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-accent-500/20 outline-none transition-colors cursor-pointer"
             value={activeProject?.id || ''}
             onChange={(e) => {
               const p = projects.find(proj => proj.id === e.target.value) || null;
@@ -187,7 +187,7 @@ export default function Home() {
               .filter(p => p.status !== 'Lost' || p.id === activeProject?.id)
               .sort((a, b) => a.name.localeCompare(b.name))
               .map(p => (
-                <option key={p.id} value={p.id}>{p.name}{p.status === 'Lost' ? ' (Lost/Archived)' : ''}</option>
+                <option key={p.id} value={p.id}>{p.name}{p.status === 'Lost' ? ' (Lost/archived)' : ''}</option>
               ))}
           </select>
           </div>
@@ -199,7 +199,7 @@ export default function Home() {
               <Tooltip content="Export Project Data" position="bottom">
                 <button 
                   onClick={handleExportJSON}
-                  className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm text-xs"
+                  className="flex items-center gap-1.5 bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-300 border border-ink-200 dark:border-ink-700 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-ink-200 dark:hover:bg-ink-700 transition-colors shadow-sm text-xs"
                 >
                   <Download size={14} />
                   <span>Save</span>
@@ -209,7 +209,7 @@ export default function Home() {
               <Tooltip content="Import Project Data" position="bottom">
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm text-xs"
+                  className="flex items-center gap-1.5 bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-300 border border-ink-200 dark:border-ink-700 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-ink-200 dark:hover:bg-ink-700 transition-colors shadow-sm text-xs"
                 >
                   <Upload size={14} />
                   <span>Load</span>
@@ -220,7 +220,7 @@ export default function Home() {
                 <button 
                   id="tour-export-btn"
                   onClick={handleExportExcel}
-                  className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors shadow-sm text-xs"
+                  className="flex items-center gap-1.5 bg-positive-50 dark:bg-positive-900/30 text-positive-600 dark:text-positive-400 border border-positive-200 dark:border-positive-800/50 px-2.5 py-1.5 rounded-lg font-semibold hover:bg-positive-100 dark:hover:bg-positive-900/50 transition-colors shadow-sm text-xs"
                 >
                   <Table size={14} />
                   <span>Excel</span>
@@ -235,23 +235,23 @@ export default function Home() {
                 className="hidden" 
               />
 
-              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+              <div className="w-px h-6 bg-ink-200 dark:bg-ink-700 mx-1" />
 
               <div id="tour-summary-buttons" className="flex gap-3">
                 <button 
                   onClick={() => setIsScheduleOpen(true)}
-                  className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+                  className="flex items-center gap-1.5 bg-accent-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-accent-700 transition-colors shadow-sm"
                 >
-                  <FileSpreadsheet size={16} className="text-blue-100" />
-                  <span>Payment Schedule</span>
+                  <FileSpreadsheet size={16} className="text-accent-100" />
+                  <span>Payment schedule</span>
                 </button>
 
                 <button 
                   onClick={() => setIsSummaryOpen(true)}
-                  className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+                  className="flex items-center gap-1.5 bg-accent-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-accent-700 transition-colors shadow-sm"
                 >
-                  <Folder size={16} className="text-blue-100" />
-                  <span>Financial Summary</span>
+                  <Folder size={16} className="text-accent-100" />
+                  <span>Financial summary</span>
                 </button>
               </div>
             </>

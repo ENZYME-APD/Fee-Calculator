@@ -31,12 +31,12 @@ export function GlobalToast() {
 
   return (
     <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-bottom-5 fade-in duration-300">
-      <div className="bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
-        <CheckCircle2 size={18} className="text-emerald-400 dark:text-emerald-600" />
+      <div className="bg-ink-800 dark:bg-ink-100 text-white dark:text-ink-900 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+        <CheckCircle2 size={18} className="text-positive-400 dark:text-positive-600" />
         <span className="text-sm font-semibold">{message}</span>
         <button 
           onClick={() => setIsVisible(false)}
-          className="ml-2 text-slate-400 hover:text-white dark:text-slate-500 dark:hover:text-slate-900 transition-colors"
+          className="ml-2 text-ink-500 hover:text-white dark:text-ink-400 dark:hover:text-ink-900 transition-colors"
         >
           <X size={16} />
         </button>

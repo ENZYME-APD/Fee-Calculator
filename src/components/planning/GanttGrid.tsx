@@ -38,7 +38,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
   const startDate = project.startDate ? new Date(project.startDate) : new Date();
   startDate.setHours(0,0,0,0);
   
-  const phaseColors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500'];
+  const phaseColors = ['bg-accent-500', 'bg-positive-500', 'bg-warning-500', 'bg-info-500', 'bg-clay-500'];
 
   const phaseTimeline = useMemo(() => {
     let currentStart = startDate;
@@ -155,7 +155,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
 
   const getPhaseColor = (phaseId: string) => {
     const idx = phases.findIndex(p => p.id === phaseId);
-    return phaseColors[idx % phaseColors.length] || 'bg-slate-500';
+    return phaseColors[idx % phaseColors.length] || 'bg-ink-500';
   };
 
   const handleAutoGenerate = () => {
@@ -200,16 +200,16 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-950 overflow-hidden relative">
+    <div className="flex flex-col h-full bg-white dark:bg-ink-950 overflow-hidden relative">
       {tasks.length === 0 && allocations.length > 0 && (
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 bg-blue-600 text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 bg-accent-600 text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
           <div>
-            <h4 className="font-bold">Generate Timeline?</h4>
-            <p className="text-sm text-blue-100">Automatically create tasks from budgeted hours.</p>
+            <h4 className="font-bold">Generate timeline?</h4>
+            <p className="text-sm text-accent-100">Automatically create tasks from budgeted hours.</p>
           </div>
           <button 
             onClick={handleAutoGenerate}
-            className="px-4 py-2 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50 transition-colors whitespace-nowrap"
+            className="px-4 py-2 bg-white text-accent-600 rounded-lg font-bold hover:bg-accent-50 transition-colors whitespace-nowrap"
           >
             Auto-Generate
           </button>
@@ -227,15 +227,15 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
           {/* Header Row */}
           <div className="sticky top-0 z-40 flex shadow-sm">
             {/* Top-Left Corner (Sticky) */}
-            <div className="w-64 shrink-0 sticky left-0 z-50 bg-slate-100 dark:bg-slate-900 border-r border-b border-slate-200 dark:border-slate-800 h-20 flex items-center px-4 box-border">
-              <span className="font-bold text-sm text-slate-500 uppercase">Team Members</span>
+            <div className="w-64 shrink-0 sticky left-0 z-50 bg-ink-100 dark:bg-ink-900 border-r border-b border-ink-200 dark:border-ink-800 h-20 flex items-center px-4 box-border">
+              <span className="font-semibold text-sm text-ink-500">Team members</span>
             </div>
             
             {/* Timeline Headers */}
-            <div className="flex flex-col border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 h-20 box-border relative" style={{ width: totalGridWidth }}>
+            <div className="flex flex-col border-b border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 h-20 box-border relative" style={{ width: totalGridWidth }}>
               
               {/* Phase Track (h-8) */}
-              <div className="flex h-8 border-b border-slate-100 dark:border-slate-800/50 absolute top-0 left-0 w-full box-border overflow-hidden">
+              <div className="flex h-8 border-b border-ink-100 dark:border-ink-800/50 absolute top-0 left-0 w-full box-border overflow-hidden">
                 {phaseVisuals.map(pv => {
                   return (
                     <div 
@@ -256,8 +256,8 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                 {phaseVisuals.map(pv => {
                   if (pv.isCollapsed) {
                     return (
-                      <div key={`col-${pv.id}`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50" style={{ left: pv.left, width: COLLAPSED_WIDTH }} title={pv.name}>
-                        <span className="text-[12px] text-slate-500 font-bold tracking-wider uppercase">{getInitials(pv.name)}</span>
+                      <div key={`col-${pv.id}`} className="absolute h-full border-r border-ink-200 dark:border-ink-800 flex items-center justify-center bg-ink-50 dark:bg-ink-900/50" style={{ left: pv.left, width: COLLAPSED_WIDTH }} title={pv.name}>
+                        <span className="text-[12px] text-ink-500 font-bold tracking-wider uppercase">{getInitials(pv.name)}</span>
                       </div>
                     )
                   } else {
@@ -265,8 +265,8 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                       const date = addDays(startDate, pv.startDay + i);
                       const x = pv.left + (i * CELL_WIDTH);
                       return (
-                        <div key={`d-${pv.startDay + i}`} className={`absolute h-full border-r border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-[10px] box-border ${isWeekend(date) ? 'bg-slate-50 dark:bg-slate-900/50 text-slate-400' : 'text-slate-700 dark:text-slate-300'}`} style={{ left: x, width: CELL_WIDTH }}>
-                          <span className="font-medium opacity-50 uppercase tracking-wider">{format(date, 'EE')}</span>
+                        <div key={`d-${pv.startDay + i}`} className={`absolute h-full border-r border-ink-200 dark:border-ink-800 flex flex-col items-center justify-center text-[10px] box-border ${isWeekend(date) ? 'bg-ink-50 dark:bg-ink-900/50 text-ink-500' : 'text-ink-700 dark:text-ink-300'}`} style={{ left: x, width: CELL_WIDTH }}>
+                          <span className="font-medium opacity-50">{format(date, 'EE')}</span>
                           <span className="font-bold text-xs">{format(date, 'd')}</span>
                         </div>
                       )
@@ -279,16 +279,16 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
 
           {/* Grid Body */}
           {projectMembers.map(member => (
-            <div key={member.id} className="flex h-16 border-b border-slate-100 dark:border-slate-800/50 group/row hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors box-border relative">
+            <div key={member.id} className="flex h-16 border-b border-ink-100 dark:border-ink-800/50 group/row hover:bg-ink-50 dark:hover:bg-ink-900 transition-colors box-border relative">
               
               {/* Left Column Member (Sticky) */}
-              <div className="w-64 shrink-0 sticky left-0 z-30 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex items-center px-4 gap-3 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-900 transition-colors box-border shadow-[1px_0_2px_rgba(0,0,0,0.02)]">
-                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold shrink-0">
+              <div className="w-64 shrink-0 sticky left-0 z-30 bg-white dark:bg-ink-950 border-r border-ink-200 dark:border-ink-800 flex items-center px-4 gap-3 group-hover/row:bg-ink-50 dark:group-hover/row:bg-ink-900 transition-colors box-border shadow-[1px_0_2px_rgba(0,0,0,0.02)]">
+                <div className="w-8 h-8 rounded-full bg-accent-100 dark:bg-accent-900/50 flex items-center justify-center text-accent-700 dark:text-accent-300 font-bold shrink-0">
                   {member.name.charAt(0)}
                 </div>
                 <div className="flex flex-col overflow-hidden">
                   <span className="font-semibold text-sm truncate">{member.name}</span>
-                  <span className="text-xs text-slate-500 truncate">{member.role || member.position}</span>
+                  <span className="text-xs text-ink-500 truncate">{member.role || member.position}</span>
                 </div>
               </div>
 
@@ -298,7 +298,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                 {phaseVisuals.map(pv => {
                   if (pv.isCollapsed) {
                     return (
-                      <div key={`bg-col-${pv.id}`} className="absolute h-full border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30" style={{ left: pv.left, width: COLLAPSED_WIDTH }} />
+                      <div key={`bg-col-${pv.id}`} className="absolute h-full border-r border-ink-200 dark:border-ink-800 bg-ink-50/50 dark:bg-ink-900/30" style={{ left: pv.left, width: COLLAPSED_WIDTH }} />
                     )
                   } else {
                     return Array.from({ length: pv.durationDays }).map((_, i) => {
@@ -308,10 +308,10 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                         <div 
                           key={`bg-d-${pv.startDay + i}`} 
                           onClick={() => handleCellClick(member.id!, date)}
-                          className={`absolute h-full border-r border-slate-100 dark:border-slate-800/50 cursor-pointer flex items-center justify-center opacity-0 group-hover/row:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all box-border ${isWeekend(date) ? 'bg-slate-50/30 dark:bg-slate-900/20' : ''}`} 
+                          className={`absolute h-full border-r border-ink-100 dark:border-ink-800/50 cursor-pointer flex items-center justify-center opacity-0 group-hover/row:opacity-100 hover:bg-accent-50 dark:hover:bg-accent-900/20 transition-all box-border ${isWeekend(date) ? 'bg-ink-50/30 dark:bg-ink-900/20' : ''}`} 
                           style={{ left: x, width: CELL_WIDTH }}
                         >
-                          <Plus size={14} className="text-blue-400" />
+                          <Plus size={14} className="text-accent-400" />
                         </div>
                       )
                     });
@@ -380,18 +380,18 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
           ))}
 
           {/* Add Team Member Button */}
-          <div className="flex h-16 border-b border-slate-100 dark:border-slate-800/50 transition-colors box-border relative">
-            <div className="w-64 shrink-0 sticky left-0 z-30 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col p-2 box-border justify-center shadow-[1px_0_2px_rgba(0,0,0,0.02)]">
+          <div className="flex h-16 border-b border-ink-100 dark:border-ink-800/50 transition-colors box-border relative">
+            <div className="w-64 shrink-0 sticky left-0 z-30 bg-ink-50 dark:bg-ink-900 border-r border-ink-200 dark:border-ink-800 flex flex-col p-2 box-border justify-center shadow-[1px_0_2px_rgba(0,0,0,0.02)]">
               {!showAddMember ? (
                 <button 
                   onClick={() => setShowAddMember(true)}
-                  className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors"
+                  className="flex items-center gap-2 text-sm font-semibold text-ink-500 hover:text-accent-600 dark:hover:text-accent-400 p-2 rounded-lg hover:bg-white dark:hover:bg-ink-800 transition-colors"
                 >
                   <Plus size={16} /> Add Team Member
                 </button>
               ) : (
                 <select 
-                  className="w-full p-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 text-sm border border-ink-200 dark:border-ink-700 rounded-lg bg-white dark:bg-ink-950 focus:outline-none focus:ring-2 focus:ring-accent-500"
                   onChange={(e) => {
                     if (e.target.value) {
                       setAddedMemberIds(prev => [...prev, e.target.value]);

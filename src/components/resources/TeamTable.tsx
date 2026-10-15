@@ -70,7 +70,7 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
 
   if (members.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 p-8">
+      <div className="flex-1 flex flex-col items-center justify-center text-ink-500 dark:text-ink-400 p-8">
         <p>No team members found.</p>
         <p className="text-sm">Click &quot;Add Member&quot; to create one, or run the seed script.</p>
       </div>
@@ -114,22 +114,22 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
     <div className="flex-1 flex flex-col min-h-0">
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/30 px-6 py-3 flex items-center justify-between border-b border-blue-100 dark:border-blue-900/50 shrink-0">
-          <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">{selectedIds.size} member{selectedIds.size > 1 ? 's' : ''} selected</span>
+        <div className="bg-accent-50 dark:bg-accent-900/30 px-6 py-3 flex items-center justify-between border-b border-accent-100 dark:border-accent-900/50 shrink-0">
+          <span className="text-sm font-semibold text-accent-800 dark:text-accent-300">{selectedIds.size} member{selectedIds.size > 1 ? 's' : ''} selected</span>
           <div className="flex items-center gap-2">
             <SecondaryButton onClick={() => setIsBulkEditOpen(true)}>
               <Edit3 size={14} /> Edit Selected
             </SecondaryButton>
-            <SecondaryButton onClick={handleBulkDelete} className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 border-rose-200 dark:border-rose-900/50">
+            <SecondaryButton onClick={handleBulkDelete} className="text-negative-600 dark:text-negative-400 hover:bg-negative-50 dark:hover:bg-negative-900/30 border-negative-200 dark:border-negative-900/50">
               <Trash2 size={14} /> Delete Selected
             </SecondaryButton>
           </div>
         </div>
       )}
       
-      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white dark:bg-slate-950">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white dark:bg-ink-950">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 sticky top-0 border-b border-slate-200 dark:border-slate-800 z-10">
+          <thead className="bg-ink-50 dark:bg-ink-900 text-ink-500 dark:text-ink-400 sticky top-0 border-b border-ink-200 dark:border-ink-800 z-10">
             <tr>
               <th className="px-4 py-3 w-10 text-center">
                 <Tooltip content="Select All" position="top">
@@ -137,7 +137,7 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                     type="checkbox" 
                     checked={selectedIds.size === members.length && members.length > 0}
                     onChange={toggleSelectAll}
-                    className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="rounded border-ink-300 dark:border-ink-600 bg-white dark:bg-ink-800 text-accent-600 focus:ring-accent-500 cursor-pointer"
                   />
                 </Tooltip>
               </th>
@@ -146,7 +146,7 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                   <Tooltip content="Toggle All Folders" position="top">
                     <button 
                       onClick={toggleAllFolders} 
-                      className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                      className="p-1 hover:bg-ink-200 dark:hover:bg-ink-700 rounded transition-colors text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300"
                     >
                       <Folder size={14} />
                     </button>
@@ -155,13 +155,13 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                 </div>
               </th>
               <th className="px-4 py-3 font-semibold">Position</th>
-              <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Salary/Mo ({currencyCode})</th>
-              <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Overheads/Mo ({currencyCode})</th>
-              <th className="px-4 py-3 font-semibold text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">Cost/Hr ({currencyCode})</th>
+              <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Salary/mo ({currencyCode})</th>
+              <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Overheads/mo ({currencyCode})</th>
+              <th className="px-4 py-3 font-semibold text-right text-negative-600 dark:text-negative-400 whitespace-nowrap">Cost/hr ({currencyCode})</th>
               <th className="px-4 py-3 font-semibold text-right w-20">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-ink-100 dark:divide-ink-800">
             {Object.entries(membersByCategory)
               .sort(([catA], [catB]) => {
                 const orderA = categories.find(c => c.id === catA)?.order ?? 99;
@@ -175,63 +175,63 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
               return (
                 <React.Fragment key={category}>
                   {/* Category Header */}
-                  <tr className="bg-slate-100/50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group" onClick={() => toggleCategory(category)}>
+                  <tr className="bg-ink-100/50 dark:bg-ink-800/50 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors cursor-pointer group" onClick={() => toggleCategory(category)}>
                     <td className="px-4 py-2" onClick={e => e.stopPropagation()}>
                       <input 
                         type="checkbox" 
                         checked={allSelected}
                         ref={el => { if (el) el.indeterminate = someSelected; }}
                         onChange={() => toggleSelectGroup(category)}
-                        className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        className="rounded border-ink-300 dark:border-ink-600 bg-white dark:bg-ink-800 text-accent-600 focus:ring-accent-500 cursor-pointer"
                       />
                     </td>
                     <td colSpan={9} className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        {isExpanded(category) ? <ChevronDown size={16} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400" /> : <ChevronRight size={16} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400" />}
-                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                        {isExpanded(category) ? <ChevronDown size={16} className="text-ink-500 dark:text-ink-400 group-hover:text-ink-600 dark:group-hover:text-ink-400" /> : <ChevronRight size={16} className="text-ink-500 dark:text-ink-400 group-hover:text-ink-600 dark:group-hover:text-ink-400" />}
+                        <span className="font-bold text-ink-800 dark:text-ink-200">
                           {categories.find(c => c.id === category)?.name || 'Uncategorized'}
                         </span>
                         {categories.find(c => c.id === category)?.type === 'external' && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-400">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-negative-100 text-negative-700 dark:bg-negative-900/50 dark:text-negative-400">
                             EXTERNAL
                           </span>
                         )}
-                        <span className="text-slate-500 dark:text-slate-400 font-medium">({catMembers.length})</span>
+                        <span className="text-ink-500 dark:text-ink-400 font-medium">({catMembers.length})</span>
                       </div>
                     </td>
                   </tr>
 
                   {/* Members */}
                   {isExpanded(category) && catMembers.map(member => (
-                    <tr key={member.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group/row ${selectedIds.has(member.id!) ? 'bg-blue-50/30 dark:bg-blue-900/20' : ''}`}>
+                    <tr key={member.id} className={`hover:bg-ink-50/50 dark:hover:bg-ink-800/30 transition-colors group/row ${selectedIds.has(member.id!) ? 'bg-accent-50/30 dark:bg-accent-900/20' : ''}`}>
                       <td className="px-4 py-3">
                         <input 
                           type="checkbox" 
                           checked={selectedIds.has(member.id!)}
                           onChange={() => toggleSelect(member.id!)}
-                          className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          className="rounded border-ink-300 dark:border-ink-600 bg-white dark:bg-ink-800 text-accent-600 focus:ring-accent-500 cursor-pointer"
                         />
                       </td>
                       <td className="px-4 py-3 pl-6">
                         <div className="flex flex-col">
-                          <span className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          <span className="font-bold text-ink-900 dark:text-ink-50 group-hover:text-accent-600 dark:group-hover:text-accent-400 transition-colors">
                             {member.name}
                           </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                          <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
                             {member.position}
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{member.position}</td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatCurrency(member.salary)}</td>
-                      <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatCurrency(member.overheads)}</td>
-                      <td className="px-4 py-3 text-right font-medium text-rose-600 dark:text-rose-400">{formatCurrency(member.costPerHour)}</td>
+                      <td className="px-4 py-3 text-ink-600 dark:text-ink-400">{member.position}</td>
+                      <td className="px-4 py-3 text-right text-ink-600 dark:text-ink-400">{formatCurrency(member.salary)}</td>
+                      <td className="px-4 py-3 text-right text-ink-600 dark:text-ink-400">{formatCurrency(member.overheads)}</td>
+                      <td className="px-4 py-3 text-right font-medium text-negative-600 dark:text-negative-400">{formatCurrency(member.costPerHour)}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Tooltip content="Edit" position="top">
                             <button 
                               onClick={() => onEdit(member)}
-                              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                              className="p-1.5 text-ink-500 dark:text-ink-400 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-900/30 rounded-lg transition-colors"
                             >
                               <Pencil size={16} />
                             </button>
@@ -239,7 +239,7 @@ export function TeamTable({ members, onEdit, onDelete, onBulkDelete, onBulkEdit 
                           <Tooltip content="Delete" position="top">
                             <button 
                               onClick={() => member.id && onDelete(member.id)}
-                              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                              className="p-1.5 text-ink-500 dark:text-ink-400 hover:text-negative-600 dark:hover:text-negative-400 hover:bg-negative-50 dark:hover:bg-negative-900/30 rounded-lg transition-colors"
                             >
                               <Trash2 size={16} />
                             </button>
