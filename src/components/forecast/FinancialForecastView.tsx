@@ -5,6 +5,7 @@ import {
   ChevronRight, 
   Plus, 
   Minus,
+  Link2,
   RefreshCw, 
   Download, 
   Trash2, 
@@ -52,6 +53,7 @@ import { AddOutflowModal } from './AddOutflowModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 // Defaults for a company that has no forecast yet. Never put real company data here:
 // this file ships to every customer's browser.
@@ -809,6 +811,20 @@ export function FinancialForecastView() {
                         }`}>
                           {row.type}
                         </span>
+                        {row.projectId ? (
+                          <Link
+                            href={`/dashboard?project=${row.projectId}`}
+                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-px rounded font-semibold bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-300 hover:underline"
+                            title="Synced from a fee proposal. Click to open the proposal."
+                          >
+                            <Link2 size={10} />
+                            Fee proposal
+                          </Link>
+                        ) : (
+                          <span className="text-[10px] font-medium text-ink-500 dark:text-ink-400" title="Added by hand in the forecast, not linked to a fee proposal">
+                            Manual
+                          </span>
+                        )}
                       </div>
                     </div>
 
