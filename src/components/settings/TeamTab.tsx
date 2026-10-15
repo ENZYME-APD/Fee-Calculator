@@ -8,6 +8,7 @@ import { auth } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
+import { generateInviteToken } from '@/lib/invites';
 
 export function TeamTab({ company }: { company: Company }) {
   const { dbUser } = useAuth();
@@ -41,7 +42,7 @@ export function TeamTab({ company }: { company: Company }) {
 
     setLoading(true);
     try {
-      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const token = generateInviteToken();
       await createInvite({
         email,
         companyId: company.id!,
