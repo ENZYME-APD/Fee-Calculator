@@ -15,42 +15,36 @@ import { SecondaryButton, PrimaryButton } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
 import { tc, CHART_COLORS } from '@/lib/theme';
+// Starter list for a company that hasn't saved Overheads yet. Generic on purpose: this ships to
+// every new customer, so never put a real company's suppliers or people here.
 const DEFAULT_CATEGORIES: OverheadCategory[] = [
-  { id: 'cat-1', name: 'Consultants & Corp', items: [
-    { id: 'item-1-1', name: 'Ada', yearlyCost: 0, isActive: true },
-    { id: 'item-1-2', name: 'Auditors HK', yearlyCost: 0, isActive: true },
-    { id: 'item-1-3', name: 'Auditors SG', yearlyCost: 0, isActive: true },
-    { id: 'item-1-4', name: 'Domenec', yearlyCost: 0, isActive: true },
-    { id: 'item-1-5', name: 'Finance', yearlyCost: 0, isActive: true },
-    { id: 'item-1-6', name: 'Enkindle', yearlyCost: 0, isActive: true },
-    { id: 'item-1-7', name: 'Comp. Sec India', yearlyCost: 0, isActive: true }
+  { id: 'cat-1', name: 'Consultants & corporate', items: [
+    { id: 'item-1-1', name: 'Accounting', yearlyCost: 0, isActive: true },
+    { id: 'item-1-2', name: 'Audit', yearlyCost: 0, isActive: true },
+    { id: 'item-1-3', name: 'Legal', yearlyCost: 0, isActive: true },
+    { id: 'item-1-4', name: 'Company secretary', yearlyCost: 0, isActive: true },
+    { id: 'item-1-5', name: 'Bank fees', yearlyCost: 0, isActive: true }
   ]},
-  { id: 'cat-2', name: 'Marketing & BD', items: [
-    { id: 'item-2-1', name: 'Trips Budget', yearlyCost: 0, isActive: true },
-    { id: 'item-2-2', name: 'Conferences & Events', yearlyCost: 0, isActive: true }
+  { id: 'cat-2', name: 'Marketing & business development', items: [
+    { id: 'item-2-1', name: 'Business travel', yearlyCost: 0, isActive: true },
+    { id: 'item-2-2', name: 'Conferences & events', yearlyCost: 0, isActive: true },
+    { id: 'item-2-3', name: 'Website & marketing', yearlyCost: 0, isActive: true }
   ]},
-  { id: 'cat-3', name: 'IT & Software', items: [
-    { id: 'item-3-1', name: 'Dropbox', yearlyCost: 0, isActive: true },
-    { id: 'item-3-2', name: 'Google Workspace', yearlyCost: 0, isActive: true },
-    { id: 'item-3-3', name: 'Magnific', yearlyCost: 0, isActive: true },
-    { id: 'item-3-4', name: 'Archicad', yearlyCost: 0, isActive: true },
-    { id: 'item-3-5', name: 'Rhino', yearlyCost: 0, isActive: true },
-    { id: 'item-3-6', name: 'Microsoft', yearlyCost: 0, isActive: true },
-    { id: 'item-3-7', name: 'Airtable', yearlyCost: 0, isActive: true },
-    { id: 'item-3-8', name: 'Website Hosting', yearlyCost: 0, isActive: true },
-    { id: 'item-3-9', name: 'Parallels', yearlyCost: 0, isActive: true },
-    { id: 'item-3-10', name: 'Gendo', yearlyCost: 0, isActive: true },
-    { id: 'item-3-11', name: 'Speckle', yearlyCost: 0, isActive: true },
-    { id: 'item-3-12', name: 'Automation (n8n, Zapier)', yearlyCost: 0, isActive: true },
-    { id: 'item-3-13', name: 'MIRO', yearlyCost: 0, isActive: true },
-    { id: 'item-3-14', name: 'XERO', yearlyCost: 0, isActive: true },
-    { id: 'item-3-15', name: 'Hardware Depreciation', yearlyCost: 0, isActive: true }
+  { id: 'cat-3', name: 'IT & software', items: [
+    { id: 'item-3-1', name: 'CAD / BIM licences', yearlyCost: 0, isActive: true },
+    { id: 'item-3-2', name: '3D & rendering software', yearlyCost: 0, isActive: true },
+    { id: 'item-3-3', name: 'Office suite & email', yearlyCost: 0, isActive: true },
+    { id: 'item-3-4', name: 'Cloud storage', yearlyCost: 0, isActive: true },
+    { id: 'item-3-5', name: 'Accounting software', yearlyCost: 0, isActive: true },
+    { id: 'item-3-6', name: 'Collaboration tools', yearlyCost: 0, isActive: true },
+    { id: 'item-3-7', name: 'Website hosting', yearlyCost: 0, isActive: true },
+    { id: 'item-3-8', name: 'Hardware depreciation', yearlyCost: 0, isActive: true }
   ]},
-  { id: 'cat-4', name: 'Office & Others', items: [
-    { id: 'item-4-1', name: 'Memberships (ARB, etc)', yearlyCost: 0, isActive: true },
-    { id: 'item-4-2', name: 'Office Rent / Expenses', yearlyCost: 0, isActive: true },
-    { id: 'item-4-3', name: 'Health Insurance', yearlyCost: 0, isActive: true },
-    { id: 'item-4-4', name: 'Business Insurance', yearlyCost: 0, isActive: true }
+  { id: 'cat-4', name: 'Office & others', items: [
+    { id: 'item-4-1', name: 'Office rent & utilities', yearlyCost: 0, isActive: true },
+    { id: 'item-4-2', name: 'Professional memberships', yearlyCost: 0, isActive: true },
+    { id: 'item-4-3', name: 'Health insurance', yearlyCost: 0, isActive: true },
+    { id: 'item-4-4', name: 'Professional indemnity insurance', yearlyCost: 0, isActive: true }
   ]}
 ];
 
