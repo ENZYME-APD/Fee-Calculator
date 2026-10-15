@@ -210,6 +210,8 @@ export interface ForecastOutflowItem {
   monthlyAmounts: Record<string, number>; // YYYY-MM -> amount
   defaultMonthlyAmount?: number; // applies to every month without its own entry in monthlyAmounts
   initialBalance?: number; // for debt tracking
+  linkedToOverheads?: boolean; // base amount = monthly salaries (Team resources) + active overhead items / 12 (Overheads)
+  monthlyAdjustments?: Record<string, number>; // YYYY-MM -> +/- correction on top of the month's amount
 }
 
 export interface ForecastProfile {

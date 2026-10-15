@@ -37,7 +37,8 @@ import {
   getPayments, 
   getTeamMembers,
   getAllocations,
-  getProjectCosts
+  getProjectCosts,
+  getOverheadsProfile
 } from '@/lib/firebase/db';
 import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
 import { useAppSettings } from '@/lib/auth/AuthContext';
@@ -86,9 +87,18 @@ function monthKeyFromDate(ts: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-/** An outflow's amount for a month: its own entry if set, otherwise its default monthly amount. */
-function outflowAmount(item: ForecastOutflowItem, monthKey: string): number {
+/**
+ * An outflow's base amount for a month: the live Team resources + Overheads figure for a linked
+ * line; otherwise the month's own entry, or the line's every-month amount.
+ */
+function outflowBase(item: ForecastOutflowItem, monthKey: string, linkedMonthly: number): number {
+  if (item.linkedToOverheads) return linkedMonthly;
   return item.monthlyAmounts?.[monthKey] ?? item.defaultMonthlyAmount ?? 0;
+}
+
+/** Base plus the month's +/- adjustment. */
+function outflowAmount(item: ForecastOutflowItem, monthKey: string, linkedMonthly: number): number {
+  return outflowBase(item, monthKey, linkedMonthly) + (item.monthlyAdjustments?.[monthKey] ?? 0);
 }
 
 function getCurrentMonthKey(): string {
@@ -117,6 +127,11 @@ export function FinancialForecastView() {
   const [startingBankBalance, setStartingBankBalance] = useState<number>(DEFAULT_SETTINGS.startingBankBalance);
   const [possibleConversion, setPossibleConversion] = useState<number>(DEFAULT_SETTINGS.possibleConversion);
   const [invoicingConversion, setInvoicingConversion] = useState<number>(DEFAULT_SETTINGS.invoicingConversion);
+
+  // Monthly running costs from the rest of the app, for the line linked to Overheads:
+  // all team salaries (Team resources, monthly) + active overhead items (Overheads, yearly / 12).
+  // Overheads' "non-billable time" isn't added, since full salaries are already counted.
+  const [runningCosts, setRunningCosts] = useState({ salaries: 0, overheads: 0, total: 0 });
 
   // Rows and Outflows
   const [rows, setRows] = useState<ForecastRow[]>([]);
@@ -149,7 +164,15 @@ export function FinancialForecastView() {
     async function loadData() {
       setLoading(true);
       try {
-        const existingProfile = await getForecastProfile();
+        const [existingProfile, members, overheadsProfile] = await Promise.all([
+          getForecastProfile(), getTeamMembers(), getOverheadsProfile(),
+        ]);
+        const salaries = Math.round(members.reduce((sum, m) => sum + (m.salary || 0), 0));
+        const overheadItems = Math.round((overheadsProfile?.categories || [])
+          .flatMap(c => c.items || [])
+          .filter(i => i.isActive !== false)
+          .reduce((sum, i) => sum + (i.yearlyCost || 0), 0) / 12);
+        setRunningCosts({ salaries, overheads: overheadItems, total: salaries + overheadItems });
         if (existingProfile) {
           setProfile(existingProfile);
           setStartMonthKey(existingProfile.startMonthKey || getCurrentMonthKey());
@@ -161,18 +184,14 @@ export function FinancialForecastView() {
           setRows(existingProfile.rows || []);
           setOutflows(existingProfile.outflows || []);
         } else {
-          // New forecast: start the monthly costs line from Team resources (salaries + overheads).
-          const members = await getTeamMembers();
-          const monthlyTeamCost = Math.round(members.reduce((sum, m) => sum + (m.salary || 0) + (m.overheads || 0), 0));
-          if (monthlyTeamCost > 0) {
-            setOutflows([{
-              id: 'burn_base',
-              name: 'Team salaries and overheads',
-              type: 'burn',
-              defaultMonthlyAmount: monthlyTeamCost,
-              monthlyAmounts: {},
-            }]);
-          }
+          // New forecast: start with a running-costs line linked to Team resources + Overheads.
+          setOutflows([{
+            id: 'burn_base',
+            name: 'Running costs (salaries + overheads)',
+            type: 'burn',
+            linkedToOverheads: true,
+            monthlyAmounts: {},
+          }]);
         }
       } catch (err) {
         console.error("Error loading forecast data", err);
@@ -438,6 +457,32 @@ export function FinancialForecastView() {
   };
 
   // Outflow amount change
+  // Link or unlink a line to Team resources + Overheads. Linking replaces typed month amounts
+  // with the live figure; adjustments are kept.
+  const handleSetLinked = (outflowId: string, linked: boolean) => {
+    setOutflows(prev => prev.map(item => {
+      if (item.id !== outflowId) return item;
+      if (linked) {
+        const next = { ...item, linkedToOverheads: true, monthlyAmounts: {} };
+        delete next.defaultMonthlyAmount;
+        return next;
+      }
+      // Unlinking keeps today's figure as the every-month amount, so totals don't jump.
+      return { ...item, linkedToOverheads: false, defaultMonthlyAmount: runningCosts.total || undefined };
+    }));
+  };
+
+  // +/- correction for one month (0 or empty removes it)
+  const handleUpdateAdjustment = (outflowId: string, monthKey: string, amount: number) => {
+    setOutflows(prev => prev.map(item => {
+      if (item.id !== outflowId) return item;
+      const monthlyAdjustments = { ...(item.monthlyAdjustments || {}) };
+      if (!amount) delete monthlyAdjustments[monthKey];
+      else monthlyAdjustments[monthKey] = Math.round(amount);
+      return { ...item, monthlyAdjustments };
+    }));
+  };
+
   // Amount repeated in every month that has no amount of its own (null switches repeating off)
   const handleUpdateOutflowDefault = (outflowId: string, amount: number | null) => {
     setOutflows(prev => prev.map(item => {
@@ -492,7 +537,7 @@ export function FinancialForecastView() {
 
       // Fixed and debt outflows, plus referral commissions on this month's collections
       let mOutflows = 0;
-      outflows.forEach(item => { mOutflows += outflowAmount(item, m); });
+      outflows.forEach(item => { mOutflows += outflowAmount(item, m, runningCosts.total); });
       Object.values(dynamicReferrals).forEach(refData => { mOutflows += (refData.monthly[m] || 0); });
 
       return {
@@ -524,7 +569,7 @@ export function FinancialForecastView() {
     }
 
     return stats;
-  }, [monthKeys, startMonthKey, openingMonthKey, rows, outflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion]);
+  }, [monthKeys, startMonthKey, openingMonthKey, rows, outflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion, runningCosts.total]);
 
   if (authLoading || !isAdmin || loading) {
     return (
@@ -972,12 +1017,34 @@ export function FinancialForecastView() {
               );
             })}
 
-            {/* Standard Fixed / Debt Outflows */}
-            {outflows.map(item => (
+            {/* Standard fixed / debt outflows */}
+            {outflows.map(item => {
+              const isLinked = !!item.linkedToOverheads;
+              const canLink = item.type === 'burn';
+              const showAdjust = item.type === 'burn';
+              return (
               <div key={item.id} className="flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors">
-                <div className="w-[480px] shrink-0 p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between">
+                <div className="w-[480px] shrink-0 p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <span className="font-semibold text-ink-800 dark:text-ink-200">{item.name}</span>
+                    {isLinked && (
+                      <div
+                        className="text-[11px] text-ink-500 dark:text-ink-400 mt-0.5"
+                        title={`Salaries (Team resources): ${fmt(runningCosts.salaries)} a month\nOverhead items (Overheads): ${fmt(runningCosts.overheads)} a month\nUpdates automatically when either page changes.`}
+                      >
+                        From Team resources + Overheads: <span className="font-semibold text-ink-700 dark:text-ink-300">{fmt(runningCosts.total)}</span> a month
+                        <button onClick={() => handleSetLinked(item.id, false)} className="ml-2 font-semibold text-accent-700 dark:text-accent-400 hover:underline">Unlink</button>
+                      </div>
+                    )}
+                    {!isLinked && canLink && (
+                      <button
+                        onClick={() => handleSetLinked(item.id, true)}
+                        className="block text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline mt-0.5"
+                        title="Use monthly salaries from Team resources plus overhead items from Overheads, kept up to date automatically. Month amounts you typed are replaced; corrections are kept."
+                      >
+                        Link to Team resources + Overheads
+                      </button>
+                    )}
                     {item.initialBalance ? (
                       <div className="text-[10px] text-ink-500 dark:text-ink-400">
                         Debt balance: {fmt(item.initialBalance)}
@@ -985,60 +1052,94 @@ export function FinancialForecastView() {
                     ) : null}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Repeats in every month without its own amount */}
-                    <label className="flex items-center gap-1.5 text-[11px] font-medium text-ink-500 dark:text-ink-400" title="Applies to every month that doesn't have its own amount. Leave empty to enter months one by one.">
-                      Every month
-                      <input
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={item.defaultMonthlyAmount ? item.defaultMonthlyAmount : ''}
-                        onChange={e => {
-                          const raw = e.target.value.replace(/[^0-9]/g, '');
-                          handleUpdateOutflowDefault(item.id, raw === '' ? null : parseInt(raw));
-                        }}
-                        placeholder="—"
-                        className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-900 text-ink-900 dark:text-ink-100 rounded outline-none focus:border-accent-500 text-xs"
-                        aria-label={`${item.name}: amount every month`}
-                      />
-                    </label>
-                  {item.id !== 'burn_base' && (
-                    <IconButton
-                      onClick={() => setOutflows(prev => prev.filter(o => o.id !== item.id))}
-                      className="opacity-0 group-hover:opacity-100 hover:text-negative-600 transition-opacity"
-                    >
-                      <Trash2 size={13} />
-                    </IconButton>
-                  )}
+                    {/* Repeats in every month without its own amount (not needed when linked) */}
+                    {!isLinked && (
+                      <label className="flex items-center gap-1.5 text-[11px] font-medium text-ink-500 dark:text-ink-400" title="Applies to every month that doesn't have its own amount. Leave empty to enter months one by one.">
+                        Every month
+                        <input
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={item.defaultMonthlyAmount ? item.defaultMonthlyAmount : ''}
+                          onChange={e => {
+                            const raw = e.target.value.replace(/[^0-9]/g, '');
+                            handleUpdateOutflowDefault(item.id, raw === '' ? null : parseInt(raw));
+                          }}
+                          placeholder="—"
+                          className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-900 text-ink-900 dark:text-ink-100 rounded outline-none focus:border-accent-500 text-xs"
+                          aria-label={`${item.name}: amount every month`}
+                        />
+                      </label>
+                    )}
+                    {item.id !== 'burn_base' && (
+                      <IconButton
+                        onClick={() => setOutflows(prev => prev.filter(o => o.id !== item.id))}
+                        className="opacity-0 group-hover:opacity-100 hover:text-negative-600 transition-opacity"
+                        title="Delete line"
+                      >
+                        <Trash2 size={13} />
+                      </IconButton>
+                    )}
                   </div>
                 </div>
 
                 {monthKeys.map(m => {
                   const own = item.monthlyAmounts?.[m];
                   const val = own ?? 0;
+                  const adj = item.monthlyAdjustments?.[m] ?? 0;
+                  const total = outflowAmount(item, m, runningCosts.total);
                   return (
-                    <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-2 flex items-center justify-end">
-                      <div className="flex items-center gap-1">
-                        <span className="text-negative-500 font-bold">-</span>
+                    <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-2 flex items-center justify-end gap-2">
+                      {isLinked ? (
+                        <span className="font-semibold text-ink-700 dark:text-ink-300" title="From Team resources + Overheads">-{fmt(runningCosts.total)}</span>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <span className="text-negative-500 font-bold">-</span>
+                          <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={own === undefined ? '' : val}
+                            onChange={e => {
+                              const raw = e.target.value.replace(/[^0-9]/g, '');
+                              handleUpdateOutflowMonth(item.id, m, raw === '' ? null : parseInt(raw));
+                            }}
+                            placeholder={String(item.defaultMonthlyAmount ?? 0)}
+                            title={item.defaultMonthlyAmount ? (own === undefined ? `Repeated every-month amount. Type a value to change just this month.` : `Clear to go back to the every-month amount (${item.defaultMonthlyAmount.toLocaleString()}).`) : undefined}
+                            className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-ink-50 dark:bg-ink-800 text-ink-900 dark:text-ink-100 placeholder:text-ink-500 dark:placeholder:text-ink-400 placeholder:font-medium rounded outline-none focus:border-accent-500 text-xs"
+                          />
+                        </div>
+                      )}
+                      {showAdjust && (
                         <input
-                          type="number"
-                          step="1"
-                          min="0"
-                          value={own === undefined ? '' : val}
+                          type="text"
+                          inputMode="numeric"
+                          value={adj ? (adj > 0 ? `+${adj}` : String(adj)) : ''}
                           onChange={e => {
-                            const raw = e.target.value.replace(/[^0-9]/g, '');
-                            handleUpdateOutflowMonth(item.id, m, raw === '' ? null : parseInt(raw));
+                            const raw = e.target.value.replace(/[^0-9+-]/g, '');
+                            const sign = raw.trim().startsWith('-') ? -1 : 1;
+                            const digits = raw.replace(/[^0-9]/g, '');
+                            handleUpdateAdjustment(item.id, m, digits ? sign * parseInt(digits) : 0);
                           }}
-                          placeholder={String(item.defaultMonthlyAmount ?? 0)}
-                          title={item.defaultMonthlyAmount ? (own === undefined ? `Repeated every-month amount. Type a value to change just this month.` : `Clear to go back to the every-month amount (${item.defaultMonthlyAmount.toLocaleString()}).`) : undefined}
-                          className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-ink-50 dark:bg-ink-800 text-ink-900 dark:text-ink-100 placeholder:text-ink-500 dark:placeholder:text-ink-400 placeholder:font-medium rounded outline-none focus:border-accent-500 text-xs"
+                          placeholder="± adjust"
+                          title="Correction for this month only: +2000 for extra costs, -1500 for lower costs."
+                          aria-label={`${item.name}: adjustment for ${formatMonthLabel(m)}`}
+                          className={`w-20 px-2 py-1 text-right text-xs font-semibold border rounded outline-none focus:border-accent-500 bg-white dark:bg-ink-900 placeholder:text-ink-500 dark:placeholder:text-ink-400 placeholder:font-normal ${
+                            adj > 0 ? 'border-negative-300 dark:border-negative-800 text-negative-700 dark:text-negative-400'
+                            : adj < 0 ? 'border-positive-300 dark:border-positive-800 text-positive-700 dark:text-positive-400'
+                            : 'border-ink-200 dark:border-ink-700 text-ink-700 dark:text-ink-300'
+                          }`}
                         />
-                      </div>
+                      )}
+                      {showAdjust && adj !== 0 && (
+                        <span className="font-bold text-negative-600 dark:text-negative-400 tabular-nums" title="This month's total">= -{fmt(total)}</span>
+                      )}
                     </div>
                   );
                 })}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Outflow Subtotal */}
