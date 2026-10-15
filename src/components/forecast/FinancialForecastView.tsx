@@ -602,6 +602,28 @@ export function FinancialForecastView() {
     try { localStorage.setItem('forecast.showNotes', v ? '0' : '1'); } catch {}
     return !v;
   });
+  // Hide rows with no amounts (any stage) in the months on screen. Remembered per browser.
+  const [hideEmpty, setHideEmpty] = useState(false);
+  useEffect(() => {
+    try { setHideEmpty(localStorage.getItem('forecast.hideEmpty') === '1'); } catch {}
+  }, []);
+  const toggleHideEmpty = () => setHideEmpty(v => {
+    try { localStorage.setItem('forecast.hideEmpty', v ? '0' : '1'); } catch {}
+    return !v;
+  });
+  const visibleRows = hideEmpty
+    ? rows.filter(r => monthKeys.some(m => {
+        const c = r.cells[m];
+        return !!c && ((c.possible?.length || 0) + (c.invoicing?.length || 0) + (c.collections?.length || 0)) > 0;
+      }))
+    : rows;
+  // Arrows move a row past its visible neighbour, so hidden rows never swallow a click.
+  const moveVisible = (row: ForecastRow, dir: -1 | 1) => {
+    const i = visibleRows.indexOf(row);
+    const neighbour = visibleRows[i + dir];
+    if (neighbour) dropRowOn(row.id, neighbour.id, dir < 0 ? 'before' : 'after');
+  };
+
   const NAME_W = 300;
   const NOTES_W = 200;
   const LABEL_W = NAME_W + (showNotes ? NOTES_W : 0);
@@ -796,7 +818,15 @@ export function FinancialForecastView() {
                 style={{ width: NAME_W }}
                 className={`shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 flex items-center justify-between gap-2 ${showNotes ? 'border-r border-ink-200 dark:border-ink-800' : 'border-r-2 border-ink-200 dark:border-ink-700'}`}
               >
-                <span>Workstream <span className="font-medium">· {rows.length} {rows.length === 1 ? 'row' : 'rows'}</span></span>
+                <span>Workstream <span className="font-medium">· {visibleRows.length === rows.length ? `${rows.length} ${rows.length === 1 ? 'row' : 'rows'}` : `${visibleRows.length} of ${rows.length}`}</span></span>
+                <span className="flex items-center gap-2.5">
+                <button
+                  onClick={toggleHideEmpty}
+                  className="text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline whitespace-nowrap"
+                  title={hideEmpty ? 'Show rows with no amounts in these months' : 'Hide rows with no amounts in these months'}
+                >
+                  {hideEmpty ? 'Show empty' : 'Hide empty'}
+                </button>
                 <button
                   onClick={toggleNotes}
                   className="text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline whitespace-nowrap"
@@ -804,6 +834,7 @@ export function FinancialForecastView() {
                 >
                   {showNotes ? 'Hide notes' : 'Show notes'}
                 </button>
+                </span>
               </div>
               {showNotes && (
                 <div style={{ width: NOTES_W }} className="shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r-2 border-ink-200 dark:border-ink-700 flex items-center">
@@ -846,7 +877,12 @@ export function FinancialForecastView() {
                 <p>Use <span className="font-semibold">Sync projects</span> to bring in milestones from your fee proposals, or <span className="font-semibold">Add income</span> for retainers and other income. Then click a cell to add an amount.</p>
               </div>
             )}
-            {rows.map((row, rowIdx) => {
+            {rows.length > 0 && visibleRows.length === 0 && (
+              <div className="px-6 py-6 text-sm text-ink-500 dark:text-ink-400">
+                No rows have amounts in these months. <button onClick={toggleHideEmpty} className="font-semibold text-accent-700 dark:text-accent-400 hover:underline">Show empty rows</button>
+              </div>
+            )}
+            {visibleRows.map((row, rowIdx) => {
               // Colour stripe drawn inside the first cell (inset shadow), so it takes no width and
               // rows stay aligned with the header and totals.
               const tagStripe = 
@@ -941,8 +977,8 @@ export function FinancialForecastView() {
                           )}
                         </div>
                         <div className="flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
-                          <IconButton onClick={() => moveRow(rowIdx, rowIdx - 1)} disabled={rowIdx === 0} className="w-6 h-6 hover:text-accent-600" title="Move up"><ArrowUp size={12} /></IconButton>
-                          <IconButton onClick={() => moveRow(rowIdx, rowIdx + 1)} disabled={rowIdx === rows.length - 1} className="w-6 h-6 hover:text-accent-600" title="Move down"><ArrowDown size={12} /></IconButton>
+                          <IconButton onClick={() => moveVisible(row, -1)} disabled={rowIdx === 0} className="w-6 h-6 hover:text-accent-600" title="Move up"><ArrowUp size={12} /></IconButton>
+                          <IconButton onClick={() => moveVisible(row, 1)} disabled={rowIdx === visibleRows.length - 1} className="w-6 h-6 hover:text-accent-600" title="Move down"><ArrowDown size={12} /></IconButton>
                           <IconButton onClick={() => setEditingRow(row)} className="w-6 h-6 hover:text-accent-600" title="Edit row"><Edit2 size={12} /></IconButton>
                           <IconButton onClick={() => setResetRowTarget(row)} className="w-6 h-6 hover:text-warning-600" title="Reset row: re-sync from its fee proposal, or clear its amounts"><Undo2 size={12} /></IconButton>
                           <IconButton onClick={() => setDeleteRowTarget(row.id)} className="w-6 h-6 hover:text-negative-600" title="Delete row"><Trash2 size={12} /></IconButton>
