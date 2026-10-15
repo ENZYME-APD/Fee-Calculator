@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase, getUsersByCompany, getProjectCosts, getAllocations, getTeamMembers, updateAllocation } from '@/lib/firebase/db';
 import { Project, Phase, User, Allocation, ProjectCost, TeamMember } from '@/lib/firebase/schema';
 import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator, ChevronUp, ChevronDown, Save, Search, CalendarDays } from 'lucide-react';
@@ -106,12 +106,17 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
 
   const { dbUser } = useAuth();
   const { formatCurrency, areaUnit } = useAppSettings();
+  const requestedProjectId = useSearchParams().get('project');
 
   const loadProjects = async () => {
     const ownerId = dbUser?.role !== 'admin' ? dbUser?.uid : undefined;
     const data = await getProjects(isTemplateMode, ownerId);
     setProjects(data);
-    if (data.length > 0 && !activeProjectId) {
+    // ?project=<id> (e.g. from Financial forecast) opens that project; otherwise the first one
+    const requested = requestedProjectId && data.find(p => p.id === requestedProjectId);
+    if (requested) {
+      setActiveProjectId(requested.id!);
+    } else if (data.length > 0 && !activeProjectId) {
       setActiveProjectId(data[0].id!);
     }
     if (!isTemplateMode) {

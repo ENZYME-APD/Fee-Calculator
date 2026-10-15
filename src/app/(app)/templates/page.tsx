@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { ProjectManager } from '@/components/projects/ProjectManager';
 import { LayoutTemplate } from 'lucide-react';
 import { addProject, addPhase } from '@/lib/firebase/db';
@@ -157,7 +157,7 @@ export default function TemplatesPage() {
   return (
     <div className="h-full flex flex-col bg-ink-50 dark:bg-ink-950 transition-colors duration-300">
       <div className="flex-1 overflow-hidden relative">
-        <ProjectManager isTemplateMode={true} headerActions={seedAction} />
+        <Suspense fallback={null}><ProjectManager isTemplateMode={true} headerActions={seedAction} /></Suspense>
       </div>
     </div>
   );

@@ -55,15 +55,16 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
     let otherExpenses = 0;
 
     phaseAllocations.forEach(alloc => {
+      // Time booked by someone who has since left still counts, at the rate saved on the
+      // allocation, so an issued proposal's fee doesn't change when the team does (same as
+      // the payment schedule and computeProjectFinancials).
       const member = members.find(m => m.id === alloc.memberId);
-      if (member) {
-        totalHours += alloc.hours;
-        const cost = alloc.hours * getAllocationRate(alloc, member);
-        totalCost += cost;
+      totalHours += alloc.hours;
+      const cost = alloc.hours * getAllocationRate(alloc, member);
+      totalCost += cost;
 
-        const catId = member.category || 'uncategorized';
-        breakdown[catId] = (breakdown[catId] || 0) + cost;
-      }
+      const catId = member?.category || 'uncategorized';
+      breakdown[catId] = (breakdown[catId] || 0) + cost;
     });
 
     const phaseCosts = projectCosts.filter(c => c.phaseId === phase.id);

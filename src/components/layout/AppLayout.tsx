@@ -608,11 +608,26 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                   phases.map((phase, index) => {
                     const phaseAllocations = localAllocations
                       .filter(a => a.phaseId === phase.id)
-                      .map(a => ({
-                        ...a,
-                        member: members.find(m => m.id === a.memberId)!
-                      }))
-                      .filter(a => a.member); // Filter out if member was deleted
+                      .map(a => {
+                        // Someone who has left the team: keep the chip (and its cost, at the saved
+                        // rate) so the proposal stays as issued, flagged so the role can be refilled.
+                        const member = members.find(m => m.id === a.memberId);
+                        return {
+                          ...a,
+                          memberMissing: !member,
+                          member: member ?? {
+                            id: a.memberId,
+                            companyId: '',
+                            name: 'Former team member',
+                            position: '',
+                            type: 'Employee',
+                            salary: 0,
+                            overheads: 0,
+                            costPerHour: a.costPerHourSnapshot ?? 0,
+                            currency: '',
+                          },
+                        };
+                      });
                       
                     const phaseCosts = localProjectCosts.filter(c => c.phaseId === phase.id);
                       

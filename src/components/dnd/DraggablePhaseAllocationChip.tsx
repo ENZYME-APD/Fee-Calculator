@@ -3,11 +3,12 @@ import { useDraggable } from '@dnd-kit/core';
 import { Allocation, TeamMember } from '@/lib/firebase/schema';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { Copy, ArrowRight, Pencil, Trash2 } from 'lucide-react';
+import { Copy, ArrowRight, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
 
-export type ExtendedAllocation = Allocation & { member: TeamMember };
+// memberMissing: the person was removed from Team resources after this was booked
+export type ExtendedAllocation = Allocation & { member: TeamMember; memberMissing?: boolean };
 
 interface DraggablePhaseAllocationChipProps {
   allocation: ExtendedAllocation;
@@ -48,13 +49,26 @@ export function DraggablePhaseAllocationChip({
       style={style}
       className={cn(
         "bg-white dark:bg-ink-800 p-3.5 rounded-xl border border-ink-200 dark:border-ink-700 flex justify-between items-center group hover:border-accent-300 dark:hover:border-accent-700 transition-colors relative hover:z-50 cursor-grab active:cursor-grabbing",
+        allocation.memberMissing && "border-dashed border-warning-400 dark:border-warning-700 bg-warning-50/60 dark:bg-warning-950/30",
         isDragging && "opacity-50 ring-2 ring-accent-500 shadow-lg scale-105"
       )}
       {...listeners}
       {...attributes}
     >
       <div className="flex flex-col">
-        <span className="font-semibold text-ink-700 dark:text-ink-200 text-sm">{allocation.member.name}</span>
+        {allocation.memberMissing ? (
+          <Tooltip
+            content={`This person is no longer in Team resources. The cost stays at the rate saved on this booking (${formatCurrency(getAllocationRate(allocation, allocation.member))}/h), so the fee doesn't change. Assign someone at a similar rate and delete this booking.`}
+            position="top"
+          >
+            <span className="font-semibold text-warning-700 dark:text-warning-300 text-sm flex items-center gap-1">
+              <AlertTriangle size={13} className="shrink-0" />
+              Former team member
+            </span>
+          </Tooltip>
+        ) : (
+          <span className="font-semibold text-ink-700 dark:text-ink-200 text-sm">{allocation.member.name}</span>
+        )}
         <span className="text-xs font-medium text-ink-500 dark:text-ink-400 mt-0.5">{Number(allocation.hours.toFixed(1))} hrs</span>
       </div>
       <div className="flex flex-col items-end pr-2 pl-2">

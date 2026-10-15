@@ -588,6 +588,20 @@ export function FinancialForecastView() {
     return stats;
   }, [monthKeys, startMonthKey, openingMonthKey, rows, outflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion, runningCosts.total]);
 
+  // Left column: frozen while scrolling sideways. The notes column can be hidden (remembered per browser).
+  const [showNotes, setShowNotes] = useState(true);
+  useEffect(() => {
+    try { const v = localStorage.getItem('forecast.showNotes'); if (v !== null) setShowNotes(v === '1'); } catch {}
+  }, []);
+  const toggleNotes = () => setShowNotes(v => {
+    try { localStorage.setItem('forecast.showNotes', v ? '0' : '1'); } catch {}
+    return !v;
+  });
+  const NAME_W = 300;
+  const NOTES_W = 200;
+  const LABEL_W = NAME_W + (showNotes ? NOTES_W : 0);
+  const FROZEN_EDGE = 'shadow-[3px_0_4px_-2px_rgba(0,0,0,0.12)]';
+
   // Row ordering: drag handle (its own MIME type, so it never collides with pill drags) or arrows
   const ROW_MIME = 'application/x-forecast-row';
   const [dropTarget, setDropTarget] = useState<{ rowId: string; pos: 'before' | 'after' } | null>(null);
@@ -771,15 +785,26 @@ export function FinancialForecastView() {
         <Card className="min-w-fit shadow-sm overflow-clip mt-6">
           {/* Matrix Header */}
           <div className="bg-ink-50 dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 flex sticky top-0 z-30 shadow-[0_1px_0_var(--ink-200)]">
-            {/* Workstream Column: 280px */}
-            <div className="w-[280px] shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r border-ink-200 dark:border-ink-800 flex items-center justify-between">
-              <span>Workstream</span>
-              <span className="text-[11px] font-medium text-ink-500 dark:text-ink-400">{rows.length} {rows.length === 1 ? 'row' : 'rows'}</span>
-            </div>
-
-            {/* Description / Notes Column: 200px */}
-            <div className="w-[200px] shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r-2 border-ink-200 dark:border-ink-700 flex items-center">
-              <span>Description / notes</span>
+            {/* Frozen left header: workstream (+ notes) */}
+            <div className={`sticky left-0 z-10 flex shrink-0 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE}`}>
+              <div
+                style={{ width: NAME_W }}
+                className={`shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 flex items-center justify-between gap-2 ${showNotes ? 'border-r border-ink-200 dark:border-ink-800' : 'border-r-2 border-ink-200 dark:border-ink-700'}`}
+              >
+                <span>Workstream <span className="font-medium">· {rows.length} {rows.length === 1 ? 'row' : 'rows'}</span></span>
+                <button
+                  onClick={toggleNotes}
+                  className="text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline whitespace-nowrap"
+                  title={showNotes ? 'Hide the notes column' : 'Show the notes column'}
+                >
+                  {showNotes ? 'Hide notes' : 'Show notes'}
+                </button>
+              </div>
+              {showNotes && (
+                <div style={{ width: NOTES_W }} className="shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r-2 border-ink-200 dark:border-ink-700 flex items-center">
+                  Notes
+                </div>
+              )}
             </div>
 
             {/* Month Column Headers with 3 stage sub-columns: 360px per month */}
@@ -850,9 +875,12 @@ export function FinancialForecastView() {
                       : ''
                   }`}
                 >
-                  {/* Column 1: Workstream Name & Row Actions (280px) */}
-                  <div className={`w-[280px] shrink-0 p-3 pl-4 border-r border-ink-100 dark:border-ink-800 flex items-center justify-between gap-2 overflow-hidden ${tagStripe}`}>
-                    <div className="flex items-center gap-1 min-w-0 -ml-2">
+                  {/* Frozen left: name, tags and actions (+ notes) */}
+                  <div className={`sticky left-0 z-10 flex shrink-0 bg-white dark:bg-ink-900 group-hover:bg-ink-50 dark:group-hover:bg-ink-800 transition-colors ${FROZEN_EDGE}`}>
+                  <div
+                    style={{ width: NAME_W }}
+                    className={`shrink-0 py-2.5 pr-2 pl-1.5 flex items-start gap-1 ${tagStripe} ${showNotes ? 'border-r border-ink-100 dark:border-ink-800' : 'border-r-2 border-ink-200 dark:border-ink-700'}`}
+                  >
                     <span
                       draggable
                       onDragStart={e => {
@@ -862,94 +890,75 @@ export function FinancialForecastView() {
                         if (rowEl) e.dataTransfer.setDragImage(rowEl, 20, 20);
                       }}
                       onDragEnd={() => setDropTarget(null)}
-                      className="shrink-0 p-0.5 rounded cursor-grab active:cursor-grabbing text-ink-400 dark:text-ink-500 hover:text-ink-700 dark:hover:text-ink-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="shrink-0 mt-0.5 p-0.5 rounded cursor-grab active:cursor-grabbing text-ink-400 dark:text-ink-500 hover:text-ink-700 dark:hover:text-ink-300 opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Drag to reorder"
                     >
                       <GripVertical size={14} />
                     </span>
-                    <div className="overflow-hidden min-w-0">
-                      <div className="font-bold text-xs text-ink-800 dark:text-ink-200 truncate" title={row.name}>
-                        {row.name}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[10px] px-1.5 py-px rounded font-semibold capitalize ${
-                          row.type === 'external' ? 'bg-negative-50 text-negative-700 dark:bg-negative-950/40 dark:text-negative-400' :
-                          row.type === 'retainer' ? 'bg-positive-50 text-positive-700 dark:bg-positive-950/40 dark:text-positive-400' :
-                          'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-400'
-                        }`}>
-                          {row.type}
-                        </span>
-                        {row.projectId ? (
-                          <Link
-                            href={`/dashboard?project=${row.projectId}`}
-                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-px rounded font-semibold bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-300 hover:underline"
-                            title="Synced from a fee proposal. Click to open the proposal."
-                          >
-                            <Link2 size={10} />
-                            Fee proposal
-                          </Link>
-                        ) : (
-                          <span className="text-[10px] font-medium text-ink-500 dark:text-ink-400" title="Added by hand in the forecast, not linked to a fee proposal">
-                            Manual
+                    <div className="min-w-0 flex-1">
+                      {/* Line 1: name, full width. Linked rows open the project in Projects & phases. */}
+                      {row.projectId ? (
+                        <Link
+                          href={`/projects?project=${row.projectId}`}
+                          className="block font-semibold text-sm text-ink-900 dark:text-ink-100 truncate hover:text-accent-700 dark:hover:text-accent-300 hover:underline"
+                          title={`${row.name}: open in Projects & phases`}
+                        >
+                          {row.name}
+                        </Link>
+                      ) : (
+                        <div className="font-semibold text-sm text-ink-900 dark:text-ink-100 truncate" title={row.name}>
+                          {row.name}
+                        </div>
+                      )}
+                      {/* Line 2: tags left, small actions right */}
+                      <div className="flex items-center justify-between gap-2 mt-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className={`text-[10px] px-1.5 py-px rounded font-semibold capitalize whitespace-nowrap ${
+                            row.type === 'external' ? 'bg-negative-50 text-negative-700 dark:bg-negative-950/40 dark:text-negative-400' :
+                            row.type === 'retainer' ? 'bg-positive-50 text-positive-700 dark:bg-positive-950/40 dark:text-positive-400' :
+                            'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-400'
+                          }`}>
+                            {row.type}
                           </span>
-                        )}
+                          {row.projectId ? (
+                            <Link
+                              href={`/dashboard?project=${row.projectId}`}
+                              className="inline-flex items-center gap-1 text-[10px] px-1.5 py-px rounded font-semibold whitespace-nowrap bg-accent-100 text-accent-800 dark:bg-accent-900/60 dark:text-accent-200 hover:underline"
+                              title="Synced from a fee proposal. Click to open the proposal."
+                            >
+                              <Link2 size={10} />
+                              Proposal
+                            </Link>
+                          ) : (
+                            <span className="text-[10px] font-medium text-ink-500 dark:text-ink-400 whitespace-nowrap" title="Added by hand in the forecast, not linked to a fee proposal">
+                              Manual
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
+                          <IconButton onClick={() => moveRow(rowIdx, rowIdx - 1)} disabled={rowIdx === 0} className="w-6 h-6 hover:text-accent-600" title="Move up"><ArrowUp size={12} /></IconButton>
+                          <IconButton onClick={() => moveRow(rowIdx, rowIdx + 1)} disabled={rowIdx === rows.length - 1} className="w-6 h-6 hover:text-accent-600" title="Move down"><ArrowDown size={12} /></IconButton>
+                          <IconButton onClick={() => setEditingRow(row)} className="w-6 h-6 hover:text-accent-600" title="Edit row"><Edit2 size={12} /></IconButton>
+                          <IconButton onClick={() => setResetRowTarget(row)} className="w-6 h-6 hover:text-warning-600" title="Reset row: re-sync from its fee proposal, or clear its amounts"><Undo2 size={12} /></IconButton>
+                          <IconButton onClick={() => setDeleteRowTarget(row.id)} className="w-6 h-6 hover:text-negative-600" title="Delete row"><Trash2 size={12} /></IconButton>
+                        </div>
                       </div>
-                    </div>
-                    </div>
-
-                    {/* Action buttons on hover: Move, Edit, Reset, Delete */}
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
-                      <IconButton
-                        onClick={() => moveRow(rowIdx, rowIdx - 1)}
-                        disabled={rowIdx === 0}
-                        className="hover:text-accent-600 disabled:opacity-30 disabled:pointer-events-none"
-                        title="Move up"
-                      >
-                        <ArrowUp size={13} />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => moveRow(rowIdx, rowIdx + 1)}
-                        disabled={rowIdx === rows.length - 1}
-                        className="hover:text-accent-600 disabled:opacity-30 disabled:pointer-events-none"
-                        title="Move down"
-                      >
-                        <ArrowDown size={13} />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => setEditingRow(row)}
-                        className="hover:text-accent-600"
-                        title="Edit workstream details"
-                      >
-                        <Edit2 size={13} />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => setResetRowTarget(row)}
-                        className="hover:text-warning-600"
-                        title="Reset row: re-sync from its fee proposal, or clear its amounts"
-                      >
-                        <Undo2 size={13} />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => setDeleteRowTarget(row.id)}
-                        className="hover:text-negative-600"
-                        title="Delete row"
-                      >
-                        <Trash2 size={13} />
-                      </IconButton>
                     </div>
                   </div>
-
-                  {/* Column 2: Description / Notes (200px) */}
-                  <div 
-                    onClick={() => setEditingRow(row)}
-                    className="w-[200px] shrink-0 p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center text-xs text-ink-500 dark:text-ink-400 cursor-pointer hover:bg-ink-100/40 dark:hover:bg-ink-800/40 transition-colors overflow-hidden"
-                    title="Click to edit notes"
-                  >
-                    {row.notes ? (
-                      <span className="truncate italic">{row.notes}</span>
-                    ) : (
-                      <span className="text-ink-300 dark:text-ink-600 italic text-[11px] group-hover:inline hidden">+ Add description</span>
-                    )}
+                  {showNotes && (
+                    <div
+                      onClick={() => setEditingRow(row)}
+                      style={{ width: NOTES_W }}
+                      className="shrink-0 p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center text-xs text-ink-500 dark:text-ink-400 cursor-pointer hover:bg-ink-100/40 dark:hover:bg-ink-800/40 transition-colors overflow-hidden"
+                      title="Click to edit notes"
+                    >
+                      {row.notes ? (
+                        <span className="truncate italic">{row.notes}</span>
+                      ) : (
+                        <span className="text-ink-500 dark:text-ink-400 italic text-[11px] group-hover:inline hidden">+ Add a note</span>
+                      )}
+                    </div>
+                  )}
                   </div>
 
                   {/* 3 Stage Cells for Each Month (360px per month) */}
@@ -1054,7 +1063,7 @@ export function FinancialForecastView() {
 
           {/* Subtotals by Stage */}
           <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t-2 border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700">
+            <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700`}>
               Total inflows
             </div>
             {monthKeys.map(m => {
@@ -1078,7 +1087,7 @@ export function FinancialForecastView() {
           <div className="bg-ink-100/40 dark:bg-ink-950/40 border-t border-ink-200 dark:border-ink-800 divide-y divide-ink-100 dark:divide-ink-800 text-xs">
             {/* Conservative */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
-              <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r-2 border-ink-200 dark:border-ink-700">
+              <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} px-3.5 py-1.5 font-medium border-r-2 border-ink-200 dark:border-ink-700`}>
                 Conservative (collections only)
               </div>
               {monthKeys.map(m => (
@@ -1091,7 +1100,7 @@ export function FinancialForecastView() {
 
             {/* Expected */}
             <div className="flex items-center text-accent-700 dark:text-accent-300 bg-accent-50/30 dark:bg-accent-950/20 font-semibold">
-              <div className="w-[480px] shrink-0 px-3.5 py-1.5 border-r-2 border-ink-200 dark:border-ink-700">
+              <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} px-3.5 py-1.5 border-r-2 border-ink-200 dark:border-ink-700`}>
                 Expected (collections + {invoicingConversion}% invoiced + {possibleConversion}% possible)
               </div>
               {monthKeys.map(m => (
@@ -1104,7 +1113,7 @@ export function FinancialForecastView() {
 
             {/* Optimistic */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
-              <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r-2 border-ink-200 dark:border-ink-700">
+              <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} px-3.5 py-1.5 font-medium border-r-2 border-ink-200 dark:border-ink-700`}>
                 Optimistic (all stages in full)
               </div>
               {monthKeys.map(m => (
@@ -1135,7 +1144,7 @@ export function FinancialForecastView() {
 
               return (
                 <div key={`referral_${personName}`} className="flex group bg-ink-50/30 dark:bg-ink-900/40 hover:bg-ink-50/60 dark:hover:bg-ink-800/30 transition-colors">
-                  <div className="w-[480px] shrink-0 p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between">
+                  <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-white dark:bg-ink-900 ${FROZEN_EDGE} p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between`}>
                     <div>
                       <div className="flex items-center gap-1.5">
                         <UserCheck size={14} className="text-accent-600 dark:text-accent-400" />
@@ -1180,7 +1189,7 @@ export function FinancialForecastView() {
               const showAdjust = item.type === 'burn';
               return (
               <div key={item.id} className="flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors">
-                <div className="w-[480px] shrink-0 p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between gap-3">
+                <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-white dark:bg-ink-900 ${FROZEN_EDGE} p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between gap-3`}>
                   <div className="min-w-0">
                     <span className="font-semibold text-ink-800 dark:text-ink-200">{item.name}</span>
                     {isLinked && (
@@ -1303,7 +1312,7 @@ export function FinancialForecastView() {
 
           {/* Outflow Subtotal */}
           <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700">
+            <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700`}>
               Total outflows
             </div>
             {monthKeys.map(m => {
@@ -1321,7 +1330,7 @@ export function FinancialForecastView() {
           <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 text-xs">
             {/* Monthly Net Delta */}
             <div className="flex items-center font-bold">
-              <div className="w-[480px] shrink-0 p-3.5 border-r-2 border-ink-200 dark:border-ink-700 text-ink-800 dark:text-ink-200">
+              <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} p-3.5 border-r-2 border-ink-200 dark:border-ink-700 text-ink-800 dark:text-ink-200`}>
                 Net cash flow (collections − outflows)
               </div>
               {monthKeys.map(m => {
@@ -1349,7 +1358,7 @@ export function FinancialForecastView() {
 
             {/* Closing Runway in Banks */}
             <div className="flex items-center font-bold bg-white dark:bg-ink-900 border-t border-ink-200 dark:border-ink-800">
-              <div className="w-[480px] shrink-0 p-4 border-r-2 border-ink-200 dark:border-ink-700 flex items-center gap-2 text-ink-900 dark:text-ink-100 text-sm">
+              <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} p-4 border-r-2 border-ink-200 dark:border-ink-700 flex items-center gap-2 text-ink-900 dark:text-ink-100 text-sm`}>
                 <Landmark size={16} className="text-accent-600 dark:text-accent-400" />
                 <span>Closing bank cash</span>
               </div>
