@@ -5,11 +5,12 @@
  *   - the whole team (names replaced; positions kept; salaries, overheads and
  *     cost rates shifted by ±10–20%)
  *   - team categories (location-specific names replaced)
- *   - the 5 richest Active/Proposed projects, with their phases, allocations,
+ *   - the 5 richest non-Lost projects that have team allocations, with their phases, allocations,
  *     costs, payment schedule, planning tasks and document blocks
  *     (project/phase/cost/payment/task names and all free text replaced;
  *     fees and costs shifted by ±10–20%)
- *   - the overheads profile (amounts shifted)
+ *   - the public-standard phase templates (RIBA, RAIC, CSCAE, China), copied as-is
+ *   - the overheads profile (amounts shifted; item names replaced, except software)
  *   - an admin login for the demo company
  *
  * Nothing is written to the source company. Random shifts are seeded, so a
@@ -27,7 +28,9 @@
  *   --company=<name>      demo company name                (default "Halden Ruiz Architects")
  *   --projects=<n>        how many projects to copy        (default 5)
  */
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
 const crypto = require('crypto');
 
 const args = Object.fromEntries(
@@ -47,8 +50,9 @@ if (!serviceAccountStr) {
   console.error('❌ FIREBASE_SERVICE_ACCOUNT_KEY is missing from .env.local');
   process.exit(1);
 }
-admin.initializeApp({ credential: admin.credential.cert(JSON.parse(serviceAccountStr)) });
-const db = admin.firestore();
+initializeApp({ credential: cert(JSON.parse(serviceAccountStr)) });
+const db = getFirestore();
+const auth = getAuth();
 
 // ---------- fictional replacement data ----------
 const PEOPLE = [
@@ -80,6 +84,13 @@ const COST_NAMES = {
   consultant: ['Structural engineer', 'MEP consultant', 'Landscape consultant'],
   other: ['Physical model', 'Printing and plotting', 'Topographic survey'],
 };
+const OVERHEAD_NAMES = {
+  consult: ['Legal counsel', 'Auditors', 'Accounting services', 'Tax advisor', 'Company secretary', 'HR consultant', 'Insurance broker', 'Payroll service'],
+  market: ['Client visits', 'Business development travel', 'Award entries', 'Website and PR', 'Conferences and events', 'Marketing materials', 'Trade fairs'],
+  office: ['Studio rent', 'Utilities', 'Cleaning', 'Professional memberships', 'Professional indemnity insurance', 'Office supplies', 'Equipment insurance',
+    'Health insurance', 'Training', 'Coworking desks', 'Couriers', 'Kitchen supplies', 'Furniture', 'Maintenance', 'Phone and internet'],
+};
+const STANDARD_TEMPLATE = /RIBA|RAIC|CSCAE|China/i;
 const TASK_NAMES = ['Site analysis', 'Massing options', 'Plan layouts', 'Elevation studies', 'Section development',
   'Material palette', 'Client presentation', 'Coordination meeting', 'Detail drawings', 'Area schedule', 'Model update', 'Render review'];
 
@@ -107,7 +118,7 @@ async function main() {
   const existingDoc = await db.collection('users').where('email', '==', DEMO_EMAIL).limit(1).get();
   if (!existingDoc.empty) throw new Error(`${DEMO_EMAIL} already has an account in company ${existingDoc.docs[0].data().companyId}. Pick another --demo email or remove that account first.`);
   let existingAuth = null;
-  try { existingAuth = await admin.auth().getUserByEmail(DEMO_EMAIL); } catch (e) { if (e.code !== 'auth/user-not-found') throw e; }
+  try { existingAuth = await auth.getUserByEmail(DEMO_EMAIL); } catch (e) { if (e.code !== 'auth/user-not-found') throw e; }
   if (existingAuth) throw new Error(`${DEMO_EMAIL} already exists in Firebase Auth (uid ${existingAuth.uid}) without a company. Remove it in the Firebase console or pick another --demo email.`);
 
   // Load source data
@@ -119,11 +130,12 @@ async function main() {
   // Pick the richest Active/Proposed projects (fall back to any non-template project)
   const count = (docs, pid) => docs.filter(d => d.data().projectId === pid).length;
   const score = (p) => count(phases, p.id) * 3 + count(allocations, p.id) + count(payments, p.id) * 2 + count(costs, p.id) + count(tasks, p.id);
-  const candidates = projects.filter(p => !p.data().isTemplate);
-  const live = candidates.filter(p => ['Active', 'Proposed'].includes(p.data().status));
-  const ranked = [...live].sort((a, b) => score(b) - score(a));
-  if (ranked.length < PROJECT_COUNT) ranked.push(...candidates.filter(p => !live.includes(p)).sort((a, b) => score(b) - score(a)));
+  const candidates = projects.filter(p => !p.data().isTemplate && p.data().status !== 'Lost');
+  const staffed = candidates.filter(p => count(allocations, p.id) > 0);
+  const ranked = [...staffed].sort((a, b) => score(b) - score(a));
+  if (ranked.length < PROJECT_COUNT) ranked.push(...candidates.filter(p => !staffed.includes(p)).sort((a, b) => score(b) - score(a)));
   const chosen = ranked.slice(0, PROJECT_COUNT);
+  const templates = projects.filter(p => p.data().isTemplate && STANDARD_TEMPLATE.test(p.data().name));
   const chosenIds = new Set(chosen.map(p => p.id));
 
   console.log(`\nTeam: ${members.length} members in ${categories.length} categories`);
@@ -132,6 +144,7 @@ async function main() {
     const d = p.data();
     console.log(`  ${d.name}  →  ${PROJECT_NAMES[i]}   [${d.status || 'no status'}; ${count(phases, p.id)} phases, ${count(allocations, p.id)} allocations, ${count(payments, p.id)} payments, ${count(costs, p.id)} costs, ${count(tasks, p.id)} tasks]`);
   });
+  console.log(`Standard templates to copy: ${templates.map(t => t.data().name).join(', ') || 'none'}`);
   if (!WRITE) {
     console.log(`\nWould create company "${DEMO_COMPANY}" with admin login ${DEMO_EMAIL}.`);
     console.log('Run again with --write to create it.');
@@ -155,7 +168,7 @@ async function main() {
 
   // Login
   const password = crypto.randomBytes(9).toString('base64url') + '-Demo7';
-  const authUser = await admin.auth().createUser({ email: DEMO_EMAIL, password, displayName: 'Demo Admin', emailVerified: true });
+  const authUser = await auth.createUser({ email: DEMO_EMAIL, password, displayName: 'Demo Admin', emailVerified: true });
   writer.set(db.collection('users').doc(authUser.uid), { email: DEMO_EMAIL, displayName: 'Demo Admin', companyId, role: 'admin' });
 
   // Categories
@@ -165,7 +178,9 @@ async function main() {
     const d = c.data();
     const name = /partner/i.test(d.name) ? 'Partners'
       : /digital|comput/i.test(d.name) ? 'Digital'
-      : /consult|extern|freelan/i.test(d.name) ? 'Consultants'
+      : /consult|freelan/i.test(d.name) ? 'Consultants'
+      : /expens|other/i.test(d.name) ? 'Other expenses'
+      : d.type === 'external' ? 'Associate studios'
       : pick(STUDIOS, studio++);
     const ref = db.collection('categories').doc();
     catMap[c.id] = ref.id;
@@ -188,6 +203,8 @@ async function main() {
     rateFactor[m.id] = ratio;
     const out = { ...d, companyId, name: pick(PEOPLE, i), salary, overheads: overheadsAmt, costPerHour };
     delete out.avatarUrl;
+    if ('id' in out) out.id = ref.id;
+    if (d.roundedFeeHour !== undefined) out.roundedFeeHour = Math.round(costPerHour * 2.5 * 100) / 100;
     if (d.category) out.category = catMap[d.category] || d.category;
     if (d.nonBillableDescription) out.nonBillableDescription = 'Studio management and business development';
     writer.set(ref, out);
@@ -228,6 +245,7 @@ async function main() {
     const d = a.data();
     if (!phaseMap[d.phaseId] || !memberMap[d.memberId]) return;
     const out = { ...d, companyId, projectId: projectMap[d.projectId], phaseId: phaseMap[d.phaseId], memberId: memberMap[d.memberId] };
+    delete out.member; // stale embedded copy of the source member (real name, salary)
     if (d.costPerHourSnapshot) out.costPerHourSnapshot = Math.round(d.costPerHourSnapshot * (rateFactor[d.memberId] || 1) * 100) / 100;
     writer.set(db.collection('allocations').doc(), out);
   });
@@ -255,14 +273,33 @@ async function main() {
     writer.set(db.collection('projectTasks').doc(), out);
   });
 
+  // Standard templates: public stage frameworks, copied without changes
+  templates.forEach(t => {
+    const ref = db.collection('projects').doc();
+    writer.set(ref, { ...t.data(), companyId, ownerId: authUser.uid });
+    const tplPhase = {};
+    phases.filter(ph => ph.data().projectId === t.id).forEach(ph => {
+      const pref = db.collection('phases').doc();
+      tplPhase[ph.id] = pref.id;
+      writer.set(pref, { ...ph.data(), companyId, projectId: ref.id });
+    });
+    payments.filter(p => p.data().projectId === t.id).forEach(p => {
+      const d = p.data();
+      writer.set(db.collection('payments').doc(), { ...d, companyId, projectId: ref.id, ...(d.phaseId ? { phaseId: tplPhase[d.phaseId] || d.phaseId } : {}) });
+    });
+  });
+
   // Document blocks: generated blocks are copied; free-text blocks get neutral sample copy.
   blocks.filter(b => !b.data().projectId || chosenIds.has(b.data().projectId)).forEach(b => {
     const d = b.data();
     const out = { ...d, companyId };
     if (d.projectId) out.projectId = projectMap[d.projectId];
     if (d.type === 'rich_text') {
-      out.title = d.title ? 'Introduction' : d.title;
-      out.content = `<p>${DEMO_COMPANY} is pleased to submit this fee proposal. It sets out our understanding of the brief, the scope of services for each stage, the team and the fee.</p><p>This is a sample document for demonstrations.</p>`;
+      const terms = /terms|condition/i.test(d.title || '');
+      out.title = terms ? 'Terms & Conditions' : 'Introduction';
+      out.content = terms
+        ? '<p>Fees exclude VAT and statutory charges. Invoices are payable within 30 days. Additional services outside the scope above are charged at our standard hourly rates.</p><p>This proposal is valid for 90 days.</p>'
+        : `<p>${DEMO_COMPANY} is pleased to submit this fee proposal. It sets out our understanding of the brief, the scope of services for each stage, the team and the fee.</p><p>This is a sample document for demonstrations.</p>`;
     }
     writer.set(db.collection('documentBlocks').doc(), out);
   });
@@ -274,9 +311,16 @@ async function main() {
       ...d, companyId, updatedAt: now,
       yearlyIncomeTarget: money((d.yearlyIncomeTarget || 0) * shift()),
       ...(d.calculatedOverheadPerPerson ? { calculatedOverheadPerPerson: money(d.calculatedOverheadPerPerson * overheadsFactor) } : {}),
-      categories: (d.categories || []).map(cat => ({
-        ...cat, items: (cat.items || []).map(it => ({ ...it, yearlyCost: money((it.yearlyCost || 0) * shift()) })),
-      })),
+      categories: (d.categories || []).map(cat => {
+        const keep = /\bIT\b|software/i.test(cat.name);
+        const list = /consult|corp/i.test(cat.name) ? OVERHEAD_NAMES.consult : /market|BD/i.test(cat.name) ? OVERHEAD_NAMES.market : OVERHEAD_NAMES.office;
+        return {
+          ...cat, items: (cat.items || []).map((it, i) => ({
+            ...it, name: keep ? it.name : (i < list.length ? list[i] : `${list[i % list.length]} ${Math.floor(i / list.length) + 1}`),
+            yearlyCost: money((it.yearlyCost || 0) * shift()),
+          })),
+        };
+      }),
     });
   });
 
