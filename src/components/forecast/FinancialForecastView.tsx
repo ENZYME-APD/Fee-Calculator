@@ -296,8 +296,12 @@ export function FinancialForecastView() {
   const referralNames = useMemo(() => Object.keys(dynamicReferrals).sort(), [dynamicReferrals]);
 
   // Milestones of one fee proposal as forecast cells: one pill per payment milestone, amount =
-  // milestone % x the project's real total fee, placed in the month its phase ends (project
-  // start date + phase durations; milestones without a phase land in the start month).
+  // milestone % x the project's real total fee. Timing (from the project start date + phase durations):
+  // - milestones tied to a phase are spread evenly across it: with n on one phase, the k-th lands
+  //   k/n of the way through (one milestone = phase end; two = halfway and end);
+  // - milestones with no phase follow the schedule order: before any phased milestone = project
+  //   start (e.g. mobilisation); after the last one = project end (e.g. final approval); in between =
+  //   with the phased milestone just before it.
   // Active projects go to Invoiced, Proposed ones to Possible. Returns null if the project has
   // no fee or payment schedule yet.
   const buildProjectCells = async (
@@ -313,17 +317,40 @@ export function FinancialForecastView() {
     if (totalFee <= 0 || payments.length === 0) return null;
 
     const sortedPhases = [...phases].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    const phaseEndWeeks: Record<string, number> = {};
+    const phaseStartWeeks: Record<string, number> = {};
+    const phaseDurWeeks: Record<string, number> = {};
     let weeks = 0;
-    sortedPhases.forEach(ph => { weeks += ph.durationWeeks || 0; phaseEndWeeks[ph.id!] = weeks; });
+    sortedPhases.forEach(ph => {
+      phaseStartWeeks[ph.id!] = weeks;
+      phaseDurWeeks[ph.id!] = ph.durationWeeks || 0;
+      weeks += ph.durationWeeks || 0;
+    });
+    const totalWeeks = weeks;
     const projectStart = proj.startDate || Date.now();
     const WEEK = 7 * 24 * 60 * 60 * 1000;
     const stage: ForecastStage = proj.status === 'Active' ? 'invoicing' : 'possible';
 
+    const ordered = [...payments].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const isPhased = (p: Payment) => !!p.phaseId && phaseStartWeeks[p.phaseId] !== undefined;
+    // Week offset for each milestone
+    const perPhaseCount: Record<string, number> = {};
+    ordered.forEach(p => { if (isPhased(p)) perPhaseCount[p.phaseId!] = (perPhaseCount[p.phaseId!] || 0) + 1; });
+    const perPhaseSeen: Record<string, number> = {};
+    const weekOf: number[] = ordered.map(p => {
+      if (!isPhased(p)) return NaN;
+      const k = (perPhaseSeen[p.phaseId!] = (perPhaseSeen[p.phaseId!] || 0) + 1);
+      return phaseStartWeeks[p.phaseId!] + phaseDurWeeks[p.phaseId!] * k / perPhaseCount[p.phaseId!];
+    });
+    ordered.forEach((p, i) => {
+      if (!Number.isNaN(weekOf[i])) return;
+      const before = weekOf.slice(0, i).filter(w => !Number.isNaN(w));
+      const anyAfter = ordered.slice(i + 1).some(isPhased);
+      weekOf[i] = before.length === 0 ? 0 : !anyAfter ? totalWeeks : before[before.length - 1];
+    });
+
     const cells: ForecastRow['cells'] = {};
-    [...payments].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach(pmt => {
-      const endWeeks = pmt.phaseId ? phaseEndWeeks[pmt.phaseId] ?? 0 : 0;
-      const monthKey = monthKeyFromDate(projectStart + endWeeks * WEEK);
+    ordered.forEach((pmt, i) => {
+      const monthKey = monthKeyFromDate(projectStart + weekOf[i] * WEEK);
       const amount = Math.round(totalFee * (pmt.percentage || 0) / 100);
       if (amount <= 0) return;
       if (!cells[monthKey]) cells[monthKey] = {};
