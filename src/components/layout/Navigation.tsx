@@ -66,8 +66,11 @@ export function Navigation() {
   return (
     <div className="w-64 bg-ink-900 dark:bg-ink-950 text-ink-300 flex flex-col h-screen shrink-0 border-r border-ink-800 z-50 transition-colors duration-300 print:hidden">
       <div className="p-6 pb-2">
-        <img src="/logo-light.png" alt="Enzyme APD" className="h-10 w-auto mb-1" />
-        <h1 className="text-sm font-semibold text-accent-300">Fee Calculator</h1>
+        {/* The logo PNG has ~13px of transparent padding; the negative margins line
+            the wordmark up with the title and the nav icons below. */}
+        <img src="/logo-light.png" alt="Enzyme APD" className="h-10 w-auto -ml-[13px] -mt-[13px] -mb-[6px]" />
+        {/* Product lockup, not a UI label: tracked caps are intentional here. */}
+        <h1 className="text-xs font-bold uppercase tracking-[0.22em] text-accent-300">Fee Calculator</h1>
       </div>
       <nav className="flex-1 px-4 space-y-2 mt-6">
         {navItems.map((item) => {
@@ -78,7 +81,7 @@ export function Navigation() {
               href={item.href}
               id={`tour-${item.href.replace('/', '')}-tab`}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm",
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-900",
                 isActive 
                   ? "bg-accent-600 text-white shadow-md shadow-accent-900/20" 
                   : "hover:bg-ink-800 hover:text-white"
