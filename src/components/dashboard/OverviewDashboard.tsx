@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories } from '@/lib/firebase/db';
-import { Project, Phase, TeamMember, Allocation, ProjectCost, User } from '@/lib/firebase/schema';
+import { Project, Phase, TeamMember, TeamCategory, Allocation, ProjectCost, User } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, Cell, PieChart, Pie, ReferenceLine, LineChart, Line } from 'recharts';
 import { Tooltip } from '@/components/ui/Tooltip';
 import Link from 'next/link';
-import { Folder, CircleDollarSign, TrendingUp, Users, PieChart as PieChartIcon, List } from 'lucide-react';
+import { Folder, CircleDollarSign, TrendingUp, Users, PieChart as PieChartIcon, List, ChevronDown, ChevronRight } from 'lucide-react';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
 
 import { tc, tca, CHART_COLORS } from '@/lib/theme';
@@ -29,7 +29,9 @@ export function OverviewDashboard() {
   const [monthlyInvoiceData, setMonthlyInvoiceData] = useState<any[]>([]);
   const [cashflowView, setCashflowView] = useState<'bar' | 'line'>('bar');
   
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);  const [projectNames, setProjectNames] = useState<string[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamCategories, setTeamCategories] = useState<TeamCategory[]>([]);
+  const [collapsedOccGroups, setCollapsedOccGroups] = useState<Record<string, boolean>>({});  const [projectNames, setProjectNames] = useState<string[]>([]);
   const [projectColors, setProjectColors] = useState<Record<string, string>>({});
   
   const [startDate, setStartDate] = useState<string>(() => {
@@ -156,6 +158,7 @@ export function OverviewDashboard() {
     setUsers(companyUsers);
     setProjects(projs);
     setTeamMembers(members);
+    setTeamCategories(categories);
 
     // Compute KPIs
     let pipeline = 0;
@@ -781,10 +784,63 @@ export function OverviewDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-ink-200 dark:divide-ink-800 bg-white dark:bg-ink-950">
-                      {teamMembers.map((member, memberIdx) => {
-                        return (
+                      {(() => {
+                        // Same grouping and order as Team resources: by category, sorted by the category's order.
+                        const groups: Record<string, TeamMember[]> = {};
+                        teamMembers.forEach(m => {
+                          const cat = m.category || 'UNCATEGORIZED';
+                          if (!groups[cat]) groups[cat] = [];
+                          groups[cat].push(m);
+                        });
+                        const orderOf = (id: string) => teamCategories.find(c => c.id === id)?.order ?? 99;
+                        const groupIds = Object.keys(groups).sort((a, b) => orderOf(a) - orderOf(b));
+                        const setAllGroups = (collapsed: boolean) => {
+                          const next: Record<string, boolean> = {};
+                          groupIds.forEach(id => { next[id] = collapsed; });
+                          setCollapsedOccGroups(next);
+                        };
+                        const rows: ({ kind: 'group'; id: string } | { kind: 'member'; member: TeamMember })[] = [];
+                        groupIds.forEach(id => {
+                          rows.push({ kind: 'group', id });
+                          if (!collapsedOccGroups[id]) groups[id].forEach(member => rows.push({ kind: 'member', member }));
+                        });
+
+                        return rows.map((row, rowIdx) => {
+                          const isLast = rowIdx === rows.length - 1;
+                          if (row.kind === 'group') {
+                            const collapsed = !!collapsedOccGroups[row.id];
+                            const groupMembers = groups[row.id];
+                            const name = teamCategories.find(c => c.id === row.id)?.name || 'Uncategorized';
+                            return (
+                              <tr
+                                key={`group-${row.id}`}
+                                className="bg-ink-100/60 dark:bg-ink-900 hover:bg-ink-100 dark:hover:bg-ink-800/70 transition-colors cursor-pointer select-none"
+                                onClick={(e) => e.altKey ? setAllGroups(!collapsed) : setCollapsedOccGroups(prev => ({ ...prev, [row.id]: !collapsed }))}
+                                title="Click to collapse or expand. ⌥-click to toggle all groups."
+                              >
+                                <td className={`sticky left-0 z-10 bg-ink-100 dark:bg-ink-900 py-2 px-4 text-left border-r border-ink-200 dark:border-ink-800 ${isLast ? 'rounded-bl-xl' : ''}`}>
+                                  <div className="flex items-center gap-1.5 text-xs font-bold text-ink-700 dark:text-ink-300">
+                                    {collapsed ? <ChevronRight size={14} className="text-ink-500 dark:text-ink-400 shrink-0" /> : <ChevronDown size={14} className="text-ink-500 dark:text-ink-400 shrink-0" />}
+                                    <span className="truncate">{name}</span>
+                                    <span className="font-medium text-ink-500 dark:text-ink-400">({groupMembers.length})</span>
+                                  </div>
+                                </td>
+                                {filteredWeeks.map((week, idx) => {
+                                  // When collapsed, still flag weeks where someone in the group is over 100%.
+                                  const over = collapsed && groupMembers.some(m => week[m.id!]?.totalPercent > 100);
+                                  return (
+                                    <td key={`group-${row.id}-${week.bucketKey}`} className={`py-2 px-2 text-center ${isLast && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}>
+                                      {over && <span className="inline-block w-2 h-2 rounded-full bg-negative-500" aria-label="Over-allocated" />}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          }
+                          const member = row.member;
+                          return (
                           <tr key={member.id} className="hover:bg-ink-50 dark:hover:bg-ink-900/50 transition-colors">
-                            <td className={`sticky left-0 z-10 bg-white dark:bg-ink-950/95 backdrop-blur-sm py-3 px-4 text-left border-r border-ink-200 dark:border-ink-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] max-w-[200px] ${memberIdx === teamMembers.length - 1 ? 'rounded-bl-xl' : ''}`}>
+                            <td className={`sticky left-0 z-10 bg-white dark:bg-ink-950/95 backdrop-blur-sm py-3 px-4 text-left border-r border-ink-200 dark:border-ink-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] max-w-[200px] ${isLast ? 'rounded-bl-xl' : ''}`}>
                               <Tooltip content={member.name} wrapper="div" className="truncate font-bold text-ink-800 dark:text-ink-200 w-full">
                                 {member.name}
                               </Tooltip>
@@ -801,13 +857,13 @@ export function OverviewDashboard() {
                               }
                               
                               if (allocs.length === 0) {
-                                return <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 border-r border-ink-100 dark:border-ink-900/30 ${memberIdx === teamMembers.length - 1 && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}></td>;
+                                return <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 border-r border-ink-100 dark:border-ink-900/30 ${isLast && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}></td>;
                               }
                               
                               const isOver = memberData?.totalPercent > 100;
                               
                               return (
-                                <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 align-middle border-r border-ink-100 dark:border-ink-900/30 ${memberIdx === teamMembers.length - 1 && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}>
+                                <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 align-middle border-r border-ink-100 dark:border-ink-900/30 ${isLast && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}>
                                   <div className="flex flex-wrap gap-1.5 justify-center">
                                     {allocs.map((alloc, i) => {
                                       return (
@@ -824,8 +880,9 @@ export function OverviewDashboard() {
                               );
                             })}
                           </tr>
-                        );
-                      })}
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>
