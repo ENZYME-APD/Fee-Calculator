@@ -208,6 +208,7 @@ export interface ForecastOutflowItem {
   name: string;
   type: 'burn' | 'partner' | 'debt' | 'custom';
   monthlyAmounts: Record<string, number>; // YYYY-MM -> amount
+  defaultMonthlyAmount?: number; // applies to every month without its own entry in monthlyAmounts
   initialBalance?: number; // for debt tracking
 }
 
@@ -218,6 +219,7 @@ export interface ForecastProfile {
   possibleConversionPercent: number; // default 50
   invoicingConversionPercent: number; // default 90
   startMonthKey: string; // YYYY-MM
+  openingMonthKey?: string; // YYYY-MM: startingBankBalance is the cash at the start of this month
   visibleMonthsCount: number; // default 6
   rows: ForecastRow[];
   outflows: ForecastOutflowItem[];

@@ -71,7 +71,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
           <button 
             type="button" 
             onClick={onClose} 
-            className="p-1.5 text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
+            className="p-1.5 text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
           >
             <X size={18} />
           </button>
@@ -132,7 +132,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
               type="text"
               value={label}
               onChange={e => setLabel(e.target.value)}
-              placeholder="e.g. 50% Advance or Final SD"
+              placeholder="e.g. 50% advance or Concept design"
               className={`${fieldClass} w-full`}
             />
           </div>
@@ -178,7 +178,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
                   type="text"
                   value={referralName}
                   onChange={e => setReferralName(e.target.value)}
-                  placeholder="e.g. Simon"
+                  placeholder="e.g. Alex Martin"
                   className={`${fieldClass} w-full text-xs font-medium`}
                 />
               </div>
@@ -193,11 +193,11 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
                     max="100"
                     step="1"
                     value={referralPercent === 0 ? '' : referralPercent}
-                    onChange={e => setReferralPercent(parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)}
+                    onChange={e => setReferralPercent(Math.min(100, parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0))}
                     placeholder="e.g. 15 or 30"
                     className={`${fieldClass} w-full text-xs text-right font-bold`}
                   />
-                  <span className="text-xs font-bold text-ink-400">%</span>
+                  <span className="text-xs font-bold text-ink-500 dark:text-ink-400">%</span>
                 </div>
               </div>
             </div>

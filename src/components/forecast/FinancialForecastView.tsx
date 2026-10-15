@@ -11,7 +11,7 @@ import {
   ArrowUpRight, 
   Check, 
   FolderSync,
-  DollarSign,
+  Landmark,
   RotateCcw,
   UserCheck,
   Edit2,
@@ -25,7 +25,9 @@ import {
   ForecastOutflowItem, 
   Project, 
   Phase, 
-  Payment 
+  Payment,
+  TeamMember,
+  Allocation
 } from '@/lib/firebase/schema';
 import { 
   getForecastProfile, 
@@ -33,8 +35,11 @@ import {
   getProjects, 
   getPhases, 
   getPayments, 
-  getOverheadsProfile 
+  getTeamMembers,
+  getAllocations,
+  getProjectCosts
 } from '@/lib/firebase/db';
+import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
@@ -43,11 +48,17 @@ import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
 import { AddOutflowModal } from './AddOutflowModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
-import { 
-  SPREADSHEET_BASELINE_ROWS, 
-  SPREADSHEET_BASELINE_OUTFLOWS, 
-  SPREADSHEET_BASELINE_SETTINGS 
-} from './forecastBaseline';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { useRouter } from 'next/navigation';
+
+// Defaults for a company that has no forecast yet. Never put real company data here:
+// this file ships to every customer's browser.
+const DEFAULT_SETTINGS = {
+  visibleMonthsCount: 6,
+  startingBankBalance: 0,
+  possibleConversion: 50,
+  invoicingConversion: 90,
+};
 
 // Helpers to format YYYY-MM
 function addMonths(yearMonth: string, offset: number): string {
@@ -64,6 +75,22 @@ function formatMonthLabel(yearMonth: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
+/** Months since year 0, for comparing and counting YYYY-MM keys. */
+function monthIndex(yearMonth: string): number {
+  const [y, m] = yearMonth.split('-').map(Number);
+  return y * 12 + (m - 1);
+}
+
+function monthKeyFromDate(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** An outflow's amount for a month: its own entry if set, otherwise its default monthly amount. */
+function outflowAmount(item: ForecastOutflowItem, monthKey: string): number {
+  return item.monthlyAmounts?.[monthKey] ?? item.defaultMonthlyAmount ?? 0;
+}
+
 function getCurrentMonthKey(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -71,6 +98,10 @@ function getCurrentMonthKey(): string {
 
 export function FinancialForecastView() {
   const { formatCurrency, currencyCode } = useAppSettings();
+  const { user, dbUser, loading: authLoading } = useAuth();
+  const router = useRouter();
+  // Bank balance, debts and commissions are company finances: admins only (same as Overheads).
+  const isAdmin = dbUser?.role === 'admin' || !!user?.email?.toLowerCase().endsWith('@weareenzyme.com');
   const fmt = (val: number) => formatCurrency(Math.round(val), 0, 0);
 
   const [loading, setLoading] = useState(true);
@@ -78,11 +109,14 @@ export function FinancialForecastView() {
   const [profile, setProfile] = useState<ForecastProfile | null>(null);
 
   // Global settings
-  const [startMonthKey, setStartMonthKey] = useState<string>(SPREADSHEET_BASELINE_SETTINGS.startMonthKey);
-  const [visibleMonthsCount, setVisibleMonthsCount] = useState<number>(SPREADSHEET_BASELINE_SETTINGS.visibleMonthsCount);
-  const [startingBankBalance, setStartingBankBalance] = useState<number>(SPREADSHEET_BASELINE_SETTINGS.startingBankBalance);
-  const [possibleConversion, setPossibleConversion] = useState<number>(SPREADSHEET_BASELINE_SETTINGS.possibleConversion);
-  const [invoicingConversion, setInvoicingConversion] = useState<number>(SPREADSHEET_BASELINE_SETTINGS.invoicingConversion);
+  const [startMonthKey, setStartMonthKey] = useState<string>(getCurrentMonthKey());
+  // The opening bank balance is the cash at the start of this month. It stays put when you
+  // scroll the window, so closing cash for any month always runs from the same starting point.
+  const [openingMonthKey, setOpeningMonthKey] = useState<string>(getCurrentMonthKey());
+  const [visibleMonthsCount, setVisibleMonthsCount] = useState<number>(DEFAULT_SETTINGS.visibleMonthsCount);
+  const [startingBankBalance, setStartingBankBalance] = useState<number>(DEFAULT_SETTINGS.startingBankBalance);
+  const [possibleConversion, setPossibleConversion] = useState<number>(DEFAULT_SETTINGS.possibleConversion);
+  const [invoicingConversion, setInvoicingConversion] = useState<number>(DEFAULT_SETTINGS.invoicingConversion);
 
   // Rows and Outflows
   const [rows, setRows] = useState<ForecastRow[]>([]);
@@ -98,55 +132,64 @@ export function FinancialForecastView() {
   const [resetRowTarget, setResetRowTarget] = useState<ForecastRow | null>(null);
   const [addOutflowModalOpen, setAddOutflowModalOpen] = useState(false);
   const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
-  const [confirmResetBaselineOpen, setConfirmResetBaselineOpen] = useState(false);
   const [deleteRowTarget, setDeleteRowTarget] = useState<string | null>(null);
 
-  // Debounced auto-save timer
-  const isInitialLoad = useRef(true);
+  // Debounced auto-save timer. skipNextSave swallows the state change caused by loading,
+  // so simply opening the page never writes anything.
+  const skipNextSave = useRef(true);
   const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Load existing profile or initialize from spreadsheet baseline
+  // Load the company's saved forecast (a company without one starts empty)
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAdmin) {
+      router.replace('/overview');
+      return;
+    }
     async function loadData() {
       setLoading(true);
       try {
         const existingProfile = await getForecastProfile();
-
-        if (existingProfile && existingProfile.rows && existingProfile.rows.length > 0) {
+        if (existingProfile) {
           setProfile(existingProfile);
-          setStartMonthKey(existingProfile.startMonthKey || SPREADSHEET_BASELINE_SETTINGS.startMonthKey);
-          setVisibleMonthsCount(existingProfile.visibleMonthsCount || SPREADSHEET_BASELINE_SETTINGS.visibleMonthsCount);
-          setStartingBankBalance(Math.round(existingProfile.startingBankBalance ?? SPREADSHEET_BASELINE_SETTINGS.startingBankBalance));
-          setPossibleConversion(existingProfile.possibleConversionPercent ?? SPREADSHEET_BASELINE_SETTINGS.possibleConversion);
-          setInvoicingConversion(existingProfile.invoicingConversionPercent ?? SPREADSHEET_BASELINE_SETTINGS.invoicingConversion);
+          setStartMonthKey(existingProfile.startMonthKey || getCurrentMonthKey());
+          setOpeningMonthKey(existingProfile.openingMonthKey || existingProfile.startMonthKey || getCurrentMonthKey());
+          setVisibleMonthsCount(existingProfile.visibleMonthsCount || DEFAULT_SETTINGS.visibleMonthsCount);
+          setStartingBankBalance(Math.round(existingProfile.startingBankBalance ?? DEFAULT_SETTINGS.startingBankBalance));
+          setPossibleConversion(existingProfile.possibleConversionPercent ?? DEFAULT_SETTINGS.possibleConversion);
+          setInvoicingConversion(existingProfile.invoicingConversionPercent ?? DEFAULT_SETTINGS.invoicingConversion);
           setRows(existingProfile.rows || []);
-          // Ensure fixed outflows don't have hardcoded simon duplicate if dynamic commission is used
-          const cleanOutflows = (existingProfile.outflows || []).filter(o => o.id !== 'partner_simon');
-          setOutflows(cleanOutflows.length > 0 ? cleanOutflows : SPREADSHEET_BASELINE_OUTFLOWS);
+          setOutflows(existingProfile.outflows || []);
         } else {
-          // Initialize with user's financial spreadsheet baseline
-          setStartMonthKey(SPREADSHEET_BASELINE_SETTINGS.startMonthKey);
-          setVisibleMonthsCount(SPREADSHEET_BASELINE_SETTINGS.visibleMonthsCount);
-          setStartingBankBalance(SPREADSHEET_BASELINE_SETTINGS.startingBankBalance);
-          setPossibleConversion(SPREADSHEET_BASELINE_SETTINGS.possibleConversion);
-          setInvoicingConversion(SPREADSHEET_BASELINE_SETTINGS.invoicingConversion);
-          setRows(SPREADSHEET_BASELINE_ROWS);
-          setOutflows(SPREADSHEET_BASELINE_OUTFLOWS);
+          // New forecast: start the monthly costs line from Team resources (salaries + overheads).
+          const members = await getTeamMembers();
+          const monthlyTeamCost = Math.round(members.reduce((sum, m) => sum + (m.salary || 0) + (m.overheads || 0), 0));
+          if (monthlyTeamCost > 0) {
+            setOutflows([{
+              id: 'burn_base',
+              name: 'Team salaries and overheads',
+              type: 'burn',
+              defaultMonthlyAmount: monthlyTeamCost,
+              monthlyAmounts: {},
+            }]);
+          }
         }
       } catch (err) {
         console.error("Error loading forecast data", err);
       } finally {
+        skipNextSave.current = true;
         setLoading(false);
       }
     }
 
     loadData();
-  }, []);
+  }, [authLoading, isAdmin, router]);
 
   // Debounced auto-save whenever rows, outflows, or settings change
   useEffect(() => {
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false;
+    if (loading) return;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
       return;
     }
 
@@ -157,6 +200,7 @@ export function FinancialForecastView() {
       try {
         await updateForecastProfile({
           startMonthKey,
+          openingMonthKey,
           visibleMonthsCount,
           startingBankBalance: Math.round(startingBankBalance),
           possibleConversionPercent: Math.round(possibleConversion),
@@ -174,7 +218,7 @@ export function FinancialForecastView() {
     return () => {
       if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
     };
-  }, [startMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows]);
+  }, [loading, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows]);
 
   // Generate list of displayed month keys
   const monthKeys = useMemo(() => {
@@ -213,110 +257,105 @@ export function FinancialForecastView() {
 
   const referralNames = useMemo(() => Object.keys(dynamicReferrals).sort(), [dynamicReferrals]);
 
-  // Reset entire forecast to original spreadsheet baseline
-  const handleResetToBaseline = () => {
-    setStartMonthKey(SPREADSHEET_BASELINE_SETTINGS.startMonthKey);
-    setVisibleMonthsCount(SPREADSHEET_BASELINE_SETTINGS.visibleMonthsCount);
-    setStartingBankBalance(SPREADSHEET_BASELINE_SETTINGS.startingBankBalance);
-    setPossibleConversion(SPREADSHEET_BASELINE_SETTINGS.possibleConversion);
-    setInvoicingConversion(SPREADSHEET_BASELINE_SETTINGS.invoicingConversion);
-    setRows(SPREADSHEET_BASELINE_ROWS);
-    setOutflows(SPREADSHEET_BASELINE_OUTFLOWS);
-    setConfirmResetBaselineOpen(false);
+  // Milestones of one fee proposal as forecast cells: one pill per payment milestone, amount =
+  // milestone % x the project's real total fee, placed in the month its phase ends (project
+  // start date + phase durations; milestones without a phase land in the start month).
+  // Active projects go to Invoiced, Proposed ones to Possible. Returns null if the project has
+  // no fee or payment schedule yet.
+  const buildProjectCells = async (
+    proj: Project,
+    members: TeamMember[],
+    allocations: Allocation[]
+  ): Promise<ForecastRow['cells'] | null> => {
+    const [phases, costs, payments] = await Promise.all([getPhases(proj.id!), getProjectCosts(proj.id!), getPayments(proj.id!)]);
+    const { totalFee } = computeProjectFinancials(proj, phases, allocations.filter(a => a.projectId === proj.id), costs, members);
+    if (totalFee <= 0 || payments.length === 0) return null;
+
+    const sortedPhases = [...phases].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const phaseEndWeeks: Record<string, number> = {};
+    let weeks = 0;
+    sortedPhases.forEach(ph => { weeks += ph.durationWeeks || 0; phaseEndWeeks[ph.id!] = weeks; });
+    const projectStart = proj.startDate || Date.now();
+    const WEEK = 7 * 24 * 60 * 60 * 1000;
+    const stage: ForecastStage = proj.status === 'Active' ? 'invoicing' : 'possible';
+
+    const cells: ForecastRow['cells'] = {};
+    [...payments].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach(pmt => {
+      const endWeeks = pmt.phaseId ? phaseEndWeeks[pmt.phaseId] ?? 0 : 0;
+      const monthKey = monthKeyFromDate(projectStart + endWeeks * WEEK);
+      const amount = Math.round(totalFee * (pmt.percentage || 0) / 100);
+      if (amount <= 0) return;
+      if (!cells[monthKey]) cells[monthKey] = {};
+      if (!cells[monthKey][stage]) cells[monthKey][stage] = [];
+      cells[monthKey][stage]!.push({
+        id: `pill_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        amount,
+        label: pmt.name || 'Milestone',
+      });
+    });
+    return cells;
   };
 
-  // Reset a SINGLE row back to its original baseline state (or re-sync if from fee proposal)
-  const handleResetSingleRow = async (targetRow: ForecastRow) => {
+  // Sync projects from Fee Proposals: adds a row for each Active/Proposed project not in the forecast yet.
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const handleSyncFromProjects = async () => {
     setLoading(true);
     try {
-      // 1. Check if it matches a baseline spreadsheet row
-      const baselineMatch = SPREADSHEET_BASELINE_ROWS.find(
-        b => b.id === targetRow.id || b.name.toLowerCase() === targetRow.name.toLowerCase()
-      );
+      const [allProjects, members, allocations] = await Promise.all([getProjects(), getTeamMembers(), getAllocations()]);
+      const candidates = allProjects.filter(p => !p.isTemplate && (p.status === 'Active' || p.status === 'Proposed'));
 
-      if (baselineMatch) {
-        setRows(prev => prev.map(r => r.id === targetRow.id ? JSON.parse(JSON.stringify(baselineMatch)) : r));
-      } else if (targetRow.projectId) {
-        // 2. If it is linked to a Fee Proposal project, re-fetch its payment milestones from db
-        const payments = await getPayments(targetRow.projectId);
-        const projCells: Record<string, Partial<Record<ForecastStage, ForecastPill[]>>> = {};
+      const newRows: ForecastRow[] = [...rows];
+      let added = 0;
+      const skippedNoFee: string[] = [];
 
-        payments.forEach((pmt, idx) => {
-          const targetMonth = monthKeys[Math.min(idx, monthKeys.length - 1)] || monthKeys[0];
-          const amount = Math.round(((pmt.percentage || 10) / 100) * 25000);
-          const stage: ForecastStage = 'possible';
-          
-          if (!projCells[targetMonth]) projCells[targetMonth] = {};
-          if (!projCells[targetMonth][stage]) projCells[targetMonth][stage] = [];
-          
-          projCells[targetMonth][stage]!.push({
-            id: `pill_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            amount,
-            label: pmt.name || 'Milestone'
-          });
+      for (const proj of candidates) {
+        const existing = newRows.find(r => r.projectId === proj.id || r.name.toLowerCase() === proj.name.toLowerCase());
+        if (existing) continue;
+        const cells = await buildProjectCells(proj, members, allocations);
+        if (!cells) {
+          skippedNoFee.push(proj.name);
+          continue;
+        }
+        newRows.push({
+          id: `row_proj_${proj.id}`,
+          name: proj.name,
+          type: 'project',
+          projectId: proj.id,
+          colorTag: 'accent',
+          notes: proj.status || undefined,
+          cells,
         });
-
-        setRows(prev => prev.map(r => r.id === targetRow.id ? { ...r, cells: projCells } : r));
-      } else {
-        // 3. Custom user-created row with no baseline: clear all pills
-        setRows(prev => prev.map(r => r.id === targetRow.id ? { ...r, cells: {} } : r));
+        added++;
       }
-      setResetRowTarget(null);
-    } catch (err) {
-      console.error("Failed to reset row", err);
+
+      setRows(newRows);
+      setConfirmSyncOpen(false);
+      setSyncMessage(
+        `Added ${added} project${added === 1 ? '' : 's'}.` +
+        (skippedNoFee.length ? ` Skipped ${skippedNoFee.length} with no fee or payment schedule yet: ${skippedNoFee.join(', ')}.` : '')
+      );
+    } catch (e) {
+      console.error(e);
+      setSyncMessage('Sync failed. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Sync projects from Fee Proposals
-  const handleSyncFromProjects = async () => {
+  // Reset one row: a project row is rebuilt from its fee proposal; any other row has its amounts cleared.
+  const handleResetSingleRow = async (targetRow: ForecastRow) => {
     setLoading(true);
     try {
-      const allProjects = await getProjects();
-      const nonTemplates = allProjects.filter(p => !p.isTemplate && p.status !== 'Lost');
-      
-      const newRows: ForecastRow[] = [...rows];
-
-      for (const proj of nonTemplates) {
-        const existing = newRows.find(r => r.projectId === proj.id || r.name.toLowerCase() === proj.name.toLowerCase());
-        if (!existing) {
-          // Fetch payments
-          const payments = await getPayments(proj.id!);
-          const projCells: Record<string, Partial<Record<ForecastStage, ForecastPill[]>>> = {};
-
-          // Distribute milestones across visible months
-          payments.forEach((pmt, idx) => {
-            const targetMonth = monthKeys[Math.min(idx, monthKeys.length - 1)] || monthKeys[0];
-            const amount = Math.round(((pmt.percentage || 10) / 100) * 25000);
-            const stage: ForecastStage = proj.status === 'Active' ? 'invoicing' : 'possible';
-            
-            if (!projCells[targetMonth]) projCells[targetMonth] = {};
-            if (!projCells[targetMonth][stage]) projCells[targetMonth][stage] = [];
-            
-            projCells[targetMonth][stage]!.push({
-              id: `pill_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-              amount,
-              label: pmt.name || 'Milestone'
-            });
-          });
-
-          newRows.push({
-            id: `row_proj_${proj.id}`,
-            name: proj.name,
-            type: 'project',
-            projectId: proj.id,
-            colorTag: 'accent',
-            notes: proj.status || undefined,
-            cells: projCells
-          });
-        }
+      let cells: ForecastRow['cells'] = {};
+      if (targetRow.projectId) {
+        const [allProjects, members, allocations] = await Promise.all([getProjects(), getTeamMembers(), getAllocations()]);
+        const proj = allProjects.find(p => p.id === targetRow.projectId);
+        cells = (proj && await buildProjectCells(proj, members, allocations)) || {};
       }
-
-      setRows(newRows);
-      setConfirmSyncOpen(false);
-    } catch (e) {
-      console.error(e);
+      setRows(prev => prev.map(r => r.id === targetRow.id ? { ...r, cells } : r));
+      setResetRowTarget(null);
+    } catch (err) {
+      console.error("Failed to reset row", err);
     } finally {
       setLoading(false);
     }
@@ -368,51 +407,53 @@ export function FinancialForecastView() {
 
   // Drag & drop move between stages/months
   const handleMovePill = (
-    rowId: string, 
+    fromRowId: string, 
+    toRowId: string,
     fromMonth: string, 
     fromStage: ForecastStage, 
     toMonth: string, 
     toStage: ForecastStage, 
     pill: ForecastPill
   ) => {
-    if (fromMonth === toMonth && fromStage === toStage) return;
+    if (fromRowId === toRowId && fromMonth === toMonth && fromStage === toStage) return;
 
     setRows(prevRows => prevRows.map(row => {
-      if (row.id !== rowId) return row;
+      if (row.id !== fromRowId && row.id !== toRowId) return row;
       const cells = { ...row.cells };
 
       // Remove from origin
-      if (cells[fromMonth]?.[fromStage]) {
-        cells[fromMonth][fromStage] = cells[fromMonth][fromStage]!.filter(p => p.id !== pill.id);
+      if (row.id === fromRowId && cells[fromMonth]?.[fromStage]) {
+        cells[fromMonth] = { ...cells[fromMonth], [fromStage]: cells[fromMonth][fromStage]!.filter(p => p.id !== pill.id) };
       }
 
-      // Add to destination
-      if (!cells[toMonth]) cells[toMonth] = {};
-      const destList = cells[toMonth][toStage] ? [...cells[toMonth][toStage]!] : [];
-      destList.push(pill);
-      cells[toMonth][toStage] = destList;
+      // Add to destination (may be a different row)
+      if (row.id === toRowId) {
+        const destList = [...(cells[toMonth]?.[toStage] || [])];
+        destList.push(pill);
+        cells[toMonth] = { ...(cells[toMonth] || {}), [toStage]: destList };
+      }
 
       return { ...row, cells };
     }));
   };
 
   // Outflow amount change
-  const handleUpdateOutflowMonth = (outflowId: string, monthKey: string, amount: number) => {
+  // amount null clears the month's own value, so the line's default monthly amount applies again
+  const handleUpdateOutflowMonth = (outflowId: string, monthKey: string, amount: number | null) => {
     setOutflows(prev => prev.map(item => {
       if (item.id !== outflowId) return item;
-      return {
-        ...item,
-        monthlyAmounts: {
-          ...item.monthlyAmounts,
-          [monthKey]: Math.round(amount)
-        }
-      };
+      const monthlyAmounts = { ...item.monthlyAmounts };
+      if (amount === null) delete monthlyAmounts[monthKey];
+      else monthlyAmounts[monthKey] = Math.round(amount);
+      return { ...item, monthlyAmounts };
     }));
   };
 
-  // Monthly totals calculation
+  // Monthly totals. Closing cash runs from the opening balance at openingMonthKey through every
+  // month up to the end of the visible window (including months scrolled out of view), so it
+  // doesn't change when the window moves. Months before the opening month have no closing cash.
   const monthlyStats = useMemo(() => {
-    const stats: Record<string, {
+    type MonthStats = {
       possible: number;
       invoicing: number;
       collections: number;
@@ -421,16 +462,14 @@ export function FinancialForecastView() {
       optimistic: number;
       totalOutflows: number;
       netDelta: number;
-      closingCash: number;
-    }> = {};
+      closingCash: number | null;
+    };
+    const stats: Record<string, MonthStats> = {};
 
-    let runningCash = startingBankBalance;
-
-    for (const m of monthKeys) {
+    const totalsFor = (m: string): Omit<MonthStats, 'closingCash'> => {
       let mPossible = 0;
       let mInvoicing = 0;
       let mCollections = 0;
-
       rows.forEach(r => {
         const cell = r.cells[m];
         if (cell) {
@@ -440,52 +479,53 @@ export function FinancialForecastView() {
         }
       });
 
-      // Fixed & Debt Outflows for month m
+      // Fixed and debt outflows, plus referral commissions on this month's collections
       let mOutflows = 0;
-      outflows.forEach(item => {
-        mOutflows += (item.monthlyAmounts[m] || 0);
-      });
+      outflows.forEach(item => { mOutflows += outflowAmount(item, m); });
+      Object.values(dynamicReferrals).forEach(refData => { mOutflows += (refData.monthly[m] || 0); });
 
-      // Add Dynamic Referral Commission Outflows for month m
-      Object.values(dynamicReferrals).forEach(refData => {
-        mOutflows += (refData.monthly[m] || 0);
-      });
-
-      const conservative = mCollections;
-      const expected = Math.round(mCollections + (mInvoicing * (invoicingConversion / 100)) + (mPossible * (possibleConversion / 100)));
-      const optimistic = mCollections + mInvoicing + mPossible;
-
-      // Net change based on real collections minus all outflows (burn + debt + referral commissions)
-      const netDelta = mCollections - mOutflows;
-      runningCash += netDelta;
-
-      stats[m] = {
+      return {
         possible: mPossible,
         invoicing: mInvoicing,
         collections: mCollections,
-        conservative,
-        expected,
-        optimistic,
+        conservative: mCollections,
+        expected: Math.round(mCollections + (mInvoicing * (invoicingConversion / 100)) + (mPossible * (possibleConversion / 100))),
+        optimistic: mCollections + mInvoicing + mPossible,
         totalOutflows: mOutflows,
-        netDelta,
-        closingCash: runningCash
+        // Bank cash only moves with real collections minus all outflows
+        netDelta: mCollections - mOutflows,
       };
+    };
+
+    const lastVisible = monthKeys[monthKeys.length - 1];
+    const first = monthIndex(openingMonthKey) < monthIndex(startMonthKey) ? openingMonthKey : startMonthKey;
+    const span = monthIndex(lastVisible) - monthIndex(first);
+    let runningCash = startingBankBalance;
+    for (let i = 0; i <= span; i++) {
+      const m = addMonths(first, i);
+      const t = totalsFor(m);
+      let closingCash: number | null = null;
+      if (monthIndex(m) >= monthIndex(openingMonthKey)) {
+        runningCash += t.netDelta;
+        closingCash = runningCash;
+      }
+      stats[m] = { ...t, closingCash };
     }
 
     return stats;
-  }, [monthKeys, rows, outflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion]);
+  }, [monthKeys, startMonthKey, openingMonthKey, rows, outflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion]);
 
-  if (loading) {
+  if (authLoading || !isAdmin || loading) {
     return (
       <div className="flex h-full w-full items-center justify-center p-8 text-ink-500">
         <RefreshCw size={24} className="animate-spin mr-2 text-accent-500" />
-        <span className="text-sm font-semibold">Loading financial forecast...</span>
+        <span className="text-sm font-semibold">Loading financial forecast…</span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-ink-50/50 dark:bg-black font-sans">
+    <div className="flex flex-col h-full w-full overflow-hidden font-sans">
       {/* Top Header & Global Conversion Controls */}
       <div className="bg-white dark:bg-ink-900 border-b border-ink-200 dark:border-ink-800 px-6 py-3 shrink-0 flex flex-wrap items-center justify-between gap-4 shadow-sm z-30">
         <div className="flex items-center gap-6">
@@ -498,9 +538,9 @@ export function FinancialForecastView() {
 
           {/* Starting bank balance */}
           <div className="flex items-center gap-2 px-3 py-1 bg-ink-50 dark:bg-ink-800 rounded-lg border border-ink-200 dark:border-ink-700">
-            <span className="text-xs font-medium text-ink-500">Opening bank cash:</span>
+            <span className="text-xs font-medium text-ink-500 dark:text-ink-400">Opening bank cash</span>
             <div className="flex items-center gap-1 font-bold text-sm text-ink-900 dark:text-ink-100">
-              <span className="text-xs text-ink-400">{currencyCode}</span>
+              <span className="text-xs text-ink-500 dark:text-ink-400">{currencyCode}</span>
               <input
                 type="number"
                 step="1"
@@ -512,6 +552,14 @@ export function FinancialForecastView() {
                 className="w-24 bg-transparent outline-none text-right font-bold"
               />
             </div>
+            <span className="text-xs font-medium text-ink-500 dark:text-ink-400">at start of</span>
+            <input
+              type="month"
+              value={openingMonthKey}
+              onChange={e => e.target.value && setOpeningMonthKey(e.target.value)}
+              className="bg-transparent text-xs font-semibold outline-none text-ink-800 dark:text-ink-200"
+              aria-label="Month the opening bank cash applies to"
+            />
           </div>
 
           {/* Number inputs for conversion rates */}
@@ -528,7 +576,7 @@ export function FinancialForecastView() {
                   onChange={e => setPossibleConversion(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
                   className="w-10 bg-transparent text-right font-bold outline-none text-ink-800 dark:text-ink-200"
                 />
-                <span className="font-bold text-ink-400">%</span>
+                <span className="font-bold text-ink-500 dark:text-ink-400">%</span>
               </div>
             </div>
 
@@ -544,7 +592,7 @@ export function FinancialForecastView() {
                   onChange={e => setInvoicingConversion(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
                   className="w-10 bg-transparent text-right font-bold outline-none text-ink-800 dark:text-ink-200"
                 />
-                <span className="font-bold text-ink-400">%</span>
+                <span className="font-bold text-ink-500 dark:text-ink-400">%</span>
               </div>
             </div>
           </div>
@@ -584,12 +632,6 @@ export function FinancialForecastView() {
             <option value={12}>12 months</option>
           </select>
 
-          {/* Reset to Spreadsheet Baseline */}
-          <SecondaryButton onClick={() => setConfirmResetBaselineOpen(true)} title="Reset entire matrix to original spreadsheet data">
-            <RotateCcw size={14} />
-            <span>Reset baseline</span>
-          </SecondaryButton>
-
           {/* Sync from Projects */}
           <SecondaryButton onClick={() => setConfirmSyncOpen(true)}>
             <FolderSync size={14} />
@@ -603,10 +645,17 @@ export function FinancialForecastView() {
           </PrimaryButton>
 
           {isSaving && (
-            <span className="text-[11px] text-ink-400 italic">Saving...</span>
+            <span className="text-[11px] text-ink-500 dark:text-ink-400 italic">Saving…</span>
           )}
         </div>
       </div>
+
+      {syncMessage && (
+        <div className="mx-6 mt-4 px-4 py-2.5 rounded-lg border border-accent-200 dark:border-accent-800/60 bg-accent-50 dark:bg-accent-950/40 text-sm text-accent-800 dark:text-accent-200 flex items-center justify-between gap-4">
+          <span>{syncMessage}</span>
+          <button onClick={() => setSyncMessage(null)} className="text-xs font-semibold hover:underline shrink-0">Dismiss</button>
+        </div>
+      )}
 
       {/* Main Forecast Matrix Table */}
       <div className="flex-1 overflow-auto p-6">
@@ -614,13 +663,13 @@ export function FinancialForecastView() {
           {/* Matrix Header */}
           <div className="bg-ink-50 dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 flex sticky top-0 z-20">
             {/* Workstream Column: 280px */}
-            <div className="w-[280px] shrink-0 p-3.5 font-bold text-xs uppercase tracking-wider text-ink-500 border-r border-ink-200 dark:border-ink-800 flex items-center justify-between">
+            <div className="w-[280px] shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r border-ink-200 dark:border-ink-800 flex items-center justify-between">
               <span>Workstream</span>
-              <span className="text-[10px] text-ink-400 lowercase font-normal">({rows.length} rows)</span>
+              <span className="text-[11px] font-medium text-ink-500 dark:text-ink-400">{rows.length} {rows.length === 1 ? 'row' : 'rows'}</span>
             </div>
 
             {/* Description / Notes Column: 200px */}
-            <div className="w-[200px] shrink-0 p-3.5 font-bold text-xs uppercase tracking-wider text-ink-500 border-r border-ink-200 dark:border-ink-800 flex items-center">
+            <div className="w-[200px] shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r border-ink-200 dark:border-ink-800 flex items-center">
               <span>Description / notes</span>
             </div>
 
@@ -641,6 +690,12 @@ export function FinancialForecastView() {
 
           {/* Workstream Inflow Rows */}
           <div className="divide-y divide-ink-100 dark:divide-ink-800 bg-white dark:bg-ink-900">
+            {rows.length === 0 && (
+              <div className="px-6 py-10 text-sm text-ink-500 dark:text-ink-400 max-w-xl">
+                <p className="font-semibold text-ink-800 dark:text-ink-200 mb-1">No income rows yet</p>
+                <p>Use <span className="font-semibold">Sync projects</span> to bring in milestones from your fee proposals, or <span className="font-semibold">Add row</span> for retainers and other income. Then click a cell to add an amount.</p>
+              </div>
+            )}
             {rows.map(row => {
               const tagBorder = 
                 row.colorTag === 'negative' ? 'border-l-4 border-l-negative-500' :
@@ -658,7 +713,7 @@ export function FinancialForecastView() {
                         {row.name}
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold capitalize ${
+                        <span className={`text-[10px] px-1.5 py-px rounded font-semibold capitalize ${
                           row.type === 'external' ? 'bg-negative-50 text-negative-700 dark:bg-negative-950/40 dark:text-negative-400' :
                           row.type === 'retainer' ? 'bg-positive-50 text-positive-700 dark:bg-positive-950/40 dark:text-positive-400' :
                           'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-400'
@@ -680,7 +735,7 @@ export function FinancialForecastView() {
                       <IconButton
                         onClick={() => setResetRowTarget(row)}
                         className="hover:text-warning-600"
-                        title="Reset row to baseline or original proposal"
+                        title="Reset row: re-sync from its fee proposal, or clear its amounts"
                       >
                         <Undo2 size={13} />
                       </IconButton>
@@ -726,7 +781,7 @@ export function FinancialForecastView() {
                                 try {
                                   const data = JSON.parse(e.dataTransfer.getData('text/plain'));
                                   if (data && data.pill) {
-                                    handleMovePill(data.fromRowId, data.fromMonth, data.fromStage, m, stage, data.pill);
+                                    handleMovePill(data.fromRowId, row.id, data.fromMonth, data.fromStage, m, stage, data.pill);
                                   }
                                 } catch (err) {
                                   console.error(err);
@@ -762,7 +817,7 @@ export function FinancialForecastView() {
                                   <div className="flex items-center gap-1 min-w-0">
                                     <span className="truncate">{pill.label}</span>
                                     {pill.referralName && (
-                                      <span className="shrink-0 text-[9px] px-1 py-0.2 rounded bg-ink-200/80 dark:bg-ink-700 text-ink-700 dark:text-ink-200 font-semibold" title={`Referral: ${pill.referralName} (${pill.referralPercent || 0}%)`}>
+                                      <span className="shrink-0 text-[9px] px-1 py-px rounded bg-ink-200/80 dark:bg-ink-700 text-ink-700 dark:text-ink-200 font-semibold" title={`Referral: ${pill.referralName} (${pill.referralPercent || 0}%)`}>
                                         {pill.referralName.substring(0, 1).toUpperCase()}
                                       </span>
                                     )}
@@ -796,8 +851,8 @@ export function FinancialForecastView() {
 
           {/* Subtotals by Stage */}
           <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t-2 border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 uppercase tracking-wider border-r border-ink-200 dark:border-ink-800">
-              Total Inflows
+            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 border-r border-ink-200 dark:border-ink-800">
+              Total inflows
             </div>
             {monthKeys.map(m => {
               const st = monthlyStats[m] || { possible: 0, invoicing: 0, collections: 0 };
@@ -816,7 +871,7 @@ export function FinancialForecastView() {
             {/* Conservative */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
               <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r border-ink-200 dark:border-ink-800">
-                • Conservative (100% Collections)
+                Conservative (collections only)
               </div>
               {monthKeys.map(m => (
                 <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 px-3 py-1.5 text-right font-bold text-ink-700 dark:text-ink-300">
@@ -828,7 +883,7 @@ export function FinancialForecastView() {
             {/* Expected */}
             <div className="flex items-center text-accent-700 dark:text-accent-300 bg-accent-50/30 dark:bg-accent-950/20 font-semibold">
               <div className="w-[480px] shrink-0 px-3.5 py-1.5 border-r border-ink-200 dark:border-ink-800">
-                • Expected ({invoicingConversion}% Inv + {possibleConversion}% Poss)
+                Expected (collections + {invoicingConversion}% invoiced + {possibleConversion}% possible)
               </div>
               {monthKeys.map(m => (
                 <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 px-3 py-1.5 text-right font-bold">
@@ -840,7 +895,7 @@ export function FinancialForecastView() {
             {/* Optimistic */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
               <div className="w-[480px] shrink-0 px-3.5 py-1.5 font-medium border-r border-ink-200 dark:border-ink-800">
-                • Optimistic (100% of all stages)
+                Optimistic (all stages in full)
               </div>
               {monthKeys.map(m => (
                 <div key={m} className="w-[360px] shrink-0 border-r border-ink-200 dark:border-ink-800 last:border-r-0 px-3 py-1.5 text-right font-bold text-ink-700 dark:text-ink-300">
@@ -851,11 +906,11 @@ export function FinancialForecastView() {
           </div>
 
           {/* Outflows / Liabilities Section */}
-          <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 p-3 font-bold text-xs uppercase tracking-wider text-ink-600 dark:text-ink-400 flex items-center justify-between">
-            <span>Outflows & Liabilities (Monthly burn & commissions)</span>
+          <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 p-3 font-semibold text-xs text-ink-700 dark:text-ink-300 flex items-center justify-between">
+            <span>Outflows (monthly costs, debt and commissions)</span>
             <button
               onClick={() => setAddOutflowModalOpen(true)}
-              className="text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold normal-case"
+              className="text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
             >
               <Plus size={12} />
               Add outflow line
@@ -894,7 +949,7 @@ export function FinancialForecastView() {
                               -{fmt(cutAmount)}
                             </span>
                           ) : (
-                            <span className="text-ink-400 text-xs font-medium">0</span>
+                            <span className="text-ink-500 dark:text-ink-400 text-xs font-medium">0</span>
                           )}
                         </div>
                       </div>
@@ -911,7 +966,7 @@ export function FinancialForecastView() {
                   <div>
                     <span className="font-semibold text-ink-800 dark:text-ink-200">{item.name}</span>
                     {item.initialBalance && (
-                      <div className="text-[10px] text-ink-400">
+                      <div className="text-[10px] text-ink-500 dark:text-ink-400">
                         Principal: {fmt(item.initialBalance)}
                       </div>
                     )}
@@ -927,7 +982,8 @@ export function FinancialForecastView() {
                 </div>
 
                 {monthKeys.map(m => {
-                  const val = item.monthlyAmounts[m] || 0;
+                  const own = item.monthlyAmounts?.[m];
+                  const val = own ?? 0;
                   return (
                     <div key={m} className="w-[360px] shrink-0 border-r border-ink-100 dark:border-ink-800 last:border-r-0 p-2 flex items-center justify-end">
                       <div className="flex items-center gap-1">
@@ -936,12 +992,13 @@ export function FinancialForecastView() {
                           type="number"
                           step="1"
                           min="0"
-                          value={val === 0 ? '' : val}
+                          value={own === undefined ? '' : val}
                           onChange={e => {
-                            const num = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
-                            handleUpdateOutflowMonth(item.id, m, num);
+                            const raw = e.target.value.replace(/[^0-9]/g, '');
+                            handleUpdateOutflowMonth(item.id, m, raw === '' ? null : parseInt(raw));
                           }}
-                          placeholder="0"
+                          placeholder={String(item.defaultMonthlyAmount ?? 0)}
+                          title={item.defaultMonthlyAmount ? `Leave empty to use the default of ${item.defaultMonthlyAmount.toLocaleString()} a month` : undefined}
                           className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-ink-50 dark:bg-ink-800 text-ink-900 dark:text-ink-100 rounded outline-none focus:border-accent-500 text-xs"
                         />
                       </div>
@@ -954,8 +1011,8 @@ export function FinancialForecastView() {
 
           {/* Outflow Subtotal */}
           <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 uppercase tracking-wider border-r border-ink-200 dark:border-ink-800">
-              Total Outflows
+            <div className="w-[480px] shrink-0 p-3 text-ink-700 dark:text-ink-300 border-r border-ink-200 dark:border-ink-800">
+              Total outflows
             </div>
             {monthKeys.map(m => {
               const outTotal = monthlyStats[m]?.totalOutflows || 0;
@@ -972,7 +1029,7 @@ export function FinancialForecastView() {
             {/* Monthly Net Delta */}
             <div className="flex items-center font-bold">
               <div className="w-[480px] shrink-0 p-3.5 border-r border-ink-200 dark:border-ink-800 text-ink-800 dark:text-ink-200">
-                Monthly Net Cash (Collections - Outflows)
+                Net cash flow (collections − outflows)
               </div>
               {monthKeys.map(m => {
                 const delta = monthlyStats[m]?.netDelta || 0;
@@ -992,12 +1049,12 @@ export function FinancialForecastView() {
             {/* Closing Runway in Banks */}
             <div className="flex items-center font-bold bg-white dark:bg-ink-900 border-t border-ink-200 dark:border-ink-800">
               <div className="w-[480px] shrink-0 p-4 border-r border-ink-200 dark:border-ink-800 flex items-center gap-2 text-ink-900 dark:text-ink-100 text-sm">
-                <DollarSign size={16} className="text-accent-600" />
-                <span>Closing Bank Cash</span>
+                <Landmark size={16} className="text-accent-600 dark:text-accent-400" />
+                <span>Closing bank cash</span>
               </div>
               {monthKeys.map(m => {
-                const closing = monthlyStats[m]?.closingCash || 0;
-                const isDeficit = closing < 0;
+                const closing = monthlyStats[m]?.closingCash ?? null;
+                const isDeficit = closing !== null && closing < 0;
 
                 return (
                   <div 
@@ -1006,7 +1063,7 @@ export function FinancialForecastView() {
                       isDeficit ? 'text-negative-600 dark:text-negative-400 bg-negative-50/40 dark:bg-negative-950/30' : 'text-accent-700 dark:text-accent-300'
                     }`}
                   >
-                    {fmt(closing)}
+                    {closing === null ? <span className="text-ink-400 dark:text-ink-500 font-semibold" title="Before the opening balance month">—</span> : fmt(closing)}
                   </div>
                 );
               })}
@@ -1051,7 +1108,7 @@ export function FinancialForecastView() {
       <ConfirmModal
         isOpen={!!resetRowTarget}
         title="Reset project row"
-        message={`Are you sure you want to reset "${resetRowTarget?.name}" back to its initial baseline milestones? Any manual changes made to this project's pills will be reverted.`}
+        message={resetRowTarget?.projectId ? `Rebuild "${resetRowTarget?.name}" from its fee proposal? Your manual changes to this row's amounts will be replaced.` : `Clear all amounts in "${resetRowTarget?.name}"?`}
         confirmText="Reset row"
         onConfirm={() => {
           if (resetRowTarget) {
@@ -1061,21 +1118,11 @@ export function FinancialForecastView() {
         onCancel={() => setResetRowTarget(null)}
       />
 
-      {/* Reset Baseline Confirmation Modal */}
-      <ConfirmModal
-        isOpen={confirmResetBaselineOpen}
-        title="Reset to spreadsheet baseline"
-        message="This will reset the entire forecast table to the exact 26 workstreams and liabilities from your original financial forecast spreadsheet, including Simon's referral commission tagging. Any unsaved custom modifications will be replaced."
-        confirmText="Reset to baseline"
-        onConfirm={handleResetToBaseline}
-        onCancel={() => setConfirmResetBaselineOpen(false)}
-      />
-
       {/* Sync Confirmation Modal */}
       <ConfirmModal
         isOpen={confirmSyncOpen}
         title="Sync from projects"
-        message="This will import your active and proposed fee proposal milestones as workstream rows in the forecast. Existing custom rows will not be overwritten."
+        message="Adds a row for each Active or Proposed project that isn't in the forecast yet, with one amount per payment milestone (milestone % of the project fee), placed in the month its phase ends. Active projects go to Invoiced, Proposed ones to Possible. Existing rows aren't changed."
         confirmText="Sync now"
         onConfirm={handleSyncFromProjects}
         onCancel={() => setConfirmSyncOpen(false)}

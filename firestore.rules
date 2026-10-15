@@ -38,6 +38,11 @@ service cloud.firestore {
       return path.split('/')[0] == 'teamMembers' || path.split('/')[0] == 'overheadsProfile';
     }
 
+    // Company finances (bank balance, debts, commissions): admins only, for reads too.
+    function isAdminOnlyCollection(path) {
+      return path.split('/')[0] == 'forecastProfile';
+    }
+
     // Companies collection
     match /companies/{companyId} {
       allow read: if request.auth != null && (getUserCompanyId() == companyId || isSuperadmin());
@@ -76,14 +81,17 @@ service cloud.firestore {
     match /{document=**} {
       allow create: if request.auth != null &&
         (request.resource.data.companyId == getUserCompanyId() || isSuperadmin()) &&
-        (!isSensitiveCollection(document) || isAdmin());
+        (!isSensitiveCollection(document) || isAdmin()) &&
+        (!isAdminOnlyCollection(document) || isAdmin());
 
       allow read: if request.auth != null &&
-        (resource.data.companyId == getUserCompanyId() || isSuperadmin());
+        (resource.data.companyId == getUserCompanyId() || isSuperadmin()) &&
+        (!isAdminOnlyCollection(document) || isAdmin());
 
       allow update, delete: if request.auth != null &&
         (resource.data.companyId == getUserCompanyId() || isSuperadmin()) &&
-        (!isSensitiveCollection(document) || isAdmin());
+        (!isSensitiveCollection(document) || isAdmin()) &&
+        (!isAdminOnlyCollection(document) || isAdmin());
     }
   }
 }

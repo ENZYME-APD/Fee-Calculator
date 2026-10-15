@@ -48,7 +48,7 @@ export function AddRowModal({ isOpen, onAdd, onClose }: AddRowModalProps) {
           <button 
             type="button" 
             onClick={onClose} 
-            className="p-1.5 text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
+            className="p-1.5 text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
           >
             <X size={18} />
           </button>
@@ -64,7 +64,7 @@ export function AddRowModal({ isOpen, onAdd, onClose }: AddRowModalProps) {
               required
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="e.g. Modulnor trasteros or Retail Design advisory"
+              placeholder="e.g. Retail design advisory"
               className={`${fieldClass} w-full text-sm font-semibold`}
               autoFocus
             />

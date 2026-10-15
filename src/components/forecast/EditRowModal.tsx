@@ -56,7 +56,7 @@ export function EditRowModal({ isOpen, row, onSave, onDelete, onClose }: EditRow
           <button 
             type="button" 
             onClick={onClose} 
-            className="p-1.5 text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
+            className="p-1.5 text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
           >
             <X size={18} />
           </button>
@@ -72,7 +72,7 @@ export function EditRowModal({ isOpen, row, onSave, onDelete, onClose }: EditRow
               required
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="e.g. Bryant Park - Final SD"
+              placeholder="e.g. Riverside Library - Concept design"
               className={`${fieldClass} w-full text-sm font-semibold`}
               autoFocus
             />

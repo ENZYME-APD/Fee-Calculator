@@ -12,7 +12,7 @@ interface AddOutflowModalProps {
 
 export function AddOutflowModal({ isOpen, onAdd, onClose }: AddOutflowModalProps) {
   const [name, setName] = useState('');
-  const [type, setType] = useState<'debt' | 'partner' | 'burn' | 'custom'>('debt');
+  const [type, setType] = useState<ForecastOutflowItem['type']>('debt');
   const [initialBalance, setInitialBalance] = useState<number>(0);
   const [monthlyAmount, setMonthlyAmount] = useState<number>(0);
 
@@ -27,7 +27,9 @@ export function AddOutflowModal({ isOpen, onAdd, onClose }: AddOutflowModalProps
       name: name.trim(),
       type,
       initialBalance: initialBalance > 0 ? Math.round(initialBalance) : undefined,
-      monthlyAmounts: {}, // Will default to monthlyAmount across months if specified
+      // Repeats every month unless a month is given its own amount in the forecast table
+      defaultMonthlyAmount: monthlyAmount > 0 ? Math.round(monthlyAmount) : undefined,
+      monthlyAmounts: {},
     });
 
     setName('');
@@ -42,14 +44,14 @@ export function AddOutflowModal({ isOpen, onAdd, onClose }: AddOutflowModalProps
         <div className="flex justify-between items-center px-5 py-4 border-b border-ink-100 dark:border-ink-800">
           <div>
             <h2 className="text-base font-bold text-ink-900 dark:text-ink-100">
-              Add outflow / liability line
+              Add outflow
             </h2>
-            <p className="text-xs text-ink-500">Debt repayment, partner profit share, or special expense</p>
+            <p className="text-xs text-ink-500">Debt repayments, profit shares and other costs</p>
           </div>
           <button 
             type="button" 
             onClick={onClose} 
-            className="p-1.5 text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
+            className="p-1.5 text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 rounded-lg hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
           >
             <X size={18} />
           </button>
@@ -65,7 +67,7 @@ export function AddOutflowModal({ isOpen, onAdd, onClose }: AddOutflowModalProps
               required
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="e.g. Partner 3.0 debt or July loan"
+              placeholder="e.g. Bank loan repayment"
               className={`${fieldClass} w-full text-sm font-semibold`}
               autoFocus
             />
@@ -77,19 +79,20 @@ export function AddOutflowModal({ isOpen, onAdd, onClose }: AddOutflowModalProps
             </label>
             <select
               value={type}
-              onChange={e => setType(e.target.value as any)}
+              onChange={e => setType(e.target.value as ForecastOutflowItem['type'])}
               className={`${fieldClass} w-full`}
             >
               <option value="debt">Debt / loan repayment</option>
               <option value="partner">Partner distribution / profit share</option>
-              <option value="custom">Other monthly expense</option>
+              <option value="burn">Fixed monthly cost</option>
+              <option value="custom">Other expense</option>
             </select>
           </div>
 
           {type === 'debt' && (
             <div>
               <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">
-                Total starting debt balance (no decimals)
+                Debt balance
               </label>
               <input
                 type="number"
@@ -100,11 +103,27 @@ export function AddOutflowModal({ isOpen, onAdd, onClose }: AddOutflowModalProps
                   const val = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
                   setInitialBalance(val);
                 }}
-                placeholder="e.g. 72000"
+                placeholder="e.g. 50000"
                 className={`${fieldClass} w-full`}
               />
             </div>
           )}
+
+          <div>
+            <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">
+              Monthly amount
+            </label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              value={monthlyAmount === 0 ? '' : monthlyAmount}
+              onChange={e => setMonthlyAmount(parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)}
+              placeholder="e.g. 2000"
+              className={`${fieldClass} w-full`}
+            />
+            <p className="text-[11px] text-ink-500 dark:text-ink-400 mt-1">Repeats every month. You can change individual months in the table.</p>
+          </div>
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-ink-100 dark:border-ink-800 mt-2">
             <SecondaryButton type="button" onClick={onClose}>
