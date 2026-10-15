@@ -4,8 +4,8 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswor
 import { auth, db, googleProvider } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getInviteByToken, bootstrapCompanyData } from '@/lib/firebase/db';
-import { Invite } from '@/lib/firebase/schema';
+import { bootstrapCompanyData } from '@/lib/firebase/db';
+import { fetchInvitePreview, InvitePreview } from '@/lib/invites';
 import { Building2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { User as FirebaseUser } from 'firebase/auth';
@@ -41,18 +41,22 @@ function LoginContent() {
   const [isResetting, setIsResetting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const router = useRouter();
-  const [inviteData, setInviteData] = useState<Invite | null>(null);
+  const [inviteData, setInviteData] = useState<InvitePreview | null>(null);
 
   React.useEffect(() => {
     if (inviteToken) {
       setIsLogin(false);
-      getInviteByToken(inviteToken).then(data => {
+      // Read through /api/invites/preview — the invitee isn't signed in yet,
+      // so a direct Firestore query on `invites` is denied by the rules.
+      fetchInvitePreview(inviteToken).then(data => {
         if (data) {
           setInviteData(data);
           setEmail(data.email);
         } else {
           setError('This invite link is invalid or expired.');
         }
+      }).catch(() => {
+        setError('Could not verify this invite. Please reload the page and try again.');
       });
     }
   }, [inviteToken]);

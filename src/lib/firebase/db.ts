@@ -45,13 +45,6 @@ export const createInvite = async (invite: Omit<Invite, 'id'>) => {
   return docRef.id;
 };
 
-export const getInviteByToken = async (token: string): Promise<Invite | null> => {
-  const q = query(collection(db, 'invites'), where('token', '==', token));
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return extractData(snap.docs[0]) as Invite;
-};
-
 export const deleteInvite = async (id: string) => {
   await deleteDoc(doc(db, 'invites', id));
 };

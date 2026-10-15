@@ -1,29 +1,26 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { getInviteByToken, getCompany } from '@/lib/firebase/db';
-import { Invite, Company } from '@/lib/firebase/schema';
+import { useParams } from 'next/navigation';
+import { fetchInvitePreview, InvitePreview } from '@/lib/invites';
 import { Users, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InvitePage() {
   const params = useParams();
-  const router = useRouter();
   const token = params.token as string;
   
   const [loading, setLoading] = useState(true);
-  const [invite, setInvite] = useState<Invite | null>(null);
-  const [company, setCompany] = useState<Company | null>(null);
+  const [invite, setInvite] = useState<InvitePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchInvite = async () => {
       try {
-        const data = await getInviteByToken(token);
+        // Served by /api/invites/preview: visitors here aren't signed in yet,
+        // so a direct Firestore read of invites/companies is denied by the rules.
+        const data = await fetchInvitePreview(token);
         if (data) {
           setInvite(data);
-          const comp = await getCompany(data.companyId);
-          setCompany(comp as Company);
         } else {
           setError("This invite link is invalid or has expired.");
         }
@@ -44,7 +41,7 @@ export default function InvitePage() {
     );
   }
 
-  if (error || !invite || !company) {
+  if (error || !invite) {
     return (
       <div className="min-h-screen bg-ink-50 dark:bg-ink-950 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md bg-white dark:bg-ink-900 rounded-2xl shadow-xl p-8 text-center border border-ink-200 dark:border-ink-800">
@@ -70,7 +67,7 @@ export default function InvitePage() {
           You've been invited!
         </h1>
         <p className="text-ink-500 dark:text-ink-400 text-center mb-8">
-          You have been invited to join <span className="font-bold text-ink-900 dark:text-ink-200">{company.name}</span> on Enzyme APD Fee Calculator.
+          You have been invited to join <span className="font-bold text-ink-900 dark:text-ink-200">{invite.companyName || 'a team'}</span> on Enzyme APD Fee Calculator.
         </p>
 
         <div className="space-y-4 mb-8">
