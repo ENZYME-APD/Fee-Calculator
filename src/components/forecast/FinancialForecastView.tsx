@@ -733,9 +733,10 @@ export function FinancialForecastView() {
 
       {/* Main Forecast Matrix Table */}
       <div className="flex-1 overflow-auto p-6">
-        <Card className="min-w-fit shadow-sm">
+        {/* overflow-clip (not hidden): still rounds the corners, but isn't a scroll container, so the month header can stick */}
+        <Card className="min-w-fit shadow-sm overflow-clip">
           {/* Matrix Header */}
-          <div className="bg-ink-50 dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 flex sticky top-0 z-20">
+          <div className="bg-ink-50 dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 flex sticky top-0 z-30 shadow-[0_1px_0_var(--ink-200)]">
             {/* Workstream Column: 280px */}
             <div className="w-[280px] shrink-0 p-3.5 font-semibold text-xs text-ink-500 dark:text-ink-400 border-r border-ink-200 dark:border-ink-800 flex items-center justify-between">
               <span>Workstream</span>
