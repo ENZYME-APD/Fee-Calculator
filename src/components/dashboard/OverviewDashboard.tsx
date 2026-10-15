@@ -756,18 +756,22 @@ export function OverviewDashboard() {
                                 <div className="flex items-center gap-1.5">
                                   <span className="font-bold text-ink-700 dark:text-ink-200">{weekStr}</span>
                                   {overAllocated.length > 0 && (
-                                    <div className="relative cursor-help z-50">
+                                    <Tooltip
+                                      className="inline-flex cursor-help"
+                                      content={
+                                        <div className="text-left">
+                                          <p className="font-semibold mb-1 text-negative-400 border-b border-ink-700 pb-1">Over-allocated:</p>
+                                          {overAllocated.map((oa, i) => (
+                                            <div key={i} className="flex justify-between gap-4 my-1">
+                                              <span>{oa.member?.name || 'Unknown'}</span>
+                                              <span className="font-mono text-negative-300">{oa.percent.toFixed(0)}%</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      }
+                                    >
                                       <div className="w-2 h-2 rounded-full bg-negative-500 animate-pulse"></div>
-                                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max bg-ink-900 text-white text-xs rounded-lg py-2 px-3 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-xl border border-ink-700">
-                                        <p className="font-semibold mb-1 text-negative-400 border-b border-ink-700 pb-1">Over-allocated:</p>
-                                        {overAllocated.map((oa, i) => (
-                                          <div key={i} className="flex justify-between gap-4 my-1">
-                                            <span>{oa.member?.name || 'Unknown'}</span>
-                                            <span className="font-mono text-negative-300">{oa.percent.toFixed(0)}%</span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
+                                    </Tooltip>
                                   )}
                                 </div>
                               </div>
