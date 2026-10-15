@@ -806,10 +806,10 @@ export function FinancialForecastView() {
       )}
 
       {/* Main Forecast Matrix Table */}
-      {/* No top padding on the scroller: a sticky header stops at the padding edge, which let rows show above it. The card's top margin keeps the spacing. */}
-      <div className="flex-1 overflow-auto px-6 pb-6">
+      {/* No padding on the scroller: sticky header/column stop at the padding edge, which let cells show through. The card margins keep the spacing. */}
+      <div className="flex-1 overflow-auto pb-6">
         {/* overflow-clip (not hidden): still rounds the corners, but isn't a scroll container, so the month header can stick */}
-        <Card className="min-w-fit shadow-sm overflow-clip mt-6">
+        <Card className="min-w-fit shadow-sm overflow-clip mt-6 mx-6">
           {/* Matrix Header */}
           <div className="bg-ink-50 dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 flex sticky top-0 z-30 shadow-[0_1px_0_var(--ink-200)]">
             {/* Frozen left header: workstream (+ notes) */}
