@@ -1,6 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc } from 'firebase/firestore';
 import { db, auth } from './config';
-import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User, ProjectTask, DocumentBlock , SavedBlock, OverheadsProfile } from './schema';
+import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User, ProjectTask, DocumentBlock , SavedBlock, OverheadsProfile, ForecastProfile } from './schema';
 
 const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
@@ -779,3 +779,35 @@ export const updateOverheadsProfile = async (profile: Partial<OverheadsProfile>)
     return snap.docs[0].id;
   }
 };
+
+// --- Forecast Profile ---
+export const getForecastProfile = async (): Promise<ForecastProfile | null> => {
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'forecastProfile'), where('companyId', '==', companyId));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return extractData(snap.docs[0]) as ForecastProfile;
+};
+
+export const updateForecastProfile = async (profile: Partial<ForecastProfile>) => {
+  const companyId = requireCompanyId();
+  const q = query(collection(db, 'forecastProfile'), where('companyId', '==', companyId));
+  const snap = await getDocs(q);
+  
+  if (snap.empty) {
+    const docRef = await addDoc(collection(db, 'forecastProfile'), sanitize({ 
+      ...profile, 
+      companyId,
+      updatedAt: Date.now()
+    }));
+    return docRef.id;
+  } else {
+    const docRef = snap.docs[0].ref;
+    await updateDoc(docRef, sanitize({
+      ...profile,
+      updatedAt: Date.now()
+    }) as any);
+    return snap.docs[0].id;
+  }
+};
+

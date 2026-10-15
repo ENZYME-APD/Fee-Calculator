@@ -179,3 +179,46 @@ export interface OverheadsProfile {
   calculatedOverheadPerPerson?: number;
   updatedAt: number;
 }
+
+export type ForecastStage = 'possible' | 'invoicing' | 'collections';
+
+export interface ForecastPill {
+  id: string;
+  amount: number;
+  label: string;
+  invoiceNumber?: string;
+  notes?: string;
+}
+
+export interface ForecastRow {
+  id: string;
+  name: string;
+  type: 'project' | 'external' | 'retainer';
+  projectId?: string;
+  colorTag?: 'default' | 'accent' | 'negative' | 'warning' | 'positive';
+  notes?: string;
+  // monthKey format YYYY-MM -> stage -> pills array
+  cells: Record<string, Partial<Record<ForecastStage, ForecastPill[]>>>;
+}
+
+export interface ForecastOutflowItem {
+  id: string;
+  name: string;
+  type: 'burn' | 'partner' | 'debt' | 'custom';
+  monthlyAmounts: Record<string, number>; // YYYY-MM -> amount
+  initialBalance?: number; // for debt tracking
+}
+
+export interface ForecastProfile {
+  id?: string;
+  companyId: string;
+  startingBankBalance: number;
+  possibleConversionPercent: number; // default 50
+  invoicingConversionPercent: number; // default 90
+  startMonthKey: string; // YYYY-MM
+  visibleMonthsCount: number; // default 6
+  rows: ForecastRow[];
+  outflows: ForecastOutflowItem[];
+  updatedAt: number;
+}
+

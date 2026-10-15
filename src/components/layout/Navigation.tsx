@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Calculator, Users, Building, FolderKanban, Moon, Sun, LogOut, Settings, BookOpen, LayoutTemplate, CreditCard, PieChart, ShieldAlert, CalendarDays, FileText } from 'lucide-react';
+import { Calculator, Users, Building, FolderKanban, Moon, Sun, LogOut, Settings, BookOpen, LayoutTemplate, CreditCard, PieChart, ShieldAlert, CalendarDays, FileText, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { auth, db } from '@/lib/firebase/config';
@@ -47,11 +47,12 @@ export function Navigation() {
     { name: 'Fee proposal', href: '/dashboard', icon: Calculator },
     { name: 'Project planning', href: '/planning', icon: CalendarDays },
     { name: 'Document builder', href: '/documents', icon: FileText },
-    // Team Resources / Overheads expose salaries and overhead costs, so only
+    // Team Resources / Overheads / Forecast expose salaries and overhead costs, so only
     // admins (or superadmins) see these in the nav at all.
     ...(isAdmin ? [
       { name: 'Team resources', href: '/team', icon: Users },
       { name: 'Overheads calculator', href: '/overheads', icon: Building },
+      { name: 'Financial forecast', href: '/forecast', icon: TrendingUp },
     ] : []),
     { name: 'Templates', href: '/templates', icon: LayoutTemplate },
     { name: 'Documentation', href: '/docs', icon: BookOpen },
