@@ -4,7 +4,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Plus, 
-  Minus,
   Link2,
   GripVertical,
   ArrowUp,
@@ -49,7 +48,7 @@ import {
 import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Card } from '@/components/ui/Card';
-import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
+import { SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
 import { EditPillModal } from './EditPillModal';
 import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
@@ -856,18 +855,6 @@ export function FinancialForecastView() {
             <FolderSync size={14} />
             <span>Sync projects</span>
           </SecondaryButton>
-
-          {/* Add a cost line (debt repayment, profit share, fixed cost) */}
-          <SecondaryButton onClick={addOutflowLine}>
-            <Minus size={14} />
-            <span>Add outflow</span>
-          </SecondaryButton>
-
-          {/* Add an income line (project, retainer, other income) */}
-          <PrimaryButton onClick={() => setAddRowModalOpen(true)}>
-            <Plus size={14} />
-            <span>Add income</span>
-          </PrimaryButton>
 
           {isSaving ? (
             <span className="text-[11px] text-ink-500 dark:text-ink-400 italic">Saving…</span>
