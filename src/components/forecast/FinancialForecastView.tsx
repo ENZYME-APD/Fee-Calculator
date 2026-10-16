@@ -22,7 +22,9 @@ import {
   Undo2,
   Eye,
   EyeOff,
-  Tags
+  Tags,
+  ChevronsDownUp,
+  ChevronsUpDown
 } from 'lucide-react';
 import { 
   ForecastProfile, 
@@ -905,7 +907,13 @@ export function FinancialForecastView() {
     const open = !collapsedGroups.has(key);
     return (
       <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} ${group ? GROUP_COLORS[group.color].stripe : ''} border-r-2 border-ink-200 dark:border-ink-700 pl-3 pr-2 py-2 flex items-center justify-between gap-2`}>
-        <button onClick={() => toggleGroupCollapsed(key)} aria-expanded={open} className="flex items-center gap-1.5 min-w-0 text-ink-800 dark:text-ink-200 hover:text-ink-950 dark:hover:text-ink-50">
+        <button
+          onClick={e => {
+            if (e.altKey) setGroupsCollapsed(groupKeysFor(key.startsWith('in:') ? 'in' : 'out'), open);
+            else toggleGroupCollapsed(key);
+          }}
+          aria-expanded={open}
+          title="Click to collapse or expand · Alt+click for every group in this section" className="flex items-center gap-1.5 min-w-0 text-ink-800 dark:text-ink-200 hover:text-ink-950 dark:hover:text-ink-50">
           <ChevronRight size={13} className={`shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
           <span className={`shrink-0 w-2.5 h-2.5 rounded-full ${group ? GROUP_COLORS[group.color].dot : 'bg-ink-300 dark:bg-ink-600'}`} />
           <span className={`truncate ${off ? 'line-through' : ''}`}>{group ? group.name : 'No group'}</span>
@@ -979,6 +987,53 @@ export function FinancialForecastView() {
         </div>
       </div>
     );
+  };
+
+  // Collapse / expand many groups at once (per section, or everything)
+  const groupKeysFor = (prefix: 'in' | 'out') =>
+    (prefix === 'in' ? sectionsOf(visibleRows, 'in') : sectionsOf(outflows.filter(o => o.type !== 'burn'), 'out'))
+      .filter(sct => sct.showBar).map(sct => sct.key);
+  const setGroupsCollapsed = (keys: string[], collapse: boolean) => setCollapsedGroups(prev => {
+    const next = new Set(prev);
+    keys.forEach(k => (collapse ? next.add(k) : next.delete(k)));
+    try { localStorage.setItem('forecast.collapsedGroups', JSON.stringify([...next])); } catch {}
+    return next;
+  });
+  const allCollapsed = (keys: string[]) => keys.length > 0 && keys.every(k => collapsedGroups.has(k));
+  const sectionGroupsToggle = (prefix: 'in' | 'out') => {
+    const keys = groupKeysFor(prefix);
+    if (keys.length === 0) return null;
+    const all = allCollapsed(keys);
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setGroupsCollapsed(keys, !all);
+          if (all) setCollapsed(prev => ({ ...prev, [prefix === 'in' ? 'inflows' : 'outflows']: false }));
+        }}
+        className="shrink-0 w-6 h-6 flex items-center justify-center rounded-md opacity-70 hover:opacity-100 hover:bg-white/60 dark:hover:bg-black/20 transition"
+        title={all ? 'Expand all groups' : 'Collapse all groups (or Alt+click a group arrow)'}
+        aria-label={all ? 'Expand all groups' : 'Collapse all groups'}
+      >
+        {all ? <ChevronsUpDown size={14} /> : <ChevronsDownUp size={14} />}
+      </button>
+    );
+  };
+  // Everything: all groups in both sections; with no groups, the two sections themselves
+  const everyGroupKey = [...groupKeysFor('in'), ...groupKeysFor('out')];
+  const everythingCollapsed = everyGroupKey.length > 0 ? allCollapsed(everyGroupKey) : collapsed.inflows && collapsed.outflows;
+  const toggleEverything = () => {
+    if (everyGroupKey.length > 0) {
+      setGroupsCollapsed(everyGroupKey, !everythingCollapsed);
+      if (everythingCollapsed) setCollapsed({ inflows: false, outflows: false });
+    } else {
+      const next = !everythingCollapsed;
+      setCollapsed({ inflows: next, outflows: next });
+      try {
+        localStorage.setItem('forecast.collapseInflows', next ? '1' : '0');
+        localStorage.setItem('forecast.collapseOutflows', next ? '1' : '0');
+      } catch {}
+    }
   };
 
   type OutflowSection = { key: string; group: ForecastGroup | null; items: ForecastOutflowItem[]; showBar: boolean };
@@ -1331,6 +1386,13 @@ export function FinancialForecastView() {
                     >
                       {showNotes ? 'Hide notes' : 'Show notes'}
                     </button>
+                    <button
+                      onClick={toggleEverything}
+                      className="text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline whitespace-nowrap"
+                      title={everythingCollapsed ? 'Expand every section and group' : 'Collapse every group (or both sections when there are no groups)'}
+                    >
+                      {everythingCollapsed ? 'Expand all' : 'Collapse all'}
+                    </button>
                   </span>
                 </div>
               </div>
@@ -1379,6 +1441,8 @@ export function FinancialForecastView() {
                 <span>Inflows</span>
                 <span className="font-medium text-ink-500 dark:text-ink-400">({visibleRows.length})</span>
               </button>
+              <div className="flex-1" />
+              {sectionGroupsToggle('in')}
               <button
                 onClick={() => openAddRow()}
                 className="shrink-0 text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
@@ -1730,6 +1794,8 @@ export function FinancialForecastView() {
                 <span className="truncate">Outflows</span>
                 <span className="font-medium text-ink-500 dark:text-ink-400">({referralNames.length + outflows.length})</span>
               </button>
+              <div className="flex-1" />
+              {sectionGroupsToggle('out')}
               <button
                 onClick={() => addOutflowLine()}
                 className="shrink-0 text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
