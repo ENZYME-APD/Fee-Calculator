@@ -479,23 +479,28 @@ export function FinancialForecastView() {
     fromStage: ForecastStage, 
     toMonth: string, 
     toStage: ForecastStage, 
-    pill: ForecastPill
+    pill: ForecastPill,
+    copy = false
   ) => {
-    if (fromRowId === toRowId && fromMonth === toMonth && fromStage === toStage) return;
+    if (!copy && fromRowId === toRowId && fromMonth === toMonth && fromStage === toStage) return;
+    // Alt+drag leaves the original in place and drops a duplicate with its own id
+    const placed = copy
+      ? { ...pill, id: `pill_${Date.now()}_${Math.random().toString(36).substring(2, 8)}` }
+      : pill;
 
     setRows(prevRows => prevRows.map(row => {
       if (row.id !== fromRowId && row.id !== toRowId) return row;
       const cells = { ...row.cells };
 
-      // Remove from origin
-      if (row.id === fromRowId && cells[fromMonth]?.[fromStage]) {
+      // Remove from origin (not when copying)
+      if (!copy && row.id === fromRowId && cells[fromMonth]?.[fromStage]) {
         cells[fromMonth] = { ...cells[fromMonth], [fromStage]: cells[fromMonth][fromStage]!.filter(p => p.id !== pill.id) };
       }
 
       // Add to destination (may be a different row)
       if (row.id === toRowId) {
         const destList = [...(cells[toMonth]?.[toStage] || [])];
-        destList.push(pill);
+        destList.push(placed);
         cells[toMonth] = { ...(cells[toMonth] || {}), [toStage]: destList };
       }
 
@@ -1057,7 +1062,10 @@ export function FinancialForecastView() {
                           return (
                             <div 
                               key={stage}
-                              onDragOver={e => e.preventDefault()}
+                              onDragOver={e => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
+                              }}
                               onDrop={e => {
                                 e.preventDefault();
                                 try {
@@ -1065,7 +1073,7 @@ export function FinancialForecastView() {
                                   if (!raw) return; // e.g. a row being reordered, handled by the row
                                   const data = JSON.parse(raw);
                                   if (data && data.pill) {
-                                    handleMovePill(data.fromRowId, row.id, data.fromMonth, data.fromStage, m, stage, data.pill);
+                                    handleMovePill(data.fromRowId, row.id, data.fromMonth, data.fromStage, m, stage, data.pill, e.altKey);
                                   }
                                 } catch (err) {
                                   console.error(err);
@@ -1085,6 +1093,7 @@ export function FinancialForecastView() {
                                       fromStage: stage,
                                       pill
                                     }));
+                                    e.dataTransfer.effectAllowed = 'copyMove';
                                   }}
                                   onClick={() => {
                                     setActiveCellLocation({ rowId: row.id, monthKey: m, stage });
@@ -1096,7 +1105,7 @@ export function FinancialForecastView() {
                                     stage === 'invoicing' ? 'bg-accent-50 text-accent-800 border-accent-200 dark:bg-accent-950/40 dark:text-accent-300 dark:border-accent-800/60' :
                                     'bg-positive-50 text-positive-800 border-positive-200 dark:bg-positive-950/40 dark:text-positive-300 dark:border-positive-800/60'
                                   }`}
-                                  title={`${pill.label}${pill.referralName ? ` • Referral: ${pill.referralName} (${pill.referralPercent || 0}%)` : ''}${pill.invoiceNumber ? ` • Inv #${pill.invoiceNumber}` : ''}${pill.notes ? ` • ${pill.notes}` : ''}`}
+                                  title={`${pill.label}${pill.referralName ? ` • Referral: ${pill.referralName} (${pill.referralPercent || 0}%)` : ''}${pill.invoiceNumber ? ` • Inv #${pill.invoiceNumber}` : ''}${pill.notes ? ` • ${pill.notes}` : ''}\nDrag to move · Alt+drag to copy`}
                                 >
                                   <div className="flex items-center gap-1 min-w-0">
                                     <span className="truncate">{pill.label}</span>
