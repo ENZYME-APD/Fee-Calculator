@@ -16,7 +16,8 @@ import { ShieldAlert, Bookmark,
   PieChart,
   Settings,
   Building,
-  RefreshCw
+  RefreshCw,
+  TrendingUp
 } from 'lucide-react';
 
 export function WikiContent() {
@@ -139,6 +140,11 @@ export function WikiContent() {
                   <ChevronRight size={16} className="shrink-0" /> 9. Best Practices: Overheads
                 </Link>
               </li>
+              <li>
+                <Link href="#financial-forecast" className="flex items-center gap-2 text-ink-600 dark:text-ink-400 hover:text-accent-600 dark:hover:text-accent-400 font-medium">
+                  <ChevronRight size={16} className="shrink-0" /> 10. Financial Forecast
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -246,6 +252,7 @@ export function WikiContent() {
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Creating:</strong> Inside a project, click <strong>"Add Phase"</strong> to create a new stage of work.</li>
                 <li><strong>Editing:</strong> You can edit the Phase Name, Description, and adjust its start/end dates using the calendar selectors.</li>
+                <li><strong>Project start date:</strong> Set it directly with the <strong>Start date</strong> picker at the top of the Phases panel. The end date next to it updates from the phase durations.</li>
               </ul>
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Understanding Phase Elements</h4>
@@ -290,6 +297,11 @@ export function WikiContent() {
                 <li><strong>Duplicate to All Phases (Stack Icon):</strong> Copies the allocation or cost into <em>every</em> other phase in the project simultaneously.</li>
                 <li><strong>Edit (Pencil) / Delete (Trash):</strong> Modify the hours or remove the allocation entirely from that phase.</li>
               </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">When a Team Member Is Removed</h4>
+              <p>
+                Deleting someone from Team Resources does not change proposals they were allocated to. Their chips stay in place with a dashed amber outline and a warning icon, labelled as a former team member, and their hours are still costed at the rate recorded when they were allocated. Reassign or remove those chips when you re-price the proposal.
+              </p>
             </div>
           </section>
 
@@ -311,6 +323,7 @@ export function WikiContent() {
               <ul className="list-disc pl-5 space-y-2 mt-4">
                 <li><strong>Bottom-Up Method:</strong> Instead of guessing a flat fee and hoping it covers your costs, you calculate exactly how much time the project needs.</li>
                 <li><strong>Real-time Totals:</strong> The <em>Fee Proposal</em> tab aggregates every hour allocated across all phases, multiplies them by the external billing rates, and presents the final recommended fee to charge the client.</li>
+                <li><strong>Jump to the project:</strong> Click the project name at the top of the Fee Proposal canvas to open that project in <em>Projects &amp; Phases</em>.</li>
               </ul>
 
               <div className="mt-6 bg-accent-50 dark:bg-accent-900/10 border border-accent-200 dark:border-accent-800/50 rounded-2xl p-6">
@@ -619,6 +632,71 @@ export function WikiContent() {
                 </p>
                 <p className="text-sm text-accent-800 dark:text-accent-400 mt-2">
                   By factoring in non-billable hours to reduce the denominator, and adding overheads to the numerator, your Internal Rate will accurately reflect the true break-even cost for every hour a team member spends on a project.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <hr className="border-ink-200 dark:border-ink-800" />
+
+          {/* Section 10: Financial Forecast */}
+          <section id="financial-forecast" className="scroll-mt-32">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
+                <TrendingUp size={24} className="text-accent-600 dark:text-accent-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-ink-900 dark:text-ink-50">10. Financial Forecast</h2>
+            </div>
+
+            <div className="prose prose-ink dark:prose-invert max-w-none text-ink-600 dark:text-ink-400">
+              <p>
+                The <strong>Financial Forecast</strong> is a month-by-month cash plan: money coming in from projects and other income, money going out on salaries, overheads and other costs, and the bank balance that results. It is visible to admins only, because it includes internal salaries and overheads. Every change saves automatically and is shared with the other admins in your company.
+              </p>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">How the Table Works</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>Months and stages:</strong> Each month has three columns: <em>Possible</em> (proposals that may happen), <em>Invoiced</em> (billed but not yet paid) and <em>Collections</em> (cash received). The last column totals the months on screen.</li>
+                <li><strong>Amounts are pills:</strong> Click the + in a cell to add an amount, click a pill to edit it, and drag a pill to move it to another month, stage or row. Hold <strong>Alt</strong> (Option on a Mac) while dragging to copy it instead.</li>
+                <li><strong>Scenarios:</strong> <em>Conservative</em> counts collections only, <em>Optimistic</em> counts every stage in full, and <em>Expected</em> counts collections plus the invoiced and possible amounts weighted by the percentages you set at the top.</li>
+                <li><strong>Bank cash:</strong> Enter your opening bank cash and the month it applies to. Each month&apos;s closing cash is the previous balance plus collections minus outflows.</li>
+              </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Inflows</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>Sync projects:</strong> Adds your Active and Proposed projects, placing each payment milestone in the month its phase reaches it. Active projects go to <em>Invoiced</em>, Proposed ones to <em>Possible</em>. Rows already in the forecast are left as they are.</li>
+                <li><strong>Reset row:</strong> Rebuilds a synced row from its current fee proposal and payment schedule (or clears a manual row). Use it after changing a proposal.</li>
+                <li><strong>Add income:</strong> Adds a manual row for retainers, partnerships or any income that isn&apos;t a fee proposal. Rows are marked <em>Proposal</em> (synced) or <em>Manual</em>.</li>
+                <li><strong>Referral commissions:</strong> Give a pill a referral name and percentage and the commission appears automatically as an outflow line in the month the money is collected.</li>
+              </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Outflows</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>Running costs:</strong> Linked by default to your internal team&apos;s monthly salaries (Team Resources, external categories excluded) plus active overhead items divided by 12 (Overheads Calculator), and updated whenever those pages change. Use the <strong>± adjust</strong> box to correct a single month, or <strong>Unlink</strong> to type amounts yourself.</li>
+                <li><strong>Other lines:</strong> Click <strong>Add outflow</strong> on the Outflows bar for debt repayments, profit shares or any other cost. Click a line&apos;s name to rename it and type an amount in each month.</li>
+              </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Groups</h4>
+              <p>Groups let you organise lines by country, office or anything else, for example India and Spain.</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>Creating groups:</strong> Click <strong>Groups</strong> in the top bar to add, rename, recolour, reorder or delete groups, or create one directly from a row&apos;s edit dialog. Groups are shared with your team.</li>
+                <li><strong>Assigning lines:</strong> Choose the group in an income row&apos;s add or edit dialog, or from the small group menu under an outflow line&apos;s name. Dragging an income row onto a row in another group moves it into that group.</li>
+                <li><strong>Subtotals and collapsing:</strong> Each group has its own bar with subtotals per month and stage. Click it to fold the group away; the subtotals stay visible.</li>
+                <li><strong>Excluding a group:</strong> Click <strong>Included</strong> on a group bar to take that group out of every total, scenario and bank balance, so you can see its effect. Its lines turn grey and a banner lists what is excluded. This only affects your screen and is never saved; click <strong>Include all</strong> or reload the page to restore everything.</li>
+              </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Arranging the View</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Collapse the <strong>Inflows</strong> or <strong>Outflows</strong> sections from their bars; totals stay visible.</li>
+                <li>Use <strong>Hide empty rows</strong> to show only rows with amounts in the months on screen, and <strong>Hide notes</strong> to narrow the left column.</li>
+                <li>Reorder rows by dragging the handle beside the name or with the up and down arrows.</li>
+                <li>Click a synced row&apos;s name to open the project in <em>Projects &amp; Phases</em>, or <strong>Proposal</strong> to open its fee proposal.</li>
+                <li>These view choices are remembered in your browser and don&apos;t affect what other admins see.</li>
+              </ul>
+
+              <div className="mt-6 bg-accent-50 dark:bg-accent-900/10 border border-accent-200 dark:border-accent-800/50 rounded-2xl p-6">
+                <h5 className="font-bold text-accent-900 dark:text-accent-300 mb-2">Saving and working together</h5>
+                <p className="text-sm">
+                  Changes save about a second after you make them. If a save fails, a red <em>Couldn&apos;t save</em> message appears in the top bar, and the browser warns you before you leave with unsaved changes. Each open page saves the whole forecast, so if several admins edit at once, refresh before making changes to avoid overwriting each other&apos;s work.
                 </p>
               </div>
             </div>
