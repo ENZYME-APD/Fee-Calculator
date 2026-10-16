@@ -448,8 +448,8 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
                   <form onSubmit={handleEditSave} className="flex-1 flex flex-col gap-2">
                     <input type="text" autoFocus required value={editName} onChange={e => setEditName(e.target.value)} className={fieldClass + ' w-full'} />
                     <div className="flex gap-2 items-center justify-between">
-                      <input type="number" required min="0" max={Math.max(0, 100 - (totalPercentage - payment.percentage))} step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className={fieldClass + ' w-24 text-center shrink-0'} />
-                      <select value={editPhaseId} onChange={e => setEditPhaseId(e.target.value)} className={fieldClass + ' flex-1'}>
+                      <input type="number" required min="0" max={Math.max(0, 100 - (totalPercentage - payment.percentage))} step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className={fieldClass + ' w-20 text-center shrink-0'} />
+                      <select value={editPhaseId} onChange={e => setEditPhaseId(e.target.value)} className={fieldClass + ' flex-1 min-w-0 truncate'}>
                         <option value="">(No phase)</option>
                         {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
