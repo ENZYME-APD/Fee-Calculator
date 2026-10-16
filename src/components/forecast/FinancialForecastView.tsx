@@ -191,7 +191,7 @@ export function FinancialForecastView() {
   });
   // Lines that count in the totals
   const activeRows = useMemo(() => rows.filter(r => !isOff(r.groupId)), [rows, groupById, disabledGroups]); // eslint-disable-line react-hooks/exhaustive-deps
-  const activeOutflows = useMemo(() => outflows.filter(o => !isOff(o.groupId)), [outflows, groupById, disabledGroups]); // eslint-disable-line react-hooks/exhaustive-deps
+  const activeOutflows = useMemo(() => outflows.filter(o => o.type === 'burn' || !isOff(o.groupId)), [outflows, groupById, disabledGroups]); // eslint-disable-line react-hooks/exhaustive-deps
   // Editing the group list also drops references to deleted groups
   const handleGroupsChange = (next: ForecastGroup[]) => {
     const ids = new Set(next.map(g => g.id));
@@ -979,6 +979,184 @@ export function FinancialForecastView() {
     );
   };
 
+  type OutflowSection = { key: string; group: ForecastGroup | null; items: ForecastOutflowItem[]; showBar: boolean };
+  const renderOutflowSections = (sections: OutflowSection[]) => (
+    sections.map(section => (
+              <React.Fragment key={section.key}>
+              {section.showBar && renderOutflowGroupBar(section.key, section.group, section.items)}
+              {!(section.showBar && collapsedGroups.has(section.key)) && section.items.map(item => {
+              const isLinked = isLinkedLine(item);
+              const itemGroup = item.groupId ? groupById[item.groupId] : undefined;
+              const itemOff = isOff(item.groupId);
+              const canLink = item.type === 'burn';
+              const showAdjust = item.type === 'burn';
+              return (
+              <div key={item.id} className={`flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors ${itemOff ? OFF_DIM : ''}`}>
+                <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-white dark:bg-ink-900 ${FROZEN_EDGE} ${itemGroup ? GROUP_COLORS[itemGroup.color].stripe : ''} p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between gap-3`}>
+                  <div className="min-w-0 flex-1">
+                    {editingOutflowId === item.id ? (
+                      <input
+                        autoFocus
+                        defaultValue={item.name}
+                        onFocus={e => e.currentTarget.select()}
+                        onBlur={e => renameOutflow(item.id, e.currentTarget.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                          if (e.key === 'Escape') setEditingOutflowId(null);
+                        }}
+                        className={fieldClass + ' w-full py-1 text-xs font-semibold'}
+                        aria-label="Outflow name"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setEditingOutflowId(item.id)}
+                        className="block max-w-full truncate text-left font-semibold text-ink-800 dark:text-ink-200 hover:underline decoration-dotted underline-offset-2"
+                        title="Click to rename"
+                      >
+                        {item.name}
+                      </button>
+                    )}
+                    {isLinked && (
+                      <div
+                        className="text-[11px] text-ink-500 dark:text-ink-400 mt-0.5"
+                        title={`Internal team salaries (Team resources): ${fmt(runningCosts.salaries)} a month\nOverhead items (Overheads): ${fmt(runningCosts.overheads)} a month\nUpdates automatically when either page changes.`}
+                      >
+                        Internal team + Overheads: <span className="font-semibold text-ink-700 dark:text-ink-300">{fmt(runningCosts.total)}</span> a month
+                        <button onClick={() => handleSetLinked(item.id, false)} className="ml-2 font-semibold text-accent-700 dark:text-accent-400 hover:underline">Unlink</button>
+                      </div>
+                    )}
+                    {!isLinked && canLink && (
+                      <button
+                        onClick={() => handleSetLinked(item.id, true)}
+                        className="block text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline mt-0.5"
+                        title="Use monthly salaries from Team resources plus overhead items from Overheads, kept up to date automatically. Month amounts you typed are replaced; corrections are kept."
+                      >
+                        Link to Team resources + Overheads
+                      </button>
+                    )}
+                    {groups.length > 0 && item.type !== 'burn' && (
+                      <select
+                        value={item.groupId && groupById[item.groupId] ? item.groupId : ''}
+                        onChange={e => {
+                          const gid = e.target.value || undefined;
+                          setOutflows(prev => prev.map(o => (o.id === item.id ? { ...o, groupId: gid } : o)));
+                        }}
+                        className="mt-1 -ml-0.5 max-w-full bg-transparent text-[11px] text-ink-500 dark:text-ink-400 hover:text-ink-800 dark:hover:text-ink-200 cursor-pointer rounded focus:outline-none"
+                        aria-label="Group"
+                        title="Group"
+                      >
+                        <option value="">No group</option>
+                        {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  {item.id !== 'burn_base' && (
+                    <IconButton
+                      onClick={() => setOutflows(prev => prev.filter(o => o.id !== item.id))}
+                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-negative-600 transition-opacity shrink-0"
+                      title="Delete line"
+                    >
+                      <Trash2 size={13} />
+                    </IconButton>
+                  )}
+                </div>
+
+                {monthKeys.map(m => {
+                  const pills = item.monthlyPills?.[m] || [];
+                  const repeating = !pills.length && item.defaultMonthlyAmount ? item.defaultMonthlyAmount : 0;
+                  const adj = item.monthlyAdjustments?.[m] ?? 0;
+                  const total = outflowAmount(item, m, runningCosts.total);
+                  return (
+                    <div
+                      key={m}
+                      className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-2 flex items-center justify-end gap-2 group/ocell"
+                      onDragOver={isLinked ? undefined : e => {
+                        if (!e.dataTransfer.types.includes(OUTFLOW_PILL_MIME)) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
+                      }}
+                      onDrop={isLinked ? undefined : e => {
+                        const raw = e.dataTransfer.getData(OUTFLOW_PILL_MIME);
+                        if (!raw) return;
+                        e.preventDefault();
+                        try {
+                          const d = JSON.parse(raw);
+                          moveOutflowPill(d.itemId, d.month, item.id, m, d.pill, e.altKey);
+                        } catch (err) { console.error(err); }
+                      }}
+                    >
+                      {isLinked ? (
+                        <span className="font-semibold text-ink-700 dark:text-ink-300" title="From Team resources + Overheads">-{fmt(runningCosts.total)}</span>
+                      ) : (
+                        <div className="flex flex-1 min-w-0 flex-wrap items-center justify-end gap-1">
+                          {repeating > 0 && (
+                            <span className="text-xs font-semibold text-ink-500 dark:text-ink-400 italic" title="Repeats every month. Add an expense to replace it in this month.">-{fmt(repeating)}</span>
+                          )}
+                          {pills.map(p => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              draggable
+                              onDragStart={e => {
+                                e.dataTransfer.setData(OUTFLOW_PILL_MIME, JSON.stringify({ itemId: item.id, month: m, pill: p }));
+                                e.dataTransfer.effectAllowed = 'copyMove';
+                              }}
+                              onClick={() => setOutflowPillEdit({ itemId: item.id, month: m, pill: p })}
+                              title={`${p.description ? p.description + '\n' : ''}-${fmt(p.amount)}\nClick to edit · Drag to move · Alt+drag to copy`}
+                              className="max-w-[200px] px-2 py-1 rounded text-xs font-bold border shadow-2xs cursor-grab active:cursor-grabbing flex items-center gap-1.5 select-none transition-all hover:scale-[1.02] bg-negative-50 text-negative-800 border-negative-200 dark:bg-negative-950/40 dark:text-negative-300 dark:border-negative-800/60"
+                            >
+                              {p.description && <span className="truncate font-medium text-negative-700/90 dark:text-negative-300/90">{p.description}</span>}
+                              <span className="shrink-0 tabular-nums">-{fmt(p.amount)}</span>
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setOutflowPillEdit({ itemId: item.id, month: m, pill: null })}
+                            className={`w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-accent-700 dark:hover:text-accent-400 transition-opacity ${pills.length || repeating ? 'opacity-0 group-hover/ocell:opacity-100 focus-visible:opacity-100' : 'opacity-60 hover:opacity-100'}`}
+                            title={`Add an expense to ${item.name} in ${formatMonthLabel(m)}`}
+                            aria-label={`Add an expense to ${item.name} in ${formatMonthLabel(m)}`}
+                          >
+                            <Plus size={13} />
+                          </button>
+                        </div>
+                      )}
+                      {showAdjust && (
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={adj ? (adj > 0 ? `+${adj}` : String(adj)) : ''}
+                          onChange={e => {
+                            const raw = e.target.value.replace(/[^0-9+-]/g, '');
+                            const sign = raw.trim().startsWith('-') ? -1 : 1;
+                            const digits = raw.replace(/[^0-9]/g, '');
+                            handleUpdateAdjustment(item.id, m, digits ? sign * parseInt(digits) : 0);
+                          }}
+                          placeholder="± adjust"
+                          title="Correction for this month only: +2000 for extra costs, -1500 for lower costs."
+                          aria-label={`${item.name}: adjustment for ${formatMonthLabel(m)}`}
+                          className={`w-20 px-2 py-1 text-right text-xs font-semibold border rounded outline-none focus:border-accent-500 bg-white dark:bg-ink-900 placeholder:text-ink-500 dark:placeholder:text-ink-400 placeholder:font-normal ${
+                            adj > 0 ? 'border-negative-300 dark:border-negative-800 text-negative-700 dark:text-negative-400'
+                            : adj < 0 ? 'border-positive-300 dark:border-positive-800 text-positive-700 dark:text-positive-400'
+                            : 'border-ink-200 dark:border-ink-700 text-ink-700 dark:text-ink-300'
+                          }`}
+                        />
+                      )}
+                      {showAdjust && adj !== 0 && (
+                        <span className="font-bold text-negative-600 dark:text-negative-400 tabular-nums" title="This month's total">= -{fmt(total)}</span>
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums p-2 flex items-center justify-end font-bold text-negative-600 dark:text-negative-400">
+                  {(() => { const t = sumVisible(m => outflowAmount(item, m, runningCosts.total)); return t ? `-${fmt(t)}` : <span className="text-ink-500 dark:text-ink-400 font-medium">0</span>; })()}
+                </div>
+              </div>
+              );
+            })}
+              </React.Fragment>
+            ))
+  );
+
   if (authLoading || !isAdmin || loading) {
     return (
       <div className="flex h-full w-full items-center justify-center p-8 text-ink-500">
@@ -1580,6 +1758,8 @@ export function FinancialForecastView() {
           </div>
 
           <div className={`divide-y divide-ink-100 dark:divide-ink-800 bg-white dark:bg-ink-900 text-xs ${collapsed.outflows ? 'hidden' : ''}`}>
+            {/* Running costs (burn) first and never grouped, then commissions, then the other lines */}
+            {renderOutflowSections([{ key: 'out:burn', group: null, items: outflows.filter(o => o.type === 'burn'), showBar: false }])}
             {/* Dynamic Referral Commission Rows */}
             {referralNames.map(personName => {
               const personData = dynamicReferrals[personName];
@@ -1624,181 +1804,7 @@ export function FinancialForecastView() {
               );
             })}
 
-            {/* Standard fixed / debt outflows */}
-            {sectionsOf(outflows, 'out').map(section => (
-              <React.Fragment key={section.key}>
-              {section.showBar && renderOutflowGroupBar(section.key, section.group, section.items)}
-              {!(section.showBar && collapsedGroups.has(section.key)) && section.items.map(item => {
-              const isLinked = isLinkedLine(item);
-              const itemGroup = item.groupId ? groupById[item.groupId] : undefined;
-              const itemOff = isOff(item.groupId);
-              const canLink = item.type === 'burn';
-              const showAdjust = item.type === 'burn';
-              return (
-              <div key={item.id} className={`flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors ${itemOff ? OFF_DIM : ''}`}>
-                <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-white dark:bg-ink-900 ${FROZEN_EDGE} ${itemGroup ? GROUP_COLORS[itemGroup.color].stripe : ''} p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between gap-3`}>
-                  <div className="min-w-0 flex-1">
-                    {editingOutflowId === item.id ? (
-                      <input
-                        autoFocus
-                        defaultValue={item.name}
-                        onFocus={e => e.currentTarget.select()}
-                        onBlur={e => renameOutflow(item.id, e.currentTarget.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') e.currentTarget.blur();
-                          if (e.key === 'Escape') setEditingOutflowId(null);
-                        }}
-                        className={fieldClass + ' w-full py-1 text-xs font-semibold'}
-                        aria-label="Outflow name"
-                      />
-                    ) : (
-                      <button
-                        onClick={() => setEditingOutflowId(item.id)}
-                        className="block max-w-full truncate text-left font-semibold text-ink-800 dark:text-ink-200 hover:underline decoration-dotted underline-offset-2"
-                        title="Click to rename"
-                      >
-                        {item.name}
-                      </button>
-                    )}
-                    {isLinked && (
-                      <div
-                        className="text-[11px] text-ink-500 dark:text-ink-400 mt-0.5"
-                        title={`Internal team salaries (Team resources): ${fmt(runningCosts.salaries)} a month\nOverhead items (Overheads): ${fmt(runningCosts.overheads)} a month\nUpdates automatically when either page changes.`}
-                      >
-                        Internal team + Overheads: <span className="font-semibold text-ink-700 dark:text-ink-300">{fmt(runningCosts.total)}</span> a month
-                        <button onClick={() => handleSetLinked(item.id, false)} className="ml-2 font-semibold text-accent-700 dark:text-accent-400 hover:underline">Unlink</button>
-                      </div>
-                    )}
-                    {!isLinked && canLink && (
-                      <button
-                        onClick={() => handleSetLinked(item.id, true)}
-                        className="block text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline mt-0.5"
-                        title="Use monthly salaries from Team resources plus overhead items from Overheads, kept up to date automatically. Month amounts you typed are replaced; corrections are kept."
-                      >
-                        Link to Team resources + Overheads
-                      </button>
-                    )}
-                    {groups.length > 0 && (
-                      <select
-                        value={item.groupId && groupById[item.groupId] ? item.groupId : ''}
-                        onChange={e => {
-                          const gid = e.target.value || undefined;
-                          setOutflows(prev => prev.map(o => (o.id === item.id ? { ...o, groupId: gid } : o)));
-                        }}
-                        className="mt-1 -ml-0.5 max-w-full bg-transparent text-[11px] text-ink-500 dark:text-ink-400 hover:text-ink-800 dark:hover:text-ink-200 cursor-pointer rounded focus:outline-none"
-                        aria-label="Group"
-                        title="Group"
-                      >
-                        <option value="">No group</option>
-                        {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                      </select>
-                    )}
-                  </div>
-                  {item.id !== 'burn_base' && (
-                    <IconButton
-                      onClick={() => setOutflows(prev => prev.filter(o => o.id !== item.id))}
-                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-negative-600 transition-opacity shrink-0"
-                      title="Delete line"
-                    >
-                      <Trash2 size={13} />
-                    </IconButton>
-                  )}
-                </div>
-
-                {monthKeys.map(m => {
-                  const pills = item.monthlyPills?.[m] || [];
-                  const repeating = !pills.length && item.defaultMonthlyAmount ? item.defaultMonthlyAmount : 0;
-                  const adj = item.monthlyAdjustments?.[m] ?? 0;
-                  const total = outflowAmount(item, m, runningCosts.total);
-                  return (
-                    <div
-                      key={m}
-                      className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-2 flex items-center justify-end gap-2 group/ocell"
-                      onDragOver={isLinked ? undefined : e => {
-                        if (!e.dataTransfer.types.includes(OUTFLOW_PILL_MIME)) return;
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
-                      }}
-                      onDrop={isLinked ? undefined : e => {
-                        const raw = e.dataTransfer.getData(OUTFLOW_PILL_MIME);
-                        if (!raw) return;
-                        e.preventDefault();
-                        try {
-                          const d = JSON.parse(raw);
-                          moveOutflowPill(d.itemId, d.month, item.id, m, d.pill, e.altKey);
-                        } catch (err) { console.error(err); }
-                      }}
-                    >
-                      {isLinked ? (
-                        <span className="font-semibold text-ink-700 dark:text-ink-300" title="From Team resources + Overheads">-{fmt(runningCosts.total)}</span>
-                      ) : (
-                        <div className="flex flex-1 min-w-0 flex-wrap items-center justify-end gap-1">
-                          {repeating > 0 && (
-                            <span className="text-xs font-semibold text-ink-500 dark:text-ink-400 italic" title="Repeats every month. Add an expense to replace it in this month.">-{fmt(repeating)}</span>
-                          )}
-                          {pills.map(p => (
-                            <button
-                              key={p.id}
-                              type="button"
-                              draggable
-                              onDragStart={e => {
-                                e.dataTransfer.setData(OUTFLOW_PILL_MIME, JSON.stringify({ itemId: item.id, month: m, pill: p }));
-                                e.dataTransfer.effectAllowed = 'copyMove';
-                              }}
-                              onClick={() => setOutflowPillEdit({ itemId: item.id, month: m, pill: p })}
-                              title={`${p.description ? p.description + '\n' : ''}-${fmt(p.amount)}\nClick to edit · Drag to move · Alt+drag to copy`}
-                              className="max-w-[200px] px-2 py-1 rounded text-xs font-bold border shadow-2xs cursor-grab active:cursor-grabbing flex items-center gap-1.5 select-none transition-all hover:scale-[1.02] bg-negative-50 text-negative-800 border-negative-200 dark:bg-negative-950/40 dark:text-negative-300 dark:border-negative-800/60"
-                            >
-                              {p.description && <span className="truncate font-medium text-negative-700/90 dark:text-negative-300/90">{p.description}</span>}
-                              <span className="shrink-0 tabular-nums">-{fmt(p.amount)}</span>
-                            </button>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => setOutflowPillEdit({ itemId: item.id, month: m, pill: null })}
-                            className={`w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-accent-700 dark:hover:text-accent-400 transition-opacity ${pills.length || repeating ? 'opacity-0 group-hover/ocell:opacity-100 focus-visible:opacity-100' : 'opacity-60 hover:opacity-100'}`}
-                            title={`Add an expense to ${item.name} in ${formatMonthLabel(m)}`}
-                            aria-label={`Add an expense to ${item.name} in ${formatMonthLabel(m)}`}
-                          >
-                            <Plus size={13} />
-                          </button>
-                        </div>
-                      )}
-                      {showAdjust && (
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={adj ? (adj > 0 ? `+${adj}` : String(adj)) : ''}
-                          onChange={e => {
-                            const raw = e.target.value.replace(/[^0-9+-]/g, '');
-                            const sign = raw.trim().startsWith('-') ? -1 : 1;
-                            const digits = raw.replace(/[^0-9]/g, '');
-                            handleUpdateAdjustment(item.id, m, digits ? sign * parseInt(digits) : 0);
-                          }}
-                          placeholder="± adjust"
-                          title="Correction for this month only: +2000 for extra costs, -1500 for lower costs."
-                          aria-label={`${item.name}: adjustment for ${formatMonthLabel(m)}`}
-                          className={`w-20 px-2 py-1 text-right text-xs font-semibold border rounded outline-none focus:border-accent-500 bg-white dark:bg-ink-900 placeholder:text-ink-500 dark:placeholder:text-ink-400 placeholder:font-normal ${
-                            adj > 0 ? 'border-negative-300 dark:border-negative-800 text-negative-700 dark:text-negative-400'
-                            : adj < 0 ? 'border-positive-300 dark:border-positive-800 text-positive-700 dark:text-positive-400'
-                            : 'border-ink-200 dark:border-ink-700 text-ink-700 dark:text-ink-300'
-                          }`}
-                        />
-                      )}
-                      {showAdjust && adj !== 0 && (
-                        <span className="font-bold text-negative-600 dark:text-negative-400 tabular-nums" title="This month's total">= -{fmt(total)}</span>
-                      )}
-                    </div>
-                  );
-                })}
-                <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums p-2 flex items-center justify-end font-bold text-negative-600 dark:text-negative-400">
-                  {(() => { const t = sumVisible(m => outflowAmount(item, m, runningCosts.total)); return t ? `-${fmt(t)}` : <span className="text-ink-500 dark:text-ink-400 font-medium">0</span>; })()}
-                </div>
-              </div>
-              );
-            })}
-              </React.Fragment>
-            ))}
+            {renderOutflowSections(sectionsOf(outflows.filter(o => o.type !== 'burn'), 'out'))}
           </div>
 
           {/* Outflow Subtotal */}
