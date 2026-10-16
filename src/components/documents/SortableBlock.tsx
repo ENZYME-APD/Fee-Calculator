@@ -1,6 +1,7 @@
 
 "use client";
 import React, { useState } from 'react';
+import { paymentAmount, paymentPercent, formatPercent } from '@/lib/utils/payments';
 import { computeProjectFinancials, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -226,11 +227,11 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
             </thead>
             <tbody className="divide-y divide-ink-200 dark:divide-ink-700">
               {payments.map(payment => {
-                const amount = totalProjectFee * (payment.percentage / 100);
+                const amount = paymentAmount(payment, totalProjectFee);
                 return (
                   <tr key={payment.id}>
                     <td className="px-4 py-3 font-medium text-ink-800 dark:text-ink-200">{payment.name}</td>
-                    <td className="px-4 py-3 text-center text-ink-600 dark:text-ink-400">{payment.percentage}%</td>
+                    <td className="px-4 py-3 text-center text-ink-600 dark:text-ink-400">{formatPercent(paymentPercent(payment, totalProjectFee))}%</td>
                     <td className="px-4 py-3 text-right font-medium text-ink-800 dark:text-ink-200">${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
                   </tr>
                 );

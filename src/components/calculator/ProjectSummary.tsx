@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { paymentAmount, paymentPercent, formatPercent, hasFixedAmount } from '@/lib/utils/payments';
 import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { Project, Phase, Allocation, TeamMember, ProjectCost, TeamCategory, Payment } from '@/lib/firebase/schema';
 import { updateProject, getCategories, updatePayment } from '@/lib/firebase/db';
@@ -93,7 +94,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
   const multiplier = feeMultiplierFor(project, projectTotalCost);
   const projectTotalFee = isFixed ? project.fixedFee! : projectTotalCost * multiplier;
   
-  const totalPercentage = payments.reduce((sum, p) => sum + p.percentage, 0);
+  const totalPercentage = payments.reduce((sum, p) => sum + paymentPercent(p, projectTotalFee), 0);
   const projectTotalWeeks = phases.reduce((sum, phase) => sum + phase.durationWeeks, 0);
   
   const handleSaveArea = async (e: React.FormEvent) => {
@@ -375,7 +376,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                 <div className="text-center text-ink-500 dark:text-ink-400 py-6 text-sm">No payment schedule defined.</div>
               ) : (
                 payments.sort((a, b) => a.order - b.order).map((payment, i) => {
-                  const feeAmount = (projectTotalFee * payment.percentage) / 100;
+                  const feeAmount = paymentAmount(payment, projectTotalFee);
                   
                   // Find associated phase stats if any
                   const linkedPhaseStat = phaseStats.find(s => s.phase.id === payment.phaseId);
@@ -400,6 +401,9 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                           )}
                         </div>
                         <div className={`w-28 px-3 py-2 flex items-center justify-end font-medium text-ink-800 dark:text-ink-200 border-l ${colorClass} ${darkColorClass}`}>
+                          {hasFixedAmount(payment) ? (
+                            <span className="text-sm font-bold" title="Fixed amount; the percentage follows the fee. Change it in Projects & phases.">{formatPercent(paymentPercent(payment, projectTotalFee))}%</span>
+                          ) : (
                           <InlinePercentInput 
                             value={payment.percentage} 
                             maxAllowed={100 - (totalPercentage - payment.percentage)}
@@ -410,6 +414,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                               }
                             }} 
                           />
+                          )}
                         </div>
                         <div className={`w-36 px-3 py-2 flex items-center justify-end text-right font-bold text-ink-900 dark:text-ink-50 border-l ${colorClass} ${darkColorClass}`}>
                           {formatCurrency(feeAmount)}

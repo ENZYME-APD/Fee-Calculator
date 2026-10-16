@@ -1,5 +1,6 @@
 
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType } from 'docx';
+import { paymentAmount, paymentPercent, formatPercent } from '@/lib/utils/payments';
 import { computeProjectFinancials, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { saveAs } from 'file-saver';
 import { DocumentBlock, Project, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Payment } from '@/lib/firebase/schema';
@@ -213,13 +214,13 @@ export const exportToDocx = async (
       ];
 
       for (const payment of payments) {
-        const amount = totalProjectFee * (payment.percentage / 100);
+        const amount = paymentAmount(payment, totalProjectFee);
         
         tableRows.push(
           new TableRow({
             children: [
               new TableCell({ children: [new Paragraph(payment.name)] }),
-              new TableCell({ children: [new Paragraph(`${payment.percentage}%`)] }),
+              new TableCell({ children: [new Paragraph(`${formatPercent(paymentPercent(payment, totalProjectFee))}%`)] }),
               new TableCell({ children: [new Paragraph(`$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`)] })
             ]
           })

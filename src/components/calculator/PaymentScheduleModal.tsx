@@ -1,5 +1,6 @@
 "use client";
 import React from 'react';
+import { paymentAmount, paymentPercent, formatPercent } from '@/lib/utils/payments';
 import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { Project, Phase, Allocation, TeamMember, ProjectCost, Payment } from '@/lib/firebase/schema';
 import { useAppSettings } from '@/lib/auth/AuthContext';
@@ -40,7 +41,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
 
   const sortedPhases = [...phases].sort((a,b) => a.order - b.order);
   const sortedPayments = [...payments].sort((a, b) => a.order - b.order);
-  const totalPercentage = payments.reduce((sum, p) => sum + p.percentage, 0);
+  const totalPercentage = payments.reduce((sum, p) => sum + paymentPercent(p, projectTotalFee), 0);
 
   // Color Helpers
   const getPhaseColor = (index: number) => {
@@ -71,12 +72,12 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
 
     sortedPayments.forEach((payment, index) => {
       const linkedPhase = phases.find(p => p.id === payment.phaseId);
-      const feeAmount = (payment.percentage / 100) * projectTotalFee;
+      const feeAmount = paymentAmount(payment, projectTotalFee);
       rows.push([
         (index + 1).toString(),
         payment.name,
         linkedPhase ? linkedPhase.name : '-',
-        `${payment.percentage}%`,
+        `${formatPercent(paymentPercent(payment, projectTotalFee))}%`,
         formatCurrency(feeAmount)
       ]);
     });
@@ -188,7 +189,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                   <div className="flex-1 flex flex-col gap-1 justify-center pb-1">
                     {startPayments.map(p => (
                       <Tooltip key={p.id} content={p.name} wrapper="div" className={`w-16 border rounded p-1.5 flex flex-col items-center justify-center shadow-sm ${unlinkedColor.pastel}`}>
-                        <span className="text-[10px] font-bold">{p.percentage}%</span>
+                        <span className="text-[10px] font-bold">{formatPercent(paymentPercent(p, projectTotalFee))}%</span>
                         <span className="text-[9px] font-medium truncate w-full text-center mt-0.5">{p.name}</span>
                       </Tooltip>
                     ))}
@@ -222,8 +223,8 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                               <span className="text-[8px] font-medium opacity-50 mb-1">W{weekNum}</span>
                               <div className="mt-auto flex flex-col justify-end gap-0.5 w-full">
                                 {paymentsThisWeek.map(p => (
-                                  <Tooltip key={p.id} content={`${p.name} - ${formatCurrency((p.percentage / 100) * projectTotalFee, 0)}`} wrapper="div" className={`w-full border rounded py-0.5 px-0.5 flex flex-col items-center shadow-sm cursor-help transition-transform hover:scale-110 ${phaseColors.bright}`}>
-                                    <span className="text-[9px] font-extrabold leading-none">{p.percentage}%</span>
+                                  <Tooltip key={p.id} content={`${p.name} - ${formatCurrency(paymentAmount(p, projectTotalFee), 0)}`} wrapper="div" className={`w-full border rounded py-0.5 px-0.5 flex flex-col items-center shadow-sm cursor-help transition-transform hover:scale-110 ${phaseColors.bright}`}>
+                                    <span className="text-[9px] font-extrabold leading-none">{formatPercent(paymentPercent(p, projectTotalFee))}%</span>
                                   </Tooltip>
                                 ))}
                               </div>
@@ -243,7 +244,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                   <div className="flex-1 flex flex-col gap-1 justify-center pb-1">
                     {endPayments.map(p => (
                       <Tooltip key={p.id} content={p.name} wrapper="div" className={`w-16 border rounded p-1.5 flex flex-col items-center justify-center shadow-sm ${unlinkedColor.pastel}`}>
-                        <span className="text-[10px] font-bold">{p.percentage}%</span>
+                        <span className="text-[10px] font-bold">{formatPercent(paymentPercent(p, projectTotalFee))}%</span>
                         <span className="text-[9px] font-medium truncate w-full text-center mt-0.5">{p.name}</span>
                       </Tooltip>
                     ))}
@@ -277,7 +278,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                   ) : (
                     sortedPayments.map((payment, index) => {
                       const linkedPhase = phases.find(p => p.id === payment.phaseId);
-                      const feeAmount = (payment.percentage / 100) * projectTotalFee;
+                      const feeAmount = paymentAmount(payment, projectTotalFee);
                       const phaseIndex = sortedPhases.findIndex(p => p.id === payment.phaseId);
                       const phaseColors = phaseIndex >= 0 ? getPhaseColor(phaseIndex) : unlinkedColor;
 
@@ -290,7 +291,7 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
                           </td>
                           <td className="px-4 py-3 text-center border-r border-ink-200 dark:border-ink-700">
                              <span className={`inline-block w-20 px-2 py-1 text-right font-medium border rounded shadow-sm ${phaseColors.pastel}`}>
-                               {payment.percentage.toFixed(2)}%
+                               {paymentPercent(payment, projectTotalFee).toFixed(2)}%
                              </span>
                           </td>
                           <td className="px-4 py-3 text-right font-bold text-ink-800 dark:text-ink-200 text-base">

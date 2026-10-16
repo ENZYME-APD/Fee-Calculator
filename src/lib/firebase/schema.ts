@@ -122,6 +122,7 @@ export interface Payment {
   phaseId?: string;
   name: string;
   percentage: number;
+  amount?: number | null; // fixed amount; when set, the percentage is calculated from the fee
   order: number;
 }
 

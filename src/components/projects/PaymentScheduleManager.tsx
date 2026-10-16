@@ -8,6 +8,7 @@ import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { Card, CardHeader, CardBody, Row } from '@/components/ui/Card';
 import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
 import { computePhaseCost } from '@/lib/utils/projectFinancials';
+import { hasFixedAmount, paymentAmount, paymentPercent, formatPercent } from '@/lib/utils/payments';
 
 interface PaymentScheduleManagerProps {
   projectId: string;
@@ -20,7 +21,7 @@ interface PaymentScheduleManagerProps {
   formatCurrency?: (n: number) => string;
 }
 
-export const InlinePercentInput = ({ value, onChange, maxAllowed }: { value: number, onChange: (val: number) => void, maxAllowed?: number }) => {
+export const InlinePercentInput = ({ value, onChange, maxAllowed, unit = '%', wide = false }: { value: number, onChange: (val: number) => void, maxAllowed?: number, unit?: string, wide?: boolean }) => {
   const [val, setVal] = useState(value.toString());
   
   useEffect(() => {
@@ -54,9 +55,9 @@ export const InlinePercentInput = ({ value, onChange, maxAllowed }: { value: num
         onChange={e => setVal(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="w-14 text-right bg-transparent text-sm font-bold text-ink-700 dark:text-ink-300 px-1 py-1 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none m-0"
+        className={`${wide ? 'w-24' : 'w-14'} text-right bg-transparent text-sm font-bold text-ink-700 dark:text-ink-300 px-1 py-1 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none m-0`}
       />
-      <span className="text-ink-500 text-sm font-bold pr-2 flex-shrink-0">%</span>
+      {unit && <span className="text-ink-500 text-sm font-bold pr-2 flex-shrink-0">{unit}</span>}
     </div>
   );
 };
@@ -90,11 +91,52 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     onConfirm: () => {}
   });
 
+  // Amount mode: milestones are fixed amounts and their percentage is calculated from the fee
+  const [amountMode, setAmountMode] = useState(false);
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+
   const loadPayments = async () => {
     setLoading(true);
     const data = await getPayments(projectId);
     setPayments(data.sort((a, b) => a.order - b.order));
+    if (data.length) setAmountMode(data.some(hasFixedAmount));
     setLoading(false);
+  };
+
+  // Convert every milestone between percentages and fixed amounts, keeping today's values
+  const convertAll = async (toAmount: boolean) => {
+    const data = await getPayments(projectId);
+    const updates = data.map(p => ({
+      id: p.id!,
+      data: toAmount
+        ? { amount: Math.round(paymentAmount(p, totalFee)), percentage: round2(paymentPercent(p, totalFee)) }
+        : { percentage: round2(paymentPercent(p, totalFee)), amount: null },
+    }));
+    if (updates.length) await batchUpdatePayments(updates);
+  };
+  const switchMode = async (toAmount: boolean) => {
+    if (toAmount === amountMode) return;
+    if (toAmount && totalFee <= 0) {
+      alert('Add hours or costs (or a fixed fee) first, so there is a fee to work the percentages out from.');
+      return;
+    }
+    setAmountMode(toAmount);
+    await convertAll(toAmount);
+    await loadPayments();
+  };
+
+  const handleClear = () => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Clear payment schedule',
+      message: "Remove every milestone from this payment schedule? This can't be undone.",
+      confirmText: 'Clear schedule',
+      onConfirm: async () => {
+        await clearPayments(projectId);
+        await loadPayments();
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   useEffect(() => {
@@ -105,8 +147,8 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     e.preventDefault();
     if (!newName.trim() || !newPercentage) return;
     
-    const parsedPercentage = parseFloat(newPercentage) || 0;
-    if (totalPercentage + parsedPercentage > 100) {
+    const parsed = parseFloat(newPercentage) || 0;
+    if (!amountMode && totalPercentage + parsed > 100) {
       alert("Total percentage cannot exceed 100%");
       return;
     }
@@ -115,7 +157,9 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
       projectId,
       phaseId: newPhaseId || undefined,
       name: newName.trim(),
-      percentage: parsedPercentage,
+      ...(amountMode
+        ? { amount: Math.round(parsed), percentage: totalFee > 0 ? round2((parsed / totalFee) * 100) : 0 }
+        : { percentage: parsed }),
       order: payments.length > 0 ? Math.max(...payments.map(p => p.order)) + 1 : 1
     });
     
@@ -128,7 +172,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
   const handleEditStart = (p: Payment) => {
     setEditingId(p.id!);
     setEditName(p.name);
-    setEditPercentage(p.percentage.toString());
+    setEditPercentage((amountMode ? Math.round(paymentAmount(p, totalFee)) : p.percentage).toString());
     setEditPhaseId(p.phaseId || '');
   };
 
@@ -136,17 +180,19 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     e.preventDefault();
     if (editingId && editName.trim()) {
       const currentPayment = payments.find(p => p.id === editingId);
-      const parsedPercentage = parseFloat(editPercentage) || 0;
-      const otherTotal = totalPercentage - (currentPayment?.percentage || 0);
+      const parsed = parseFloat(editPercentage) || 0;
+      const otherTotal = totalPercentage - (currentPayment ? paymentPercent(currentPayment, totalFee) : 0);
       
-      if (otherTotal + parsedPercentage > 100) {
+      if (!amountMode && otherTotal + parsed > 100) {
         alert("Total percentage cannot exceed 100%");
         return;
       }
       
       await updatePayment(editingId, {
         name: editName.trim(),
-        percentage: parseFloat(editPercentage) || 0,
+        ...(amountMode
+          ? { amount: Math.round(parsed), percentage: totalFee > 0 ? round2((parsed / totalFee) * 100) : 0 }
+          : { percentage: parsed }),
         phaseId: editPhaseId || undefined
       });
       setEditingId(null);
@@ -237,6 +283,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     });
     
     await batchAddPayments(newPayments);
+      if (amountMode) await convertAll(true);
       await loadPayments();
     };
 
@@ -312,6 +359,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     });
     
     await batchAddPayments(newPayments);
+      if (amountMode) await convertAll(true);
       await loadPayments();
     };
 
@@ -357,6 +405,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
       }
 
       await batchAddPayments(newPayments);
+      if (amountMode) await convertAll(true);
       await loadPayments();
     };
 
@@ -381,7 +430,9 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     }
   };
 
-  const totalPercentage = payments.reduce((sum, p) => sum + p.percentage, 0);
+  const totalPercentage = payments.reduce((sum, p) => sum + paymentPercent(p, totalFee), 0);
+  const totalAmount = payments.reduce((sum, p) => sum + paymentAmount(p, totalFee), 0);
+  const money = (n: number) => (formatCurrency ? formatCurrency(n) : n.toFixed(2));
 
   if (loading) return <div className="p-8 flex-1 text-ink-500 flex items-center justify-center">Loading payments...</div>;
 
@@ -390,7 +441,35 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
       <CardHeader className="bg-ink-50/50 dark:bg-ink-900/50 flex flex-col gap-3">
         <div className="min-w-0">
           <h2 className="font-semibold text-sm text-ink-800 dark:text-ink-100">Payment schedule</h2>
-          <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">Milestones must total 100%.</p>
+          <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">
+            {amountMode ? 'Fixed amounts; percentages follow the fee. They should add up to the total fee.' : 'Milestones must total 100%.'}
+          </p>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="inline-flex rounded-lg border border-ink-200 dark:border-ink-700 p-0.5 bg-white dark:bg-ink-900 text-xs font-semibold" role="radiogroup" aria-label="Enter milestones as">
+            {[{ v: false, label: '% of fee' }, { v: true, label: 'Fixed amounts' }].map(o => (
+              <button
+                key={o.label}
+                type="button"
+                role="radio"
+                aria-checked={amountMode === o.v}
+                onClick={() => switchMode(o.v)}
+                className={`px-2.5 py-1 rounded-md transition-colors ${amountMode === o.v ? 'bg-accent-600 text-white' : 'text-ink-600 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800'}`}
+                title={o.v ? 'Type each milestone as an amount; its percentage is calculated from the fee' : 'Type each milestone as a share of the fee'}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={payments.length === 0}
+            className="text-xs font-semibold text-negative-600 dark:text-negative-400 hover:underline disabled:opacity-40 disabled:no-underline flex items-center gap-1"
+            title="Remove every milestone"
+          >
+            <Trash2 size={12} /> Clear
+          </button>
         </div>
         <div className="flex gap-1.5">
           <SecondaryButton onClick={handleUseTemplate} className="h-auto py-1.5 px-2.5 flex-1">
@@ -414,7 +493,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
         <form onSubmit={handleCreate} className="flex flex-col gap-2">
           <input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="Payment name, e.g. Phase 1 Completion" className={fieldClass + ' w-full'} />
           <div className="flex gap-2 items-center">
-            <input type="number" required min="0" max={Math.max(0, 100 - totalPercentage)} step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="%" className={fieldClass + ' w-20 text-center shrink-0'} />
+            <input type="number" required min="0" max={amountMode ? undefined : Math.max(0, 100 - totalPercentage)} step={amountMode ? '1' : '0.01'} value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder={amountMode ? 'Amount' : '%'} className={fieldClass + ` ${amountMode ? 'w-28' : 'w-20'} text-center shrink-0`} />
             {/* min-w-0 lets the phase picker shrink, so long phase names don't push Add out of the card */}
             <select value={newPhaseId} onChange={e => setNewPhaseId(e.target.value)} className={fieldClass + ' flex-1 min-w-0 truncate'}>
               <option value="">(No phase)</option>
@@ -428,9 +507,17 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
       <CardBody className="overflow-y-auto relative">
         <div className="flex justify-between items-center px-4 py-2 border-b border-ink-100 dark:border-ink-800 bg-ink-50/50 dark:bg-ink-900/40">
           <span className="text-xs font-medium text-ink-500">Total allocated</span>
-          <span className={`text-sm font-bold ${totalPercentage === 100 ? 'text-positive-600' : totalPercentage > 100 ? 'text-negative-600' : 'text-warning-500'}`}>
-            {totalPercentage.toFixed(2)}%
-          </span>
+          {(() => {
+            const pct = round2(totalPercentage);
+            const cls = pct === 100 ? 'text-positive-600' : pct > 100 ? 'text-negative-600' : 'text-warning-500';
+            return amountMode ? (
+              <span className={`text-sm font-bold ${cls}`} title={totalFee > 0 ? `Remaining: ${money(totalFee - totalAmount)}` : undefined}>
+                {money(totalAmount)} <span className="font-medium text-ink-500 dark:text-ink-400">of {money(totalFee)} · {pct.toFixed(2)}%</span>
+              </span>
+            ) : (
+              <span className={`text-sm font-bold ${cls}`}>{totalPercentage.toFixed(2)}%</span>
+            );
+          })()}
         </div>
 
         {payments.length === 0 ? (
@@ -448,7 +535,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
                   <form onSubmit={handleEditSave} className="flex-1 flex flex-col gap-2">
                     <input type="text" autoFocus required value={editName} onChange={e => setEditName(e.target.value)} className={fieldClass + ' w-full'} />
                     <div className="flex gap-2 items-center justify-between">
-                      <input type="number" required min="0" max={Math.max(0, 100 - (totalPercentage - payment.percentage))} step="0.01" value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className={fieldClass + ' w-20 text-center shrink-0'} />
+                      <input type="number" required min="0" max={amountMode ? undefined : Math.max(0, 100 - (totalPercentage - paymentPercent(payment, totalFee)))} step={amountMode ? '1' : '0.01'} value={editPercentage} onChange={e => setEditPercentage(e.target.value)} className={fieldClass + ` ${amountMode ? 'w-28' : 'w-20'} text-center shrink-0`} />
                       <select value={editPhaseId} onChange={e => setEditPhaseId(e.target.value)} className={fieldClass + ' flex-1 min-w-0 truncate'}>
                         <option value="">(No phase)</option>
                         {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -463,7 +550,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
               );
             }
 
-            const amount = totalFee > 0 ? (payment.percentage / 100) * totalFee : null;
+            const amount = totalFee > 0 || hasFixedAmount(payment) ? paymentAmount(payment, totalFee) : null;
 
             return (
               <Row key={payment.id}>
@@ -478,14 +565,29 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
                         {linkedPhase.name}
                       </span>
                     )}
-                    {amount !== null && (
+                    {amountMode ? (
+                      <span className="text-[11px] text-ink-500 dark:text-ink-400">{formatPercent(paymentPercent(payment, totalFee))}% of fee</span>
+                    ) : amount !== null && (
                       <span className="text-[11px] text-ink-500 dark:text-ink-400">
-                        ≈ {formatCurrency ? formatCurrency(amount) : amount.toFixed(2)}
+                        ≈ {money(amount)}
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 relative">
+                  {amountMode ? (
+                    <InlinePercentInput
+                      value={Math.round(paymentAmount(payment, totalFee))}
+                      unit=""
+                      wide
+                      onChange={async (newVal) => {
+                        if (payment.id) {
+                          await updatePayment(payment.id, { amount: Math.round(newVal), percentage: totalFee > 0 ? round2((newVal / totalFee) * 100) : 0 });
+                          loadPayments();
+                        }
+                      }}
+                    />
+                  ) : (
                   <InlinePercentInput
                     value={payment.percentage}
                     maxAllowed={100 - (totalPercentage - payment.percentage)}
@@ -496,6 +598,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
                       }
                     }}
                   />
+                  )}
 
                   <RowMenu
                     items={[

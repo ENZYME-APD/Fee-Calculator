@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { paymentAmount } from '@/lib/utils/payments';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -447,7 +448,7 @@ export function FinancialForecastView() {
     const cells: ForecastRow['cells'] = {};
     ordered.forEach((pmt, i) => {
       const monthKey = monthKeyFromDate(projectStart + weekOf[i] * WEEK);
-      const amount = Math.round(totalFee * (pmt.percentage || 0) / 100);
+      const amount = Math.round(paymentAmount(pmt, totalFee));
       if (amount <= 0) return;
       if (!cells[monthKey]) cells[monthKey] = {};
       if (!cells[monthKey][stage]) cells[monthKey][stage] = [];

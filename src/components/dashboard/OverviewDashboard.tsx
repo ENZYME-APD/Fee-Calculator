@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { paymentAmount } from '@/lib/utils/payments';
 import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories } from '@/lib/firebase/db';
 import { Project, Phase, TeamMember, TeamCategory, Allocation, ProjectCost, User } from '@/lib/firebase/schema';
@@ -228,7 +229,7 @@ export function OverviewDashboard() {
       const stats = projectStats.find(p => p.id === proj.id);
       if (!stats) return;
       
-      const paymentValue = (payment.percentage / 100) * stats.totalFee;
+      const paymentValue = paymentAmount(payment, stats.totalFee);
       
       const projStart = new Date(proj.startDate || Date.now());
       let paymentDate = new Date(projStart);

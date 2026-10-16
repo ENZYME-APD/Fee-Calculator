@@ -539,6 +539,8 @@ export function WikiContent() {
                 <li>Inside your Project view, locate the <strong>Payment Schedule</strong> section.</li>
                 <li>You can add payments manually by specifying a name, a target date, and a percentage of the total fee.</li>
                 <li>The system will automatically convert that percentage into a monetary value based on the total project fee calculated in Step 5.</li>
+                <li><strong>Fixed amounts:</strong> Switch the schedule from <em>% of fee</em> to <em>Fixed amounts</em> to type each milestone as an amount instead. Its percentage is then calculated from the fee, and the total shows how much is allocated out of the fee. Switching converts the existing milestones at today&apos;s values.</li>
+                <li><strong>Clear:</strong> Removes every milestone, for example after applying a preset you don&apos;t want.</li>
               </ol>
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Payment Templates</h4>

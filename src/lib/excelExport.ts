@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { paymentPercent } from '@/lib/utils/payments';
 import { computeProjectFinancials, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { Project, Phase, TeamMember, Allocation, ProjectCost, Payment, TeamCategory } from '@/lib/firebase/schema';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
@@ -15,7 +16,9 @@ export function exportProposalToExcel(
 ) {
   const wb = XLSX.utils.book_new();
   // Fee = cost x multiplier, matching the app (margin is a markup on cost; fixed fees split pro rata)
-  const feeMult = feeMultiplierFor(project, computeProjectFinancials(project, phases, allocations, projectCosts, members).totalCost);
+  const financials = computeProjectFinancials(project, phases, allocations, projectCosts, members);
+  const feeMult = feeMultiplierFor(project, financials.totalCost);
+  const excelTotalFee = financials.totalFee;
   
   const headerStyle = { font: { bold: true } };
   const titleStyle = { font: { bold: true, sz: 14 } };
@@ -207,7 +210,7 @@ export function exportProposalToExcel(
   payments.sort((a, b) => a.order - b.order).forEach(p => {
     paymentRows.push([
       p.name,
-      { v: p.percentage / 100, t: 'n', z: '0.0%' },
+      { v: paymentPercent(p, excelTotalFee) / 100, t: 'n', z: '0.0%' },
       { f: `B${payRow}*'Financial Summary'!D${sumRow}`, t: 'n', z: '#,##0.00' }
     ]);
     payRow++;
