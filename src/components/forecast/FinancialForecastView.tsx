@@ -35,7 +35,8 @@ import {
   Payment,
   TeamMember,
   Allocation,
-  ForecastGroup
+  ForecastGroup,
+  ForecastOutflowPill
 } from '@/lib/firebase/schema';
 import { 
   getForecastProfile, 
@@ -57,6 +58,7 @@ import { EditPillModal } from './EditPillModal';
 import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
 import { GROUP_COLORS, ManageGroupsModal } from './groups';
+import { OutflowPillModal } from './OutflowPillModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -111,7 +113,25 @@ function isLinkedLine(item: ForecastOutflowItem): boolean {
 
 function outflowBase(item: ForecastOutflowItem, monthKey: string, linkedMonthly: number): number {
   if (isLinkedLine(item)) return linkedMonthly;
+  // A month's expenses replace the repeating every-month amount (set when a line is unlinked)
+  const pills = item.monthlyPills?.[monthKey];
+  if (pills && pills.length) return pills.reduce((sum, p) => sum + (p.amount || 0), 0);
   return item.monthlyAmounts?.[monthKey] ?? item.defaultMonthlyAmount ?? 0;
+}
+
+/** Older lines stored one number per month; turn those into expense pills. */
+function migrateOutflow(item: ForecastOutflowItem): ForecastOutflowItem {
+  if (isLinkedLine(item)) return item;
+  const entries = Object.entries(item.monthlyAmounts || {});
+  if (entries.length === 0) return item;
+  const monthlyPills = { ...(item.monthlyPills || {}) };
+  entries.forEach(([m, amount], i) => {
+    if (monthlyPills[m]?.length) return;
+    // A 0 only matters when it overrides a repeating amount
+    if (!amount && !item.defaultMonthlyAmount) return;
+    monthlyPills[m] = [{ id: `opill_${m}_${i}`, amount: Math.round(amount || 0) }];
+  });
+  return { ...item, monthlyAmounts: {}, monthlyPills };
 }
 
 /** Base plus the month's +/- adjustment. */
@@ -231,7 +251,7 @@ export function FinancialForecastView() {
           setPossibleConversion(existingProfile.possibleConversionPercent ?? DEFAULT_SETTINGS.possibleConversion);
           setInvoicingConversion(existingProfile.invoicingConversionPercent ?? DEFAULT_SETTINGS.invoicingConversion);
           setRows(existingProfile.rows || []);
-          setOutflows(existingProfile.outflows || []);
+          setOutflows((existingProfile.outflows || []).map(migrateOutflow));
           setGroups(existingProfile.groups || []);
         } else {
           // New forecast: start with a running-costs line linked to Team resources + Overheads.
@@ -607,16 +627,42 @@ export function FinancialForecastView() {
     }));
   };
 
-  // amount null clears the month's own value, so the line's default monthly amount applies again
-  const handleUpdateOutflowMonth = (outflowId: string, monthKey: string, amount: number | null) => {
-    setOutflows(prev => prev.map(item => {
-      if (item.id !== outflowId) return item;
-      const monthlyAmounts = { ...item.monthlyAmounts };
-      if (amount === null) delete monthlyAmounts[monthKey];
-      else monthlyAmounts[monthKey] = Math.round(amount);
-      return { ...item, monthlyAmounts };
+
+  // Outflow expenses (pills): add / edit / delete, and drag between months or lines (Alt copies)
+  const [outflowPillEdit, setOutflowPillEdit] = useState<{ itemId: string; month: string; pill: ForecastOutflowPill | null } | null>(null);
+  const saveOutflowPill = (itemId: string, month: string, pill: ForecastOutflowPill) => {
+    setOutflows(prev => prev.map(o => {
+      if (o.id !== itemId) return o;
+      const list = [...(o.monthlyPills?.[month] || [])];
+      const i = list.findIndex(p => p.id === pill.id);
+      if (i >= 0) list[i] = pill; else list.push(pill);
+      return { ...o, monthlyPills: { ...(o.monthlyPills || {}), [month]: list } };
     }));
   };
+  const deleteOutflowPill = (itemId: string, month: string, pillId: string) => {
+    setOutflows(prev => prev.map(o => {
+      if (o.id !== itemId) return o;
+      const list = (o.monthlyPills?.[month] || []).filter(p => p.id !== pillId);
+      const monthlyPills = { ...(o.monthlyPills || {}) };
+      if (list.length) monthlyPills[month] = list; else delete monthlyPills[month];
+      return { ...o, monthlyPills };
+    }));
+  };
+  const moveOutflowPill = (fromItemId: string, fromMonth: string, toItemId: string, toMonth: string, pill: ForecastOutflowPill, copy: boolean) => {
+    if (!copy && fromItemId === toItemId && fromMonth === toMonth) return;
+    const placed = copy ? { ...pill, id: `opill_${Date.now()}_${Math.random().toString(36).substring(2, 7)}` } : pill;
+    setOutflows(prev => prev.map(o => {
+      if (o.id !== fromItemId && o.id !== toItemId) return o;
+      const monthlyPills = { ...(o.monthlyPills || {}) };
+      if (!copy && o.id === fromItemId) {
+        const left = (monthlyPills[fromMonth] || []).filter(p => p.id !== pill.id);
+        if (left.length) monthlyPills[fromMonth] = left; else delete monthlyPills[fromMonth];
+      }
+      if (o.id === toItemId) monthlyPills[toMonth] = [...(monthlyPills[toMonth] || []), placed];
+      return { ...o, monthlyPills };
+    }));
+  };
+  const OUTFLOW_PILL_MIME = 'application/x-forecast-outflow-pill';
 
   // Monthly totals. Closing cash runs from the opening balance at openingMonthKey through every
   // month up to the end of the visible window (including months scrolled out of view), so it
@@ -1577,30 +1623,62 @@ export function FinancialForecastView() {
                 </div>
 
                 {monthKeys.map(m => {
-                  const own = item.monthlyAmounts?.[m];
-                  const val = own ?? 0;
+                  const pills = item.monthlyPills?.[m] || [];
+                  const repeating = !pills.length && item.defaultMonthlyAmount ? item.defaultMonthlyAmount : 0;
                   const adj = item.monthlyAdjustments?.[m] ?? 0;
                   const total = outflowAmount(item, m, runningCosts.total);
                   return (
-                    <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-2 flex items-center justify-end gap-2">
+                    <div
+                      key={m}
+                      className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 p-2 flex items-center justify-end gap-2 group/ocell"
+                      onDragOver={isLinked ? undefined : e => {
+                        if (!e.dataTransfer.types.includes(OUTFLOW_PILL_MIME)) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
+                      }}
+                      onDrop={isLinked ? undefined : e => {
+                        const raw = e.dataTransfer.getData(OUTFLOW_PILL_MIME);
+                        if (!raw) return;
+                        e.preventDefault();
+                        try {
+                          const d = JSON.parse(raw);
+                          moveOutflowPill(d.itemId, d.month, item.id, m, d.pill, e.altKey);
+                        } catch (err) { console.error(err); }
+                      }}
+                    >
                       {isLinked ? (
                         <span className="font-semibold text-ink-700 dark:text-ink-300" title="From Team resources + Overheads">-{fmt(runningCosts.total)}</span>
                       ) : (
-                        <div className="flex items-center gap-1">
-                          <span className="text-negative-500 font-bold">-</span>
-                          <input
-                            type="number"
-                            step="1"
-                            min="0"
-                            value={own === undefined ? '' : val}
-                            onChange={e => {
-                              const raw = e.target.value.replace(/[^0-9]/g, '');
-                              handleUpdateOutflowMonth(item.id, m, raw === '' ? null : parseInt(raw));
-                            }}
-                            placeholder={String(item.defaultMonthlyAmount ?? 0)}
-                            title={item.defaultMonthlyAmount ? (own === undefined ? `Repeated every-month amount. Type a value to change just this month.` : `Clear to go back to the every-month amount (${item.defaultMonthlyAmount.toLocaleString()}).`) : undefined}
-                            className="w-24 px-2 py-1 text-right font-bold border border-ink-200 dark:border-ink-700 bg-ink-50 dark:bg-ink-800 text-ink-900 dark:text-ink-100 placeholder:text-ink-500 dark:placeholder:text-ink-400 placeholder:font-medium rounded outline-none focus:border-accent-500 text-xs"
-                          />
+                        <div className="flex flex-1 min-w-0 flex-wrap items-center justify-end gap-1">
+                          {repeating > 0 && (
+                            <span className="text-xs font-semibold text-ink-500 dark:text-ink-400 italic" title="Repeats every month. Add an expense to replace it in this month.">-{fmt(repeating)}</span>
+                          )}
+                          {pills.map(p => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              draggable
+                              onDragStart={e => {
+                                e.dataTransfer.setData(OUTFLOW_PILL_MIME, JSON.stringify({ itemId: item.id, month: m, pill: p }));
+                                e.dataTransfer.effectAllowed = 'copyMove';
+                              }}
+                              onClick={() => setOutflowPillEdit({ itemId: item.id, month: m, pill: p })}
+                              title={`${p.description ? p.description + '\n' : ''}-${fmt(p.amount)}\nClick to edit · Drag to move · Alt+drag to copy`}
+                              className="max-w-[200px] px-2 py-1 rounded text-xs font-bold border shadow-2xs cursor-grab active:cursor-grabbing flex items-center gap-1.5 select-none transition-all hover:scale-[1.02] bg-negative-50 text-negative-800 border-negative-200 dark:bg-negative-950/40 dark:text-negative-300 dark:border-negative-800/60"
+                            >
+                              {p.description && <span className="truncate font-medium text-negative-700/90 dark:text-negative-300/90">{p.description}</span>}
+                              <span className="shrink-0 tabular-nums">-{fmt(p.amount)}</span>
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setOutflowPillEdit({ itemId: item.id, month: m, pill: null })}
+                            className={`w-6 h-6 shrink-0 flex items-center justify-center rounded-md text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-accent-700 dark:hover:text-accent-400 transition-opacity ${pills.length || repeating ? 'opacity-0 group-hover/ocell:opacity-100 focus-visible:opacity-100' : 'opacity-60 hover:opacity-100'}`}
+                            title={`Add an expense to ${item.name} in ${formatMonthLabel(m)}`}
+                            aria-label={`Add an expense to ${item.name} in ${formatMonthLabel(m)}`}
+                          >
+                            <Plus size={13} />
+                          </button>
                         </div>
                       )}
                       {showAdjust && (
@@ -1743,6 +1821,16 @@ export function FinancialForecastView() {
         defaultGroupId={addRowGroupId}
         groups={groups}
         onCreateGroup={g => setGroups(prev => [...prev, g])}
+      />
+
+      <OutflowPillModal
+        isOpen={!!outflowPillEdit}
+        lineName={outflows.find(o => o.id === outflowPillEdit?.itemId)?.name || ''}
+        monthLabel={outflowPillEdit ? formatMonthLabel(outflowPillEdit.month) : ''}
+        pill={outflowPillEdit?.pill || null}
+        onSave={p => { if (outflowPillEdit) saveOutflowPill(outflowPillEdit.itemId, outflowPillEdit.month, p); }}
+        onDelete={id => { if (outflowPillEdit) deleteOutflowPill(outflowPillEdit.itemId, outflowPillEdit.month, id); }}
+        onClose={() => setOutflowPillEdit(null)}
       />
 
       <ManageGroupsModal

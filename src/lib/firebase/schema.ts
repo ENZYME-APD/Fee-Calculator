@@ -214,11 +214,19 @@ export interface ForecastRow {
   cells: Record<string, Partial<Record<ForecastStage, ForecastPill[]>>>;
 }
 
+// One expense in an outflow line for a month (several can share a month; they add up)
+export interface ForecastOutflowPill {
+  id: string;
+  amount: number;
+  description?: string;
+}
+
 export interface ForecastOutflowItem {
   id: string;
   name: string;
   type: 'burn' | 'partner' | 'debt' | 'custom';
-  monthlyAmounts: Record<string, number>; // YYYY-MM -> amount
+  monthlyAmounts: Record<string, number>; // YYYY-MM -> amount (legacy; converted to monthlyPills on load)
+  monthlyPills?: Record<string, ForecastOutflowPill[]>; // YYYY-MM -> expenses; override defaultMonthlyAmount for that month
   defaultMonthlyAmount?: number; // applies to every month without its own entry in monthlyAmounts
   initialBalance?: number; // for debt tracking
   linkedToOverheads?: boolean; // base amount = monthly salaries (Team resources) + active overhead items / 12 (Overheads)

@@ -672,7 +672,7 @@ export function WikiContent() {
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Outflows</h4>
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Running costs:</strong> Linked by default to your internal team&apos;s monthly salaries (Team Resources, external categories excluded) plus active overhead items divided by 12 (Overheads Calculator), and updated whenever those pages change. Use the <strong>± adjust</strong> box to correct a single month, or <strong>Unlink</strong> to type amounts yourself.</li>
-                <li><strong>Other lines:</strong> Click <strong>Add outflow</strong> on the Outflows bar for debt repayments, profit shares or any other cost. Click a line&apos;s name to rename it and type an amount in each month.</li>
+                <li><strong>Other lines:</strong> Click <strong>Add outflow</strong> on the Outflows bar for debt repayments, profit shares or any other cost. Click a line&apos;s name to rename it. Add expenses to a month with its <strong>+</strong>: each one has an amount and an optional description, shown as a preview in the cell. Several expenses in a month add up. Click an expense to edit it, drag it to another month or line, or hold <strong>Alt</strong> while dragging to copy it.</li>
               </ul>
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Groups</h4>
