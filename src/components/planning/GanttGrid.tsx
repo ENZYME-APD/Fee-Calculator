@@ -5,6 +5,7 @@ import { Project, Phase, TeamMember, ProjectTask, Allocation } from '@/lib/fireb
 import { Plus, Edit2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { format, addDays, isWeekend, differenceInDays } from 'date-fns';
 import { EditTaskModal } from './EditTaskModal';
+import { useAppSettings } from '@/lib/auth/AuthContext';
 
 interface GanttGridProps {
   project: Project;
@@ -24,6 +25,13 @@ const COLLAPSED_WIDTH = 64;
 
 export function GanttGrid({ project, phases, members, allocations, tasks, onTaskCreate, onTaskUpdate, onTaskDelete, collapsedPhases, setCollapsedPhases }: GanttGridProps) {
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
+  const { formatCurrency } = useAppSettings();
+  // Planned cost = task hours x the person's current cost rate (same basis as the header's Planned cost);
+  // fee adds the project's profit margin.
+  const marginMultiplier = 1 + (project.profitMargin ?? 30) / 100;
+  const taskCost = (t: ProjectTask) => (t.durationHours || 0) * (members.find(m => m.id === t.memberId)?.costPerHour || 0);
+  const phasePlanned = (phaseId: string) => tasks.filter(t => t.phaseId === phaseId).reduce((sum, t) => sum + taskCost(t), 0);
+  const money = (v: number) => formatCurrency(Math.round(v), 0, 0);
   const [addedMemberIds, setAddedMemberIds] = useState<string[]>([]);
   const [showAddMember, setShowAddMember] = useState(false);
   
@@ -245,7 +253,19 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                       style={{ left: pv.left + 2, width: Math.max(0, pv.visualWidth - 4), opacity: 0.8 }}
                     >
                        {!pv.isCollapsed && <span className="truncate">{pv.name}</span>}
-                       {pv.isCollapsed ? <ChevronRight size={14} className="mx-auto" /> : <ChevronLeft size={14} />}
+                       {!pv.isCollapsed && (() => {
+                         const cost = phasePlanned(pv.id!);
+                         if (!cost || pv.visualWidth < 260) return null;
+                         return (
+                           <span
+                             className="ml-auto mr-1.5 shrink-0 font-semibold text-[11px] text-white/90 tabular-nums"
+                             title={`Planned cost ${money(cost)} · Fee with ${project.profitMargin ?? 30}% margin ${money(cost * marginMultiplier)}`}
+                           >
+                             {money(cost)} cost · {money(cost * marginMultiplier)} fee
+                           </span>
+                         );
+                       })()}
+                       {pv.isCollapsed ? <ChevronRight size={14} className="mx-auto" /> : <ChevronLeft size={14} className="shrink-0" />}
                     </div>
                   )
                 })}
@@ -350,9 +370,14 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                         cursor: 'grab'
                       }}
                       onPointerDown={(e) => handlePointerDown(e, task, 'move', displayLeft, displayWidth)}
-                      title={task.name}
+                      title={`${task.name}\n${task.durationHours || 0} h · ${money(taskCost(task))} cost`}
                     >
-                      <span className="text-xs font-semibold truncate pointer-events-none">{task.name}</span>
+                      <div className="flex flex-col min-w-0 pointer-events-none leading-tight">
+                        <span className="text-xs font-semibold truncate">{task.name}</span>
+                        {displayWidth >= 72 && (
+                          <span className="text-[10px] font-medium text-white/85 truncate tabular-nums">{money(taskCost(task))} · {task.durationHours || 0}h</span>
+                        )}
+                      </div>
                       
                       {/* Resize Handle */}
                       <div 

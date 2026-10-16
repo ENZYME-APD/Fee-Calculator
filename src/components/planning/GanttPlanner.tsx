@@ -408,6 +408,10 @@ export function GanttPlanner() {
                           <span className="text-xs font-medium text-ink-500 mb-0.5">Planned cost</span>
                           <span className="text-lg font-bold text-accent-600 dark:text-accent-400">{formatCurrency(plannedCost)}</span>
                        </div>
+                       <div className="flex flex-col items-end border-r border-ink-200 dark:border-ink-700 pr-6" title={`Planned cost plus the project's ${project.profitMargin ?? 30}% profit margin`}>
+                          <span className="text-xs font-medium text-ink-500 mb-0.5">Planned fee (+{project.profitMargin ?? 30}%)</span>
+                          <span className="text-lg font-bold text-ink-700 dark:text-ink-300">{formatCurrency(plannedCost * (1 + (project.profitMargin ?? 30) / 100))}</span>
+                       </div>
                        <div className="flex flex-col items-end">
                           <span className="text-xs font-medium text-ink-500 mb-0.5">Variance</span>
                           <span className={`text-lg font-bold ${isOverBudget ? 'text-negative-500' : 'text-positive-500'}`}>
