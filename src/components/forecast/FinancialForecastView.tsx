@@ -778,10 +778,14 @@ export function FinancialForecastView() {
   });
   // Groups in their saved order, then lines with no group. One plain section when there are no groups.
   function sectionsOf<T extends { groupId?: string }>(items: T[], prefix: string) {
-    if (groups.length === 0) return [{ key: `${prefix}:all`, group: null as ForecastGroup | null, items, showBar: false }];
+    // Only groups with lines in this section get a bar (inflow and outflow groups can differ).
+    // A section where nothing is grouped stays a plain list.
+    if (!items.some(i => i.groupId && groupById[i.groupId])) {
+      return [{ key: `${prefix}:all`, group: null as ForecastGroup | null, items, showBar: false }];
+    }
     const out = groups
-      // Empty groups still get a bar, so their + can add the first line
-      .map(g => ({ key: `${prefix}:${g.id}`, group: g as ForecastGroup | null, items: items.filter(i => i.groupId === g.id), showBar: true }));
+      .map(g => ({ key: `${prefix}:${g.id}`, group: g as ForecastGroup | null, items: items.filter(i => i.groupId === g.id), showBar: true }))
+      .filter(sct => sct.items.length > 0);
     const rest = items.filter(i => !i.groupId || !groupById[i.groupId]);
     if (rest.length) out.push({ key: `${prefix}:__none`, group: null, items: rest, showBar: true });
     return out;
