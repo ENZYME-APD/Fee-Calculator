@@ -789,8 +789,11 @@ export const getForecastProfile = async (): Promise<ForecastProfile | null> => {
   return extractData(snap.docs[0]) as ForecastProfile;
 };
 
-export const updateForecastProfile = async (profile: Partial<ForecastProfile>) => {
+export const updateForecastProfile = async (input: Partial<ForecastProfile>) => {
   const companyId = requireCompanyId();
+  // Firestore rejects the whole write if any nested field is undefined (e.g. a pill with no
+  // invoice number), so strip them at every level.
+  const profile = JSON.parse(JSON.stringify(input)) as Partial<ForecastProfile>;
   const q = query(collection(db, 'forecastProfile'), where('companyId', '==', companyId));
   const snap = await getDocs(q);
   

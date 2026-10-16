@@ -130,6 +130,9 @@ export function FinancialForecastView() {
 
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  // True from the first unsaved change until the write lands; used to warn before leaving
+  const savePending = useRef(false);
   const [profile, setProfile] = useState<ForecastProfile | null>(null);
 
   // Global settings
@@ -230,6 +233,7 @@ export function FinancialForecastView() {
     }
 
     if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+    savePending.current = true;
 
     autoSaveTimeout.current = setTimeout(async () => {
       setIsSaving(true);
@@ -244,8 +248,11 @@ export function FinancialForecastView() {
           rows,
           outflows
         });
+        savePending.current = false;
+        setSaveError(false);
       } catch (e) {
         console.error("Failed to auto-save forecast", e);
+        setSaveError(true);
       } finally {
         setIsSaving(false);
       }
@@ -255,6 +262,17 @@ export function FinancialForecastView() {
       if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
     };
   }, [loading, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows]);
+
+  // Warn before reloading or closing the tab while a change hasn't been saved yet
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => {
+      if (!savePending.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
 
   // Generate list of displayed month keys
   const monthKeys = useMemo(() => {
@@ -835,9 +853,11 @@ export function FinancialForecastView() {
             <span>Add income</span>
           </PrimaryButton>
 
-          {isSaving && (
+          {isSaving ? (
             <span className="text-[11px] text-ink-500 dark:text-ink-400 italic">Saving…</span>
-          )}
+          ) : saveError ? (
+            <span className="text-[11px] font-semibold text-negative-600 dark:text-negative-400">Couldn't save. Your changes will be retried on the next edit.</span>
+          ) : null}
         </div>
       </div>
 
