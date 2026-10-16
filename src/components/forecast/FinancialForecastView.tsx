@@ -1363,8 +1363,8 @@ export function FinancialForecastView() {
           </div>
 
           {/* Subtotals by Stage */}
-          <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t-2 border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700`}>
+          <div className="bg-[color-mix(in_srgb,var(--positive-50)_55%,white)] dark:bg-[color-mix(in_srgb,var(--positive-950)_55%,var(--ink-950))] border-t-2 border-ink-200 dark:border-ink-800 flex font-bold text-xs">
+            <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-[color-mix(in_srgb,var(--positive-50)_55%,white)] dark:bg-[color-mix(in_srgb,var(--positive-950)_55%,var(--ink-950))] ${FROZEN_EDGE} p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700`}>
               Total inflows
             </div>
             {monthKeys.map(m => {
@@ -1641,8 +1641,8 @@ export function FinancialForecastView() {
           </div>
 
           {/* Outflow Subtotal */}
-          <div className="bg-ink-50/70 dark:bg-ink-950/80 border-t border-ink-200 dark:border-ink-800 flex font-bold text-xs">
-            <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700`}>
+          <div className="bg-[color-mix(in_srgb,var(--negative-50)_55%,white)] dark:bg-[color-mix(in_srgb,var(--negative-950)_55%,var(--ink-950))] border-t border-ink-200 dark:border-ink-800 flex font-bold text-xs">
+            <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-[color-mix(in_srgb,var(--negative-50)_55%,white)] dark:bg-[color-mix(in_srgb,var(--negative-950)_55%,var(--ink-950))] ${FROZEN_EDGE} p-3 text-ink-700 dark:text-ink-300 border-r-2 border-ink-200 dark:border-ink-700`}>
               Total outflows
             </div>
             {monthKeys.map(m => {
