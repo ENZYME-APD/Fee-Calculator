@@ -664,6 +664,22 @@ export function FinancialForecastView() {
     return !v;
   });
   // Hide rows with no amounts (any stage) in the months on screen. Remembered per browser.
+  // Collapsible Inflows / Outflows sections (remembered per browser)
+  const [collapsed, setCollapsed] = useState<{ inflows: boolean; outflows: boolean }>({ inflows: false, outflows: false });
+  useEffect(() => {
+    try {
+      setCollapsed({
+        inflows: localStorage.getItem('forecast.collapseInflows') === '1',
+        outflows: localStorage.getItem('forecast.collapseOutflows') === '1',
+      });
+    } catch {}
+  }, []);
+  const toggleSection = (key: 'inflows' | 'outflows') => setCollapsed(prev => {
+    const next = { ...prev, [key]: !prev[key] };
+    try { localStorage.setItem(key === 'inflows' ? 'forecast.collapseInflows' : 'forecast.collapseOutflows', next[key] ? '1' : '0'); } catch {}
+    return next;
+  });
+
   const [hideEmpty, setHideEmpty] = useState(false);
   useEffect(() => {
     try { setHideEmpty(localStorage.getItem('forecast.hideEmpty') === '1'); } catch {}
@@ -936,8 +952,30 @@ export function FinancialForecastView() {
             </div>
           </div>
 
+          {/* Inflows section bar (collapses the income rows; totals stay visible) */}
+          <div className="bg-ink-50 dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 font-semibold text-xs text-ink-700 dark:text-ink-300">
+            <div style={{ width: LABEL_W }} className="sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 p-3 flex items-center justify-between gap-3">
+              <button
+                onClick={() => toggleSection('inflows')}
+                aria-expanded={!collapsed.inflows}
+                className="flex items-center gap-1.5 hover:text-ink-900 dark:hover:text-ink-100 transition-colors"
+              >
+                <ChevronRight size={14} className={`transition-transform ${collapsed.inflows ? '' : 'rotate-90'}`} />
+                <span>Inflows</span>
+                <span className="font-medium text-ink-500 dark:text-ink-400">({visibleRows.length})</span>
+              </button>
+              <button
+                onClick={() => setAddRowModalOpen(true)}
+                className="shrink-0 text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
+              >
+                <Plus size={12} />
+                Add income
+              </button>
+            </div>
+          </div>
+
           {/* Workstream Inflow Rows */}
-          <div className="divide-y divide-ink-100 dark:divide-ink-800 bg-white dark:bg-ink-900">
+          <div className={`divide-y divide-ink-100 dark:divide-ink-800 bg-white dark:bg-ink-900 ${collapsed.inflows ? 'hidden' : ''}`}>
             {rows.length === 0 && (
               <div className="px-6 py-10 text-sm text-ink-500 dark:text-ink-400 max-w-xl">
                 <p className="font-semibold text-ink-800 dark:text-ink-200 mb-1">No income rows yet</p>
@@ -1241,7 +1279,16 @@ export function FinancialForecastView() {
           <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 font-semibold text-xs text-ink-700 dark:text-ink-300">
             {/* Frozen with the other row labels so it doesn't scroll away sideways */}
             <div style={{ width: LABEL_W }} className="sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 p-3 flex items-center justify-between gap-3">
-              <span className="truncate" title="Monthly costs, debt and commissions">Outflows</span>
+              <button
+                onClick={() => toggleSection('outflows')}
+                aria-expanded={!collapsed.outflows}
+                title="Monthly costs, debt and commissions"
+                className="flex items-center gap-1.5 min-w-0 hover:text-ink-900 dark:hover:text-ink-100 transition-colors"
+              >
+                <ChevronRight size={14} className={`shrink-0 transition-transform ${collapsed.outflows ? '' : 'rotate-90'}`} />
+                <span className="truncate">Outflows</span>
+                <span className="font-medium text-ink-500 dark:text-ink-400">({referralNames.length + outflows.length})</span>
+              </button>
               <button
                 onClick={addOutflowLine}
                 className="shrink-0 text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
@@ -1252,7 +1299,7 @@ export function FinancialForecastView() {
             </div>
           </div>
 
-          <div className="divide-y divide-ink-100 dark:divide-ink-800 bg-white dark:bg-ink-900 text-xs">
+          <div className={`divide-y divide-ink-100 dark:divide-ink-800 bg-white dark:bg-ink-900 text-xs ${collapsed.outflows ? 'hidden' : ''}`}>
             {/* Dynamic Referral Commission Rows */}
             {referralNames.map(personName => {
               const personData = dynamicReferrals[personName];
