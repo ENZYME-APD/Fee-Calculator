@@ -656,15 +656,15 @@ export function WikiContent() {
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">How the Table Works</h4>
               <ul className="list-disc pl-5 space-y-2">
-                <li><strong>Months and stages:</strong> Each month has three columns: <em>Possible</em> (proposals that may happen), <em>Invoiced</em> (billed but not yet paid) and <em>Collections</em> (cash received). The last column totals the months on screen.</li>
+                <li><strong>Months and stages:</strong> Each month has three columns. <em>Invoiced</em> is your invoicing schedule: every invoice you send that month. It is for reference and never counts as cash. <em>Possible</em> is money that may come in that month, and <em>Collections</em> is money you expect to receive. To forecast a payment, copy the invoice (Alt+drag) into Collections or Possible in the month you expect it. The last column totals the months on screen.</li>
                 <li><strong>Amounts are pills:</strong> Click the + in a cell to add an amount, click a pill to edit it, and drag a pill to move it to another month, stage or row. Hold <strong>Alt</strong> (Option on a Mac) while dragging to copy it instead.</li>
-                <li><strong>Scenarios:</strong> <em>Conservative</em> counts collections only, <em>Optimistic</em> counts every stage in full, and <em>Expected</em> counts collections plus the invoiced and possible amounts weighted by the percentages you set at the top.</li>
+                <li><strong>Scenarios:</strong> <em>Conservative</em> counts collections only, <em>Expected</em> adds Possible amounts weighted by the percentage at the top, and <em>Optimistic</em> adds all Possible amounts in full. Invoiced amounts are never included.</li>
                 <li><strong>Bank cash:</strong> Enter your opening bank cash and the month it applies to. Each month&apos;s closing cash is the previous balance plus collections minus outflows.</li>
               </ul>
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Inflows</h4>
               <ul className="list-disc pl-5 space-y-2">
-                <li><strong>Sync projects:</strong> Adds your Active and Proposed projects, placing each payment milestone in the month its phase reaches it. Active projects go to <em>Invoiced</em>, Proposed ones to <em>Possible</em>. Rows already in the forecast are left as they are.</li>
+                <li><strong>Sync projects:</strong> Adds your Active and Proposed projects, placing each payment milestone as an invoice in the month its phase reaches it. You then decide when each invoice is likely to be paid by copying it to Collections or Possible. Under each synced row you can see its fee, how much has been invoiced (with any over or under invoicing), and what is in Collections and Possible. Rows already in the forecast are left as they are.</li>
                 <li><strong>Reset row:</strong> Rebuilds a synced row from its current fee proposal and payment schedule (or clears a manual row). Use it after changing a proposal.</li>
                 <li><strong>Add income:</strong> Adds a manual row for retainers, partnerships or any income that isn&apos;t a fee proposal. Rows are marked <em>Proposal</em> (synced) or <em>Manual</em>.</li>
                 <li><strong>Referral commissions:</strong> Give a pill a referral name and percentage and the commission appears automatically as an outflow line in the month the money is collected.</li>

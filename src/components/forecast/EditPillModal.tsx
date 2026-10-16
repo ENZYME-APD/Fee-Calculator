@@ -83,7 +83,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
               Stage
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {(['possible', 'invoicing', 'collections'] as ForecastStage[]).map(st => (
+              {(['invoicing', 'possible', 'collections'] as ForecastStage[]).map(st => (
                 <button
                   key={st}
                   type="button"
@@ -98,7 +98,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
                       : 'border-ink-200 dark:border-ink-800 text-ink-500 hover:bg-ink-50 dark:hover:bg-ink-800'
                   }`}
                 >
-                  {st}
+                  {st === 'invoicing' ? 'Invoiced' : st === 'possible' ? 'Possible' : 'Collections'}
                 </button>
               ))}
             </div>

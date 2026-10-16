@@ -421,7 +421,8 @@ export function FinancialForecastView() {
     const totalWeeks = weeks;
     const projectStart = proj.startDate || Date.now();
     const WEEK = 7 * 24 * 60 * 60 * 1000;
-    const stage: ForecastStage = proj.status === 'Active' ? 'invoicing' : 'possible';
+    // Proposals bring in their invoices only; you then copy each one to Collections or Possible
+    const stage: ForecastStage = 'invoicing';
 
     const ordered = [...payments].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     const isPhased = (p: Payment) => !!p.phaseId && phaseStartWeeks[p.phaseId] !== undefined;
@@ -759,8 +760,9 @@ export function FinancialForecastView() {
         invoicing: mInvoicing,
         collections: mCollections,
         conservative: mCollections,
-        expected: Math.round(mCollections + (mInvoicing * (invoicingConversion / 100)) + (mPossible * (possibleConversion / 100))),
-        optimistic: mCollections + mInvoicing + mPossible,
+        // Invoiced is the invoicing schedule only; cash comes from Collections (certain) and Possible (weighted)
+        expected: Math.round(mCollections + (mPossible * (possibleConversion / 100))),
+        optimistic: mCollections + mPossible,
         totalOutflows: mOutflows,
         // Bank cash only moves with real collections minus all outflows
         netDelta: mCollections - mOutflows,
@@ -945,14 +947,14 @@ export function FinancialForecastView() {
         {groupBarLabel(key, group, items.length, () => openAddRow(group?.id), 'Add income')}
         {monthKeys.map(m => (
           <div key={m} className="w-[360px] shrink-0 grid grid-cols-3 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 py-2 px-1.5 text-center">
-            {cell(stageSum(items, m, 'possible'), 'text-warning-700 dark:text-warning-300')}
-            {cell(stageSum(items, m, 'invoicing'), 'text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800')}
+            {cell(stageSum(items, m, 'invoicing'), 'text-accent-700 dark:text-accent-300')}
+            {cell(stageSum(items, m, 'possible'), 'text-warning-700 dark:text-warning-300 border-x border-ink-200 dark:border-ink-800')}
             {cell(stageSum(items, m, 'collections'), 'text-positive-700 dark:text-positive-300')}
           </div>
         ))}
         <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 grid grid-cols-3 py-2 px-1.5 text-center">
-          {cell(sumVisible(m => stageSum(items, m, 'possible')), 'text-warning-700 dark:text-warning-300')}
-          {cell(sumVisible(m => stageSum(items, m, 'invoicing')), 'text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800')}
+          {cell(sumVisible(m => stageSum(items, m, 'invoicing')), 'text-accent-700 dark:text-accent-300')}
+          {cell(sumVisible(m => stageSum(items, m, 'possible')), 'text-warning-700 dark:text-warning-300 border-x border-ink-200 dark:border-ink-800')}
           {cell(sumVisible(m => stageSum(items, m, 'collections')), 'text-positive-700 dark:text-positive-300')}
         </div>
       </div>
@@ -1210,7 +1212,7 @@ export function FinancialForecastView() {
           {/* Number inputs for conversion rates */}
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
-              <span className="text-ink-500 font-medium">Possible weight:</span>
+              <span className="text-ink-500 font-medium" title="Share of Possible amounts counted in the Expected scenario">Possible weight:</span>
               <div className="flex items-center gap-0.5 bg-ink-50 dark:bg-ink-800 px-2 py-0.5 rounded border border-ink-200 dark:border-ink-700">
                 <input
                   type="number"
@@ -1225,21 +1227,6 @@ export function FinancialForecastView() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span className="text-ink-500 font-medium">Invoiced weight:</span>
-              <div className="flex items-center gap-0.5 bg-ink-50 dark:bg-ink-800 px-2 py-0.5 rounded border border-ink-200 dark:border-ink-700">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={invoicingConversion}
-                  onChange={e => setInvoicingConversion(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
-                  className="w-10 bg-transparent text-right font-bold outline-none text-ink-800 dark:text-ink-200"
-                />
-                <span className="font-bold text-ink-500 dark:text-ink-400">%</span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -1361,8 +1348,8 @@ export function FinancialForecastView() {
                   {formatMonthLabel(m)}
                 </div>
                 <div className="grid grid-cols-3 text-[11px] font-semibold text-center py-1 text-ink-500 bg-ink-50/50 dark:bg-ink-950/50">
-                  <span className="text-warning-600 dark:text-warning-400 py-0.5">Possible</span>
-                  <span className="text-accent-600 dark:text-accent-400 py-0.5 border-x border-ink-200 dark:border-ink-800">Invoiced</span>
+                  <span className="text-accent-600 dark:text-accent-400 py-0.5">Invoiced</span>
+                  <span className="text-warning-600 dark:text-warning-400 border-x border-ink-200 dark:border-ink-800 py-0.5">Possible</span>
                   <span className="text-positive-600 dark:text-positive-400 py-0.5">Collections</span>
                 </div>
               </div>
@@ -1373,8 +1360,8 @@ export function FinancialForecastView() {
                 Total, {monthKeys.length} months
               </div>
               <div className="grid grid-cols-3 text-[11px] font-semibold text-center py-1 text-ink-500">
-                <span className="text-warning-600 dark:text-warning-400 py-0.5">Possible</span>
-                <span className="text-accent-600 dark:text-accent-400 py-0.5 border-x border-ink-200 dark:border-ink-800">Invoiced</span>
+                <span className="text-accent-600 dark:text-accent-400 py-0.5">Invoiced</span>
+                <span className="text-warning-600 dark:text-warning-400 border-x border-ink-200 dark:border-ink-800 py-0.5">Possible</span>
                 <span className="text-positive-600 dark:text-positive-400 py-0.5">Collections</span>
               </div>
             </div>
@@ -1517,31 +1504,27 @@ export function FinancialForecastView() {
                           <IconButton onClick={() => setDeleteRowTarget(row.id)} className="w-6 h-6 hover:text-negative-600" title="Delete row"><Trash2 size={12} /></IconButton>
                         </div>
                       </div>
-                      {/* Line 3 (linked rows): proposal fee vs what this row adds up to, in every month */}
+                      {/* Line 3 (linked rows): proposal fee vs what has been invoiced, and where the cash is expected */}
                       {row.projectId && proposalFees[row.projectId] !== undefined && (() => {
                         const fee = proposalFees[row.projectId!];
-                        let inForecast = 0;
-                        let collected = 0;
-                        Object.values(row.cells).forEach(c => {
-                          (['possible', 'invoicing', 'collections'] as ForecastStage[]).forEach(st => {
-                            const sum = (c?.[st] || []).reduce((a, p) => a + p.amount, 0);
-                            inForecast += sum;
-                            if (st === 'collections') collected += sum;
-                          });
-                        });
-                        const diff = Math.round(inForecast - fee);
+                        const total = (st: ForecastStage) => Object.values(row.cells).reduce((sum, c) => sum + (c?.[st] || []).reduce((a, p) => a + p.amount, 0), 0);
+                        const invoiced = total('invoicing');
+                        const collections = total('collections');
+                        const possible = total('possible');
+                        const diff = Math.round(invoiced - fee);
                         return (
-                          <div className="mt-1 text-[10px] text-ink-500 dark:text-ink-400 tabular-nums flex flex-wrap items-center gap-x-1.5" title="Fee: the proposal's current total fee. In forecast: every amount in this row, all months and stages. Collected: amounts in Collections.">
+                          <div className="mt-1 text-[10px] text-ink-500 dark:text-ink-400 tabular-nums flex flex-wrap items-center gap-x-1.5" title="All months, not only those on screen. Fee: the proposal's current total. Invoiced: every invoice in this row, compared with the fee. Collections and Possible: where you expect the payments.">
                             <span>Fee <span className="font-semibold text-ink-700 dark:text-ink-300">{fmt(fee)}</span></span>
                             <span>·</span>
-                            <span>Forecast <span className="font-semibold text-ink-700 dark:text-ink-300">{fmt(inForecast)}</span></span>
+                            <span>Invoiced <span className="font-semibold text-accent-700 dark:text-accent-400">{fmt(invoiced)}</span></span>
                             {diff !== 0 && (
                               <span className={`font-semibold ${diff > 0 ? 'text-warning-700 dark:text-warning-400' : 'text-negative-600 dark:text-negative-400'}`}>
                                 ({diff > 0 ? '+' : '−'}{fmt(Math.abs(diff))} {diff > 0 ? 'over' : 'under'})
                               </span>
                             )}
                             <span>·</span>
-                            <span>Collected <span className="font-semibold text-positive-700 dark:text-positive-400">{fmt(collected)}</span></span>
+                            <span>Collections <span className="font-semibold text-positive-700 dark:text-positive-400">{fmt(collections)}</span></span>
+                            {possible > 0 && (<><span>·</span><span>Possible <span className="font-semibold text-warning-700 dark:text-warning-400">{fmt(possible)}</span></span></>)}
                           </div>
                         );
                       })()}
@@ -1569,7 +1552,7 @@ export function FinancialForecastView() {
 
                     return (
                       <div key={m} className="w-[360px] shrink-0 grid grid-cols-3 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 min-h-[56px]">
-                        {(['possible', 'invoicing', 'collections'] as ForecastStage[]).map((stage, colIdx) => {
+                        {(['invoicing', 'possible', 'collections'] as ForecastStage[]).map((stage, colIdx) => {
                           const pills = monthCell[stage] || [];
                           const borderClasses = colIdx === 1 ? 'border-x border-ink-100 dark:border-ink-800/60' : '';
 
@@ -1656,8 +1639,8 @@ export function FinancialForecastView() {
                     const t = { possible: stageTotal('possible'), invoicing: stageTotal('invoicing'), collections: stageTotal('collections') };
                     return (
                       <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums grid grid-cols-3 text-xs font-bold text-center">
-                        <span className="flex items-center justify-center text-warning-700 dark:text-warning-300">{t.possible ? fmt(t.possible) : ''}</span>
-                        <span className="flex items-center justify-center text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800">{t.invoicing ? fmt(t.invoicing) : ''}</span>
+                        <span className="flex items-center justify-center text-accent-700 dark:text-accent-300">{t.invoicing ? fmt(t.invoicing) : ''}</span>
+                        <span className="flex items-center justify-center text-warning-700 dark:text-warning-300 border-x border-ink-200 dark:border-ink-800">{t.possible ? fmt(t.possible) : ''}</span>
                         <span className="flex items-center justify-center text-positive-700 dark:text-positive-300">{t.collections ? fmt(t.collections) : ''}</span>
                       </div>
                     );
@@ -1678,15 +1661,15 @@ export function FinancialForecastView() {
               const st = monthlyStats[m] || { possible: 0, invoicing: 0, collections: 0 };
               return (
                 <div key={m} className="w-[360px] shrink-0 grid grid-cols-3 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 py-2.5 px-1.5 text-center">
-                  <span className="text-warning-700 dark:text-warning-300">{fmt(st.possible)}</span>
-                  <span className="text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800">{fmt(st.invoicing)}</span>
+                  <span className="text-accent-700 dark:text-accent-300">{fmt(st.invoicing)}</span>
+                  <span className="text-warning-700 dark:text-warning-300 border-x border-ink-200 dark:border-ink-800">{fmt(st.possible)}</span>
                   <span className="text-positive-700 dark:text-positive-300">{fmt(st.collections)}</span>
                 </div>
               );
             })}
             <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums grid grid-cols-3 py-2.5 px-1.5 text-center">
-              <span className="text-warning-700 dark:text-warning-300">{fmt(sumVisible(m => monthlyStats[m]?.possible || 0))}</span>
-              <span className="text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800">{fmt(sumVisible(m => monthlyStats[m]?.invoicing || 0))}</span>
+              <span className="text-accent-700 dark:text-accent-300">{fmt(sumVisible(m => monthlyStats[m]?.invoicing || 0))}</span>
+              <span className="text-warning-700 dark:text-warning-300 border-x border-ink-200 dark:border-ink-800">{fmt(sumVisible(m => monthlyStats[m]?.possible || 0))}</span>
               <span className="text-positive-700 dark:text-positive-300">{fmt(sumVisible(m => monthlyStats[m]?.collections || 0))}</span>
             </div>
           </div>
@@ -1709,7 +1692,7 @@ export function FinancialForecastView() {
             {/* Expected */}
             <div className="flex items-center text-accent-700 dark:text-accent-300 bg-accent-50/30 dark:bg-accent-950/20 font-semibold">
               <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} px-3.5 py-1.5 border-r-2 border-ink-200 dark:border-ink-700`}>
-                Expected (collections + {invoicingConversion}% invoiced + {possibleConversion}% possible)
+                Expected (collections + {possibleConversion}% possible)
               </div>
               {monthKeys.map(m => (
                 <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 px-3 py-1.5 text-right font-bold">
@@ -1722,7 +1705,7 @@ export function FinancialForecastView() {
             {/* Optimistic */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
               <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} px-3.5 py-1.5 font-medium border-r-2 border-ink-200 dark:border-ink-700`}>
-                Optimistic (all stages in full)
+                Optimistic (collections + all possible)
               </div>
               {monthKeys.map(m => (
                 <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 px-3 py-1.5 text-right font-bold text-ink-700 dark:text-ink-300">
