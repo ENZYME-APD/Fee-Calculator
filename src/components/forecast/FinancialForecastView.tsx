@@ -213,6 +213,26 @@ export function FinancialForecastView() {
   // Reset row: the rebuilt amounts are worked out first, and a confirmation is shown only when they differ
   const [resetPlan, setResetPlan] = useState<{ row: ForecastRow; cells: ForecastRow['cells']; changed: number } | null>(null);
   const [resetCheckingId, setResetCheckingId] = useState<string | null>(null);
+  // Current proposed fee for each project, to compare with what the linked row adds up to
+  const [proposalFees, setProposalFees] = useState<Record<string, number>>({});
+  const loadProposalFees = async () => {
+    try {
+      const [projs, allPhases, allCosts, allocs, mems] = await Promise.all([
+        getProjects(), getPhases(), getProjectCosts(), getAllocations(), getTeamMembers(),
+      ]);
+      const fees: Record<string, number> = {};
+      projs.forEach(p => {
+        if (!p.id) return;
+        const { totalFee } = computeProjectFinancials(
+          p, allPhases.filter(ph => ph.projectId === p.id), allocs, allCosts, mems, // costs are matched to phases inside
+        );
+        fees[p.id] = Math.round(totalFee);
+      });
+      setProposalFees(fees);
+    } catch (err) {
+      console.error('Failed to load proposal fees', err);
+    }
+  };
   const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
   const [deleteRowTarget, setDeleteRowTarget] = useState<string | null>(null);
 
@@ -275,6 +295,10 @@ export function FinancialForecastView() {
 
     loadData();
   }, [authLoading, isAdmin, router]);
+
+  useEffect(() => {
+    if (!loading && isAdmin) loadProposalFees();
+  }, [loading, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounced auto-save whenever rows, outflows, or settings change
   useEffect(() => {
@@ -1315,6 +1339,34 @@ export function FinancialForecastView() {
                           <IconButton onClick={() => setDeleteRowTarget(row.id)} className="w-6 h-6 hover:text-negative-600" title="Delete row"><Trash2 size={12} /></IconButton>
                         </div>
                       </div>
+                      {/* Line 3 (linked rows): proposal fee vs what this row adds up to, in every month */}
+                      {row.projectId && proposalFees[row.projectId] !== undefined && (() => {
+                        const fee = proposalFees[row.projectId!];
+                        let inForecast = 0;
+                        let collected = 0;
+                        Object.values(row.cells).forEach(c => {
+                          (['possible', 'invoicing', 'collections'] as ForecastStage[]).forEach(st => {
+                            const sum = (c?.[st] || []).reduce((a, p) => a + p.amount, 0);
+                            inForecast += sum;
+                            if (st === 'collections') collected += sum;
+                          });
+                        });
+                        const diff = Math.round(inForecast - fee);
+                        return (
+                          <div className="mt-1 text-[10px] text-ink-500 dark:text-ink-400 tabular-nums flex flex-wrap items-center gap-x-1.5" title="Fee: the proposal's current total fee. In forecast: every amount in this row, all months and stages. Collected: amounts in Collections.">
+                            <span>Fee <span className="font-semibold text-ink-700 dark:text-ink-300">{fmt(fee)}</span></span>
+                            <span>·</span>
+                            <span>Forecast <span className="font-semibold text-ink-700 dark:text-ink-300">{fmt(inForecast)}</span></span>
+                            {diff !== 0 && (
+                              <span className={`font-semibold ${diff > 0 ? 'text-warning-700 dark:text-warning-400' : 'text-negative-600 dark:text-negative-400'}`}>
+                                ({diff > 0 ? '+' : '−'}{fmt(Math.abs(diff))} {diff > 0 ? 'over' : 'under'})
+                              </span>
+                            )}
+                            <span>·</span>
+                            <span>Collected <span className="font-semibold text-positive-700 dark:text-positive-400">{fmt(collected)}</span></span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                   {showNotes && (
