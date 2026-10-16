@@ -905,14 +905,17 @@ export function FinancialForecastView() {
             <div className="flex items-center gap-1 font-bold text-sm text-ink-900 dark:text-ink-100">
               <span className="text-xs text-ink-500 dark:text-ink-400">{currencyCode}</span>
               <input
-                type="number"
-                step="1"
-                value={startingBankBalance === 0 ? '' : startingBankBalance}
+                type="text"
+                inputMode="numeric"
+                value={startingBankBalance === 0 ? '' : startingBankBalance.toLocaleString('en-US')}
                 onChange={e => {
-                  const val = parseInt(e.target.value.replace(/[^0-9-]/g, '')) || 0;
-                  setStartingBankBalance(val);
+                  // Thousand separators are display only; keep digits and a leading minus
+                  const raw = e.target.value.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, '');
+                  setStartingBankBalance(parseInt(raw, 10) || 0);
                 }}
-                className="w-24 bg-transparent outline-none text-right font-bold"
+                placeholder="0"
+                className="w-28 bg-transparent outline-none text-right font-bold tabular-nums"
+                aria-label="Opening bank cash"
               />
             </div>
             <span className="text-xs font-medium text-ink-500 dark:text-ink-400">at start of</span>
@@ -1701,6 +1704,11 @@ export function FinancialForecastView() {
                     }`}
                   >
                     {closing === null ? <span className="text-ink-400 dark:text-ink-500 font-semibold" title="Before the opening balance month">—</span> : fmt(closing)}
+                    {m === openingMonthKey && startingBankBalance !== 0 && (
+                      <div className="mt-0.5 text-[11px] font-medium text-ink-500 dark:text-ink-400" title="Opening bank cash added at the start of this month">
+                        {startingBankBalance > 0 ? '+' : '−'}{fmt(Math.abs(startingBankBalance))} opening bank cash
+                      </div>
+                    )}
                   </div>
                 );
               })}
