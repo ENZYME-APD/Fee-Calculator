@@ -110,4 +110,13 @@
   --chart-6: #C08A5B; /* tan */
   --chart-7: #45B9AB; /* light teal */
   --chart-8: #D9AE45; /* light amber */
+  /* Extra colours for forecast groups (no purple) */
+  --group-sky: #3A9BD5;
+  --group-navy: #2D4A80;
+  --group-cyan: #1BB3BF;
+  --group-forest: #2F6E48;
+  --group-olive: #8E8A2C;
+  --group-brown: #7B5234;
+  --group-rose: #D9677E;
+  --group-sand: #C9A86A;
 }

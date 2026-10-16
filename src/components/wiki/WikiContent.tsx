@@ -678,8 +678,8 @@ export function WikiContent() {
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Groups</h4>
               <p>Groups let you organise lines by country, office or anything else, for example India and Spain.</p>
               <ul className="list-disc pl-5 space-y-2">
-                <li><strong>Creating groups:</strong> Click <strong>Groups</strong> in the top bar to add, rename, recolour, reorder or delete groups, or create one directly from a row&apos;s edit dialog. Groups are shared with your team.</li>
-                <li><strong>Assigning lines:</strong> Choose the group in an income row&apos;s add or edit dialog, or from the small group menu under an outflow line&apos;s name. Dragging an income row onto a row in another group moves it into that group.</li>
+                <li><strong>Creating groups:</strong> Click <strong>Groups</strong> in the top bar to add, rename, recolour (15 colours), reorder or delete groups, or create one directly from a row&apos;s edit dialog. Groups are shared with your team.</li>
+                <li><strong>Assigning lines:</strong> Choose the group in an income row&apos;s add or edit dialog, or from the small group menu under an outflow line&apos;s name. Dragging an income row onto a row in another group moves it into that group. The <strong>+</strong> on a group bar adds a new income row or outflow line straight into that group.</li>
                 <li><strong>Subtotals and collapsing:</strong> Each group has its own bar with subtotals per month and stage. Click it to fold the group away; the subtotals stay visible.</li>
                 <li><strong>Excluding a group:</strong> Click <strong>Included</strong> on a group bar to take that group out of every total, scenario and bank balance, so you can see its effect. Its lines turn grey and a banner lists what is excluded. This only affects your screen and is never saved; click <strong>Include all</strong> or reload the page to restore everything.</li>
               </ul>

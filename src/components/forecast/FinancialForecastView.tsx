@@ -187,6 +187,8 @@ export function FinancialForecastView() {
   const [editingPill, setEditingPill] = useState<ForecastPill | null>(null);
 
   const [addRowModalOpen, setAddRowModalOpen] = useState(false);
+  const [addRowGroupId, setAddRowGroupId] = useState<string | undefined>(undefined);
+  const openAddRow = (groupId?: string) => { setAddRowGroupId(groupId); setAddRowModalOpen(true); };
   const [editingRow, setEditingRow] = useState<ForecastRow | null>(null);
   const [resetRowTarget, setResetRowTarget] = useState<ForecastRow | null>(null);
   const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
@@ -557,9 +559,9 @@ export function FinancialForecastView() {
   // Outflow amount change
   // Add outflow: appends a plain line straight into the table and puts its name in edit mode.
   const [editingOutflowId, setEditingOutflowId] = useState<string | null>(null);
-  const addOutflowLine = () => {
+  const addOutflowLine = (groupId?: string) => {
     const id = `outflow_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    setOutflows(prev => [...prev, { id, name: 'New outflow', type: 'custom', monthlyAmounts: {} }]);
+    setOutflows(prev => [...prev, { id, name: 'New outflow', type: 'custom', monthlyAmounts: {}, groupId }]);
     setEditingOutflowId(id);
   };
   const renameOutflow = (outflowId: string, name: string) => {
@@ -778,8 +780,8 @@ export function FinancialForecastView() {
   function sectionsOf<T extends { groupId?: string }>(items: T[], prefix: string) {
     if (groups.length === 0) return [{ key: `${prefix}:all`, group: null as ForecastGroup | null, items, showBar: false }];
     const out = groups
-      .map(g => ({ key: `${prefix}:${g.id}`, group: g as ForecastGroup | null, items: items.filter(i => i.groupId === g.id), showBar: true }))
-      .filter(sct => sct.items.length > 0);
+      // Empty groups still get a bar, so their + can add the first line
+      .map(g => ({ key: `${prefix}:${g.id}`, group: g as ForecastGroup | null, items: items.filter(i => i.groupId === g.id), showBar: true }));
     const rest = items.filter(i => !i.groupId || !groupById[i.groupId]);
     if (rest.length) out.push({ key: `${prefix}:__none`, group: null, items: rest, showBar: true });
     return out;
@@ -791,7 +793,7 @@ export function FinancialForecastView() {
     [...rows, ...outflows].forEach(l => { if (l.groupId) u[l.groupId] = (u[l.groupId] || 0) + 1; });
     return u;
   }, [rows, outflows]);
-  const groupBarLabel = (key: string, group: ForecastGroup | null, count: number) => {
+  const groupBarLabel = (key: string, group: ForecastGroup | null, count: number, onAdd: () => void, addLabel: string) => {
     const off = !!group && disabledGroups.has(group.id);
     const open = !collapsedGroups.has(key);
     return (
@@ -801,6 +803,15 @@ export function FinancialForecastView() {
           <span className={`shrink-0 w-2.5 h-2.5 rounded-full ${group ? GROUP_COLORS[group.color].dot : 'bg-ink-300 dark:bg-ink-600'}`} />
           <span className={`truncate ${off ? 'line-through' : ''}`}>{group ? group.name : 'No group'}</span>
           <span className="shrink-0 font-medium text-ink-500 dark:text-ink-400">({count})</span>
+        </button>
+        <div className="keep-on shrink-0 flex items-center gap-1">
+        <button
+          onClick={onAdd}
+          className="w-6 h-6 flex items-center justify-center rounded-md text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-accent-700 dark:hover:text-accent-400 transition-colors"
+          title={`${addLabel}${group ? ` to ${group.name}` : ' with no group'}`}
+          aria-label={`${addLabel}${group ? ` to ${group.name}` : ' with no group'}`}
+        >
+          <Plus size={14} />
         </button>
         {group && (
           <button
@@ -815,6 +826,7 @@ export function FinancialForecastView() {
             <span>{off ? 'Excluded' : 'Included'}</span>
           </button>
         )}
+        </div>
       </div>
     );
   };
@@ -825,7 +837,7 @@ export function FinancialForecastView() {
     const cell = (v: number, cls: string) => <span className={`flex items-center justify-center ${cls}`}>{v ? fmt(v) : ''}</span>;
     return (
       <div className={`flex bg-ink-50 dark:bg-ink-950 text-xs font-semibold tabular-nums ${off ? OFF_DIM : ''}`}>
-        {groupBarLabel(key, group, items.length)}
+        {groupBarLabel(key, group, items.length, () => openAddRow(group?.id), 'Add income')}
         {monthKeys.map(m => (
           <div key={m} className="w-[360px] shrink-0 grid grid-cols-3 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 py-2 px-1.5 text-center">
             {cell(stageSum(items, m, 'possible'), 'text-warning-700 dark:text-warning-300')}
@@ -846,7 +858,7 @@ export function FinancialForecastView() {
     const monthTotal = (m: string) => items.reduce((sum, it) => sum + outflowAmount(it, m, runningCosts.total), 0);
     return (
       <div className={`flex bg-ink-50 dark:bg-ink-950 text-xs font-semibold tabular-nums ${off ? OFF_DIM : ''}`}>
-        {groupBarLabel(key, group, items.length)}
+        {groupBarLabel(key, group, items.length, () => addOutflowLine(group?.id), 'Add outflow')}
         {monthKeys.map(m => {
           const v = monthTotal(m);
           return (
@@ -1095,7 +1107,7 @@ export function FinancialForecastView() {
                 <span className="font-medium text-ink-500 dark:text-ink-400">({visibleRows.length})</span>
               </button>
               <button
-                onClick={() => setAddRowModalOpen(true)}
+                onClick={() => openAddRow()}
                 className="shrink-0 text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
               >
                 <Plus size={12} />
@@ -1422,7 +1434,7 @@ export function FinancialForecastView() {
                 <span className="font-medium text-ink-500 dark:text-ink-400">({referralNames.length + outflows.length})</span>
               </button>
               <button
-                onClick={addOutflowLine}
+                onClick={() => addOutflowLine()}
                 className="shrink-0 text-xs text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1 font-semibold"
               >
                 <Plus size={12} />
@@ -1716,6 +1728,7 @@ export function FinancialForecastView() {
         isOpen={addRowModalOpen}
         onAdd={newRow => setRows(prev => [...prev, newRow])}
         onClose={() => setAddRowModalOpen(false)}
+        defaultGroupId={addRowGroupId}
         groups={groups}
         onCreateGroup={g => setGroups(prev => [...prev, g])}
       />

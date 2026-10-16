@@ -193,7 +193,9 @@ export interface ForecastPill {
 }
 
 // Custom group (e.g. "India", "Spain") that collapses rows together in the forecast
-export type ForecastGroupColor = 'accent' | 'info' | 'positive' | 'warning' | 'clay' | 'negative' | 'ink';
+export type ForecastGroupColor =
+  | 'accent' | 'info' | 'positive' | 'warning' | 'clay' | 'negative' | 'ink'
+  | 'sky' | 'navy' | 'cyan' | 'forest' | 'olive' | 'brown' | 'rose' | 'sand';
 export interface ForecastGroup {
   id: string;
   name: string;

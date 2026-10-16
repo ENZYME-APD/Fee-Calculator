@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { ForecastRow, ForecastGroup } from '@/lib/firebase/schema';
 import { PrimaryButton, SecondaryButton, fieldClass } from '@/components/ui/Button';
@@ -11,12 +11,16 @@ interface AddRowModalProps {
   onClose: () => void;
   groups: ForecastGroup[];
   onCreateGroup: (group: ForecastGroup) => void;
+  defaultGroupId?: string; // preselected when opened from a group's + button
 }
 
-export function AddRowModal({ isOpen, onAdd, onClose, groups, onCreateGroup }: AddRowModalProps) {
+export function AddRowModal({ isOpen, onAdd, onClose, groups, onCreateGroup, defaultGroupId }: AddRowModalProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState<'project' | 'external' | 'retainer'>('external');
   const [groupId, setGroupId] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (isOpen) setGroupId(defaultGroupId);
+  }, [isOpen, defaultGroupId]);
   const [notes, setNotes] = useState('');
 
   if (!isOpen) return null;

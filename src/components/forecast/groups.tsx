@@ -13,6 +13,14 @@ export const GROUP_COLORS: Record<ForecastGroupColor, { label: string; dot: stri
   clay:     { label: 'Clay',  dot: 'bg-clay-500',     stripe: 'shadow-[inset_4px_0_0_var(--clay-500)]' },
   negative: { label: 'Red',   dot: 'bg-negative-500', stripe: 'shadow-[inset_4px_0_0_var(--negative-500)]' },
   ink:      { label: 'Grey',  dot: 'bg-ink-400',      stripe: 'shadow-[inset_4px_0_0_var(--ink-400)]' },
+  sky:      { label: 'Sky',    dot: 'bg-[var(--group-sky)]',    stripe: 'shadow-[inset_4px_0_0_var(--group-sky)]' },
+  navy:     { label: 'Navy',   dot: 'bg-[var(--group-navy)]',   stripe: 'shadow-[inset_4px_0_0_var(--group-navy)]' },
+  cyan:     { label: 'Cyan',   dot: 'bg-[var(--group-cyan)]',   stripe: 'shadow-[inset_4px_0_0_var(--group-cyan)]' },
+  forest:   { label: 'Forest', dot: 'bg-[var(--group-forest)]', stripe: 'shadow-[inset_4px_0_0_var(--group-forest)]' },
+  olive:    { label: 'Olive',  dot: 'bg-[var(--group-olive)]',  stripe: 'shadow-[inset_4px_0_0_var(--group-olive)]' },
+  brown:    { label: 'Brown',  dot: 'bg-[var(--group-brown)]',  stripe: 'shadow-[inset_4px_0_0_var(--group-brown)]' },
+  rose:     { label: 'Rose',   dot: 'bg-[var(--group-rose)]',   stripe: 'shadow-[inset_4px_0_0_var(--group-rose)]' },
+  sand:     { label: 'Sand',   dot: 'bg-[var(--group-sand)]',   stripe: 'shadow-[inset_4px_0_0_var(--group-sand)]' },
 };
 const COLOR_KEYS = Object.keys(GROUP_COLORS) as ForecastGroupColor[];
 
@@ -24,7 +32,7 @@ export const nextGroupColor = (groups: ForecastGroup[]): ForecastGroupColor =>
 
 function ColorSwatches({ value, onChange }: { value: ForecastGroupColor; onChange: (c: ForecastGroupColor) => void }) {
   return (
-    <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Group colour">
+    <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Group colour">
       {COLOR_KEYS.map(c => (
         <button
           key={c}
