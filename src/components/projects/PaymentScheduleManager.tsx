@@ -414,12 +414,13 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
         <form onSubmit={handleCreate} className="flex flex-col gap-2">
           <input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="Payment name, e.g. Phase 1 Completion" className={fieldClass + ' w-full'} />
           <div className="flex gap-2 items-center">
-            <input type="number" required min="0" max={Math.max(0, 100 - totalPercentage)} step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="%" className={fieldClass + ' w-24 text-center shrink-0'} />
-            <select value={newPhaseId} onChange={e => setNewPhaseId(e.target.value)} className={fieldClass + ' flex-1'}>
+            <input type="number" required min="0" max={Math.max(0, 100 - totalPercentage)} step="0.01" value={newPercentage} onChange={e => setNewPercentage(e.target.value)} placeholder="%" className={fieldClass + ' w-20 text-center shrink-0'} />
+            {/* min-w-0 lets the phase picker shrink, so long phase names don't push Add out of the card */}
+            <select value={newPhaseId} onChange={e => setNewPhaseId(e.target.value)} className={fieldClass + ' flex-1 min-w-0 truncate'}>
               <option value="">(No phase)</option>
               {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <PrimaryButton type="submit"><Plus size={15} /> Add</PrimaryButton>
+            <PrimaryButton type="submit" className="shrink-0"><Plus size={15} /> Add</PrimaryButton>
           </div>
         </form>
       </div>
