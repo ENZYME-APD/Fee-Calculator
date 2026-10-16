@@ -1102,12 +1102,12 @@ export function FinancialForecastView() {
           </div>
 
           {/* Inflows section bar (collapses the income rows; totals stay visible) */}
-          <div className="bg-ink-50 dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 font-semibold text-xs text-ink-700 dark:text-ink-300">
-            <div style={{ width: LABEL_W }} className="sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 p-3 flex items-center justify-between gap-3">
+          <div className="bg-positive-50 dark:bg-positive-950 border-b border-positive-200 dark:border-positive-900 font-semibold text-xs text-positive-800 dark:text-positive-300">
+            <div style={{ width: LABEL_W }} className="sticky left-0 z-10 bg-positive-50 dark:bg-positive-950 shadow-[inset_4px_0_0_var(--positive-500)] p-3 flex items-center justify-between gap-3">
               <button
                 onClick={() => toggleSection('inflows')}
                 aria-expanded={!collapsed.inflows}
-                className="flex items-center gap-1.5 hover:text-ink-900 dark:hover:text-ink-100 transition-colors"
+                className="flex items-center gap-1.5 hover:text-positive-950 dark:hover:text-positive-100 transition-colors"
               >
                 <ChevronRight size={14} className={`transition-transform ${collapsed.inflows ? '' : 'rotate-90'}`} />
                 <span>Inflows</span>
@@ -1427,14 +1427,14 @@ export function FinancialForecastView() {
           </div>
 
           {/* Outflows / Liabilities Section */}
-          <div className="bg-ink-50 dark:bg-ink-950 border-t-2 border-ink-200 dark:border-ink-800 font-semibold text-xs text-ink-700 dark:text-ink-300">
+          <div className="bg-negative-50 dark:bg-negative-950 border-t-2 border-b border-negative-200 dark:border-negative-900 font-semibold text-xs text-negative-800 dark:text-negative-300">
             {/* Frozen with the other row labels so it doesn't scroll away sideways */}
-            <div style={{ width: LABEL_W }} className="sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 p-3 flex items-center justify-between gap-3">
+            <div style={{ width: LABEL_W }} className="sticky left-0 z-10 bg-negative-50 dark:bg-negative-950 shadow-[inset_4px_0_0_var(--negative-500)] p-3 flex items-center justify-between gap-3">
               <button
                 onClick={() => toggleSection('outflows')}
                 aria-expanded={!collapsed.outflows}
                 title="Monthly costs, debt and commissions"
-                className="flex items-center gap-1.5 min-w-0 hover:text-ink-900 dark:hover:text-ink-100 transition-colors"
+                className="flex items-center gap-1.5 min-w-0 hover:text-negative-950 dark:hover:text-negative-100 transition-colors"
               >
                 <ChevronRight size={14} className={`shrink-0 transition-transform ${collapsed.outflows ? '' : 'rotate-90'}`} />
                 <span className="truncate">Outflows</span>
