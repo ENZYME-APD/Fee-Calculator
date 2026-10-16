@@ -210,7 +210,9 @@ export function FinancialForecastView() {
   const [addRowGroupId, setAddRowGroupId] = useState<string | undefined>(undefined);
   const openAddRow = (groupId?: string) => { setAddRowGroupId(groupId); setAddRowModalOpen(true); };
   const [editingRow, setEditingRow] = useState<ForecastRow | null>(null);
-  const [resetRowTarget, setResetRowTarget] = useState<ForecastRow | null>(null);
+  // Reset row: the rebuilt amounts are worked out first, and a confirmation is shown only when they differ
+  const [resetPlan, setResetPlan] = useState<{ row: ForecastRow; cells: ForecastRow['cells']; changed: number } | null>(null);
+  const [resetCheckingId, setResetCheckingId] = useState<string | null>(null);
   const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
   const [deleteRowTarget, setDeleteRowTarget] = useState<string | null>(null);
 
@@ -477,8 +479,21 @@ export function FinancialForecastView() {
   };
 
   // Reset one row: a project row is rebuilt from its fee proposal; any other row has its amounts cleared.
-  const handleResetSingleRow = async (targetRow: ForecastRow) => {
-    setLoading(true);
+  // Amounts are compared by month, stage, amount and label (ids ignored), counting differences both ways.
+  const cellSignatures = (cells: ForecastRow['cells']) => {
+    const counts: Record<string, number> = {};
+    Object.entries(cells || {}).forEach(([m, cell]) => {
+      (['possible', 'invoicing', 'collections'] as ForecastStage[]).forEach(st => {
+        (cell?.[st] || []).forEach(p => {
+          const key = `${m}|${st}|${Math.round(p.amount)}|${p.label || ''}|${p.referralName || ''}|${p.referralPercent || 0}|${p.invoiceNumber || ''}|${p.notes || ''}`;
+          counts[key] = (counts[key] || 0) + 1;
+        });
+      });
+    });
+    return counts;
+  };
+  const requestResetRow = async (targetRow: ForecastRow) => {
+    setResetCheckingId(targetRow.id);
     try {
       let cells: ForecastRow['cells'] = {};
       if (targetRow.projectId) {
@@ -486,13 +501,29 @@ export function FinancialForecastView() {
         const proj = allProjects.find(p => p.id === targetRow.projectId);
         cells = (proj && await buildProjectCells(proj, members, allocations)) || {};
       }
-      setRows(prev => prev.map(r => r.id === targetRow.id ? { ...r, cells } : r));
-      setResetRowTarget(null);
+      const cur = cellSignatures(targetRow.cells);
+      const next = cellSignatures(cells);
+      const changed = [...new Set([...Object.keys(cur), ...Object.keys(next)])]
+        .reduce((sum, k) => sum + Math.abs((cur[k] || 0) - (next[k] || 0)), 0);
+      if (changed === 0) {
+        setSyncMessage(targetRow.projectId
+          ? `"${targetRow.name}" already matches its fee proposal. Nothing to reset.`
+          : `"${targetRow.name}" has no amounts to clear.`);
+        return;
+      }
+      setResetPlan({ row: targetRow, cells, changed });
     } catch (err) {
-      console.error("Failed to reset row", err);
+      console.error("Failed to prepare row reset", err);
+      setSyncMessage('Could not load the fee proposal for this row. Check your connection and try again.');
     } finally {
-      setLoading(false);
+      setResetCheckingId(null);
     }
+  };
+  const applyResetPlan = () => {
+    if (!resetPlan) return;
+    const { row, cells } = resetPlan;
+    setRows(prev => prev.map(r => (r.id === row.id ? { ...r, cells } : r)));
+    setResetPlan(null);
   };
 
   // Add / Edit pill
@@ -1280,7 +1311,7 @@ export function FinancialForecastView() {
                           <IconButton onClick={() => moveVisible(row, -1, section.items)} disabled={rowIdx === 0} className="w-6 h-6 hover:text-accent-600" title="Move up"><ArrowUp size={12} /></IconButton>
                           <IconButton onClick={() => moveVisible(row, 1, section.items)} disabled={rowIdx === section.items.length - 1} className="w-6 h-6 hover:text-accent-600" title="Move down"><ArrowDown size={12} /></IconButton>
                           <IconButton onClick={() => setEditingRow(row)} className="w-6 h-6 hover:text-accent-600" title="Edit row"><Edit2 size={12} /></IconButton>
-                          <IconButton onClick={() => setResetRowTarget(row)} className="w-6 h-6 hover:text-warning-600" title="Reset row: re-sync from its fee proposal, or clear its amounts"><Undo2 size={12} /></IconButton>
+                          <IconButton onClick={() => requestResetRow(row)} disabled={resetCheckingId === row.id} className={`w-6 h-6 hover:text-warning-600 ${resetCheckingId === row.id ? 'animate-spin' : ''}`} title="Reset row: re-sync from its fee proposal, or clear its amounts"><Undo2 size={12} /></IconButton>
                           <IconButton onClick={() => setDeleteRowTarget(row.id)} className="w-6 h-6 hover:text-negative-600" title="Delete row"><Trash2 size={12} /></IconButton>
                         </div>
                       </div>
@@ -1858,18 +1889,18 @@ export function FinancialForecastView() {
         onClose={() => setEditingRow(null)}
       />
 
-      {/* Reset Single Row Confirmation Modal */}
+      {/* Reset row confirmation: only shown when the reset would change something */}
       <ConfirmModal
-        isOpen={!!resetRowTarget}
-        title="Reset project row"
-        message={resetRowTarget?.projectId ? `Rebuild "${resetRowTarget?.name}" from its fee proposal? Your manual changes to this row's amounts will be replaced.` : `Clear all amounts in "${resetRowTarget?.name}"?`}
+        isOpen={!!resetPlan}
+        title="Reset row?"
+        message={resetPlan
+          ? resetPlan.row.projectId
+            ? `"${resetPlan.row.name}" differs from its fee proposal in ${resetPlan.changed} amount${resetPlan.changed === 1 ? '' : 's'} (manual edits, moves, copies or a changed proposal). Resetting replaces this row's amounts with the proposal's milestones. This can't be undone.`
+            : `Clear all ${resetPlan.changed} amount${resetPlan.changed === 1 ? '' : 's'} in "${resetPlan.row.name}"? This can't be undone.`
+          : ''}
         confirmText="Reset row"
-        onConfirm={() => {
-          if (resetRowTarget) {
-            handleResetSingleRow(resetRowTarget);
-          }
-        }}
-        onCancel={() => setResetRowTarget(null)}
+        onConfirm={applyResetPlan}
+        onCancel={() => setResetPlan(null)}
       />
 
       {/* Sync Confirmation Modal */}
