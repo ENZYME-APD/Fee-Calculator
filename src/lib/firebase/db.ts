@@ -191,7 +191,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
   batch.set(newProjectRef, sanitize({
     name: newName || `${project.name} (Copy)`,
     description: project.description || '',
-    profitMargin: project.profitMargin || 30,
+    profitMargin: project.profitMargin ?? 30, // keep a deliberate 0%
     companyId: requireCompanyId(),
     createdAt: Date.now(),
     isTemplate: isTemplate,
@@ -384,7 +384,7 @@ export const importProjectData = async (data: any) => {
     name: `${project.name} (Imported)`,
     description: project.description || '',
     createdAt: Date.now(),
-    profitMargin: project.profitMargin || 30,
+    profitMargin: project.profitMargin ?? 30, // keep a deliberate 0%
     companyId
   }));
 

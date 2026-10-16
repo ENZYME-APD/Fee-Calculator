@@ -69,9 +69,7 @@ export function ProjectFinancialHeader({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                const val = parseFloat(marginInput);
-                if (!isNaN(val)) onMarginChange?.(val);
-                setIsEditingMargin(false);
+                (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.blur();
               }}
               className="flex items-center gap-1"
             >
@@ -82,7 +80,13 @@ export function ProjectFinancialHeader({
                 onChange={(e) => setMarginInput(e.target.value)}
                 className="w-14 px-1.5 py-0.5 text-sm border border-ink-300 dark:border-ink-600 rounded text-right font-bold text-ink-800 dark:text-ink-200 bg-ink-50 dark:bg-ink-800 focus:outline-none focus:border-accent-500"
                 autoFocus
-                onBlur={() => setIsEditingMargin(false)}
+                onBlur={() => {
+                  // Clicking away saves too, not only Enter
+                  const val = parseFloat(marginInput);
+                  if (!isNaN(val) && val !== profitMarginPercent) onMarginChange?.(val);
+                  setIsEditingMargin(false);
+                }}
+                onKeyDown={(e) => { if (e.key === 'Escape') { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(false); } }}
               />
               <span className="text-sm font-bold text-ink-600 dark:text-ink-400">%</span>
             </form>

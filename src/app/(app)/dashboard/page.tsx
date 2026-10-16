@@ -59,7 +59,7 @@ function FeeProposalPage() {
       if (projectIdParam) {
         const found = projs.find(p => p.id === projectIdParam);
         if (found) {
-          setActiveProject(prev => (prev?.id === found.id ? prev : found));
+          setActiveProject(found); // fresh copy, so saved edits (e.g. profit margin) show
           setLoading(false);
           return;
         }
@@ -78,7 +78,7 @@ function FeeProposalPage() {
   useEffect(() => {
     if (!projectParam) return;
     const found = projects.find(p => p.id === projectParam);
-    if (found) setActiveProject(prev => (prev?.id === found.id ? prev : found));
+    if (found) setActiveProject(found); // fresh copy, so saved edits (e.g. profit margin) show
   }, [projectParam, projects]);
 
   useEffect(() => {
