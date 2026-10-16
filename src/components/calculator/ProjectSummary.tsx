@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { Project, Phase, Allocation, TeamMember, ProjectCost, TeamCategory, Payment } from '@/lib/firebase/schema';
 import { updateProject, getCategories, updatePayment } from '@/lib/firebase/db';
 import { useAppSettings } from '@/lib/auth/AuthContext';
@@ -85,11 +86,12 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
     };
   });
 
-  const profitMarginPercent = project.profitMargin ?? 30; // Default 30% if not set
-  const multiplier = 1 + (profitMarginPercent / 100);
-
   const projectTotalCost = phaseStats.reduce((sum, stat) => sum + stat.totalCost, 0);
-  const projectTotalFee = projectTotalCost * multiplier;
+  // With a fixed fee the margin is worked out from it and can't be typed here
+  const isFixed = hasFixedFee(project);
+  const profitMarginPercent = effectiveMarginPercent(project, projectTotalCost);
+  const multiplier = feeMultiplierFor(project, projectTotalCost);
+  const projectTotalFee = isFixed ? project.fixedFee! : projectTotalCost * multiplier;
   
   const totalPercentage = payments.reduce((sum, p) => sum + p.percentage, 0);
   const projectTotalWeeks = phases.reduce((sum, phase) => sum + phase.durationWeeks, 0);
@@ -262,7 +264,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                   <span className="text-sm font-bold text-ink-600 dark:text-ink-400">%</span>
                 </form>
                 ) : (
-                  <button onClick={() => { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} className="flex items-center gap-2 bg-white dark:bg-ink-900 px-2 py-0.5 rounded border border-ink-200 dark:border-ink-700 hover:border-ink-300 dark:hover:border-ink-600 transition-colors group">
+                  <button onClick={() => { if (isFixed) return; setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} title={isFixed ? 'Calculated from the fixed fee. Turn off Fixed fee in the header to type a margin.' : undefined} className="flex items-center gap-2 bg-white dark:bg-ink-900 px-2 py-0.5 rounded border border-ink-200 dark:border-ink-700 hover:border-ink-300 dark:hover:border-ink-600 transition-colors group">
                     <span className="font-bold text-ink-800 dark:text-ink-200 text-sm">{profitMarginPercent}%</span>
                     <Edit3 size={12} className="text-ink-500 group-hover:text-ink-600 dark:group-hover:text-ink-300" />
                   </button>
@@ -323,7 +325,7 @@ export function ProjectSummary({ project, phases, allocations, members, projectC
                     <span className="text-sm font-bold ml-1 text-positive-100">%</span>
                   </form>
                 ) : (
-                  <button onClick={() => { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} className="flex items-center gap-1 hover:text-white transition-colors group">
+                  <button onClick={() => { if (isFixed) return; setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(true); }} title={isFixed ? 'Calculated from the fixed fee. Turn off Fixed fee in the header to type a margin.' : undefined} className="flex items-center gap-1 hover:text-white transition-colors group">
                     <span>{profitMarginPercent}%</span>
                     <Edit3 size={12} className="opacity-50 group-hover:opacity-100" />
                   </button>

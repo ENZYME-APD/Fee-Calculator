@@ -18,17 +18,18 @@ interface GanttGridProps {
   onTaskDelete: (id: string) => void;
   collapsedPhases: Set<string>;
   setCollapsedPhases: React.Dispatch<React.SetStateAction<Set<string>>>;
+  feeMultiplier?: number; // cost -> fee (1 + margin, or fixed fee / budgeted cost)
 }
 
 const CELL_WIDTH = 48;
 const COLLAPSED_WIDTH = 64;
 
-export function GanttGrid({ project, phases, members, allocations, tasks, onTaskCreate, onTaskUpdate, onTaskDelete, collapsedPhases, setCollapsedPhases }: GanttGridProps) {
+export function GanttGrid({ project, phases, members, allocations, tasks, onTaskCreate, onTaskUpdate, onTaskDelete, collapsedPhases, setCollapsedPhases, feeMultiplier }: GanttGridProps) {
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
   const { formatCurrency } = useAppSettings();
   // Planned cost = task hours x the person's current cost rate (same basis as the header's Planned cost);
   // fee adds the project's profit margin.
-  const marginMultiplier = 1 + (project.profitMargin ?? 30) / 100;
+  const marginMultiplier = feeMultiplier ?? 1 + (project.profitMargin ?? 30) / 100;
   const taskCost = (t: ProjectTask) => (t.durationHours || 0) * (members.find(m => m.id === t.memberId)?.costPerHour || 0);
   const phasePlanned = (phaseId: string) => tasks.filter(t => t.phaseId === phaseId).reduce((sum, t) => sum + taskCost(t), 0);
   const money = (v: number) => formatCurrency(Math.round(v), 0, 0);
@@ -259,7 +260,7 @@ export function GanttGrid({ project, phases, members, allocations, tasks, onTask
                          return (
                            <span
                              className="ml-auto mr-1.5 shrink-0 font-semibold text-[11px] text-white/90 tabular-nums"
-                             title={`Planned cost ${money(cost)} · Fee with ${project.profitMargin ?? 30}% margin ${money(cost * marginMultiplier)}`}
+                             title={`Planned cost ${money(cost)} · Fee with ${Math.round((marginMultiplier - 1) * 1000) / 10}% margin ${money(cost * marginMultiplier)}`}
                            >
                              {money(cost)} cost · {money(cost * marginMultiplier)} fee
                            </span>

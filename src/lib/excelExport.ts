@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { computeProjectFinancials, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { Project, Phase, TeamMember, Allocation, ProjectCost, Payment, TeamCategory } from '@/lib/firebase/schema';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
 
@@ -13,6 +14,8 @@ export function exportProposalToExcel(
   currencyCode: string
 ) {
   const wb = XLSX.utils.book_new();
+  // Fee = cost x multiplier, matching the app (margin is a markup on cost; fixed fees split pro rata)
+  const feeMult = feeMultiplierFor(project, computeProjectFinancials(project, phases, allocations, projectCosts, members).totalCost);
   
   const headerStyle = { font: { bold: true } };
   const titleStyle = { font: { bold: true, sz: 14 } };
@@ -127,8 +130,7 @@ export function exportProposalToExcel(
     const totalCostRow = rowNum;
     rowNum++;
     
-    const marginDec = (project.profitMargin || 0) / 100;
-    phaseRows.push(['', '', '', { v: 'PHASE FEE:', s: headerStyle }, { f: `E${totalCostRow}/(1-${marginDec})`, t: 'n', z: '#,##0.00', s: headerStyle }]);
+    phaseRows.push(['', '', '', { v: 'PHASE FEE:', s: headerStyle }, { f: `E${totalCostRow}*${feeMult}`, t: 'n', z: '#,##0.00', s: headerStyle }]);
     rowNum++;
     
     phaseRows.push([]); // Empty row
@@ -166,14 +168,12 @@ export function exportProposalToExcel(
       pCost += c.quantity * c.unitCost;
     });
     
-    const marginDec = (project.profitMargin || 0) / 100;
-    
     summaryRows.push([
       phase.name,
       { v: phase.durationWeeks, t: 'n', z: '0' },
       { v: pCost, t: 'n', z: '#,##0.00' },
-      { f: `C${sumRow}/(1-${marginDec})`, t: 'n', z: '#,##0.00' },
-      { f: `(D${sumRow}-C${sumRow})/D${sumRow}`, t: 'n', z: '0.0%' }
+      { f: `C${sumRow}*${feeMult}`, t: 'n', z: '#,##0.00' },
+      { f: `IF(C${sumRow}=0,0,(D${sumRow}-C${sumRow})/C${sumRow})`, t: 'n', z: '0.0%' }
     ]);
     sumRow++;
   });
@@ -187,7 +187,7 @@ export function exportProposalToExcel(
     { f: `SUM(B2:B${endSumRow})`, t: 'n', z: '0', s: headerStyle }, 
     { f: `SUM(C2:C${endSumRow})`, t: 'n', z: '#,##0.00', s: headerStyle }, 
     { f: `SUM(D2:D${endSumRow})`, t: 'n', z: '#,##0.00', s: headerStyle }, 
-    { f: `(D${sumRow}-C${sumRow})/D${sumRow}`, t: 'n', z: '0.0%', s: headerStyle }
+    { f: `IF(C${sumRow}=0,0,(D${sumRow}-C${sumRow})/C${sumRow})`, t: 'n', z: '0.0%', s: headerStyle }
   ]);
   
   const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);

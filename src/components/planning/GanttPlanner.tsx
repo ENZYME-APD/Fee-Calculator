@@ -7,6 +7,7 @@ import { Folder, Eye, EyeOff, CalendarDays, Lock, Calculator, ChevronsRight, Che
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GanttGrid } from './GanttGrid';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
+import { computeProjectFinancials, feeMultiplierFor, effectiveMarginPercent } from '@/lib/utils/projectFinancials';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 
@@ -408,9 +409,9 @@ export function GanttPlanner() {
                           <span className="text-xs font-medium text-ink-500 mb-0.5">Planned cost</span>
                           <span className="text-lg font-bold text-accent-600 dark:text-accent-400">{formatCurrency(plannedCost)}</span>
                        </div>
-                       <div className="flex flex-col items-end border-r border-ink-200 dark:border-ink-700 pr-6" title={`Planned cost plus the project's ${project.profitMargin ?? 30}% profit margin`}>
-                          <span className="text-xs font-medium text-ink-500 mb-0.5">Planned fee (+{project.profitMargin ?? 30}%)</span>
-                          <span className="text-lg font-bold text-ink-700 dark:text-ink-300">{formatCurrency(plannedCost * (1 + (project.profitMargin ?? 30) / 100))}</span>
+                       <div className="flex flex-col items-end border-r border-ink-200 dark:border-ink-700 pr-6" title={`Planned cost plus the project's ${effectiveMarginPercent(project, budgetedCost)}% profit margin${project.fixedFee ? ' (from its fixed fee)' : ''}`}>
+                          <span className="text-xs font-medium text-ink-500 mb-0.5">Planned fee (+{effectiveMarginPercent(project, budgetedCost)}%)</span>
+                          <span className="text-lg font-bold text-ink-700 dark:text-ink-300">{formatCurrency(plannedCost * feeMultiplierFor(project, budgetedCost))}</span>
                        </div>
                        <div className="flex flex-col items-end">
                           <span className="text-xs font-medium text-ink-500 mb-0.5">Variance</span>
@@ -432,6 +433,11 @@ export function GanttPlanner() {
                   members={members}
                   allocations={allocations.filter(a => phases.map(p => p.id).includes(a.phaseId))}
                   tasks={tasks}
+                  feeMultiplier={(() => {
+                    const proj = projects.find(p => p.id === activeProjectId);
+                    const projPhases = phases.filter(p => p.projectId === activeProjectId);
+                    return feeMultiplierFor(proj, computeProjectFinancials(proj, projPhases, allocations, projectCosts, members).totalCost);
+                  })()}
                   onTaskCreate={handleTaskCreate}
                   onTaskUpdate={handleTaskUpdate}
                   onTaskDelete={handleTaskDelete}

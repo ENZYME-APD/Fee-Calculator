@@ -1,5 +1,6 @@
 "use client";
 import React from 'react';
+import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { Project, Phase, Allocation, TeamMember, ProjectCost, Payment } from '@/lib/firebase/schema';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { FileSpreadsheet, X, Download } from 'lucide-react';
@@ -33,9 +34,9 @@ export function PaymentScheduleModal({ project, phases, allocations, members, pr
   });
 
   const projectTotalCost = phaseStats.reduce((sum, cost) => sum + cost, 0);
-  const profitMarginPercent = project.profitMargin ?? 30;
-  const multiplier = 1 + (profitMarginPercent / 100);
-  const projectTotalFee = projectTotalCost * multiplier;
+  const profitMarginPercent = effectiveMarginPercent(project, projectTotalCost);
+  const multiplier = feeMultiplierFor(project, projectTotalCost);
+  const projectTotalFee = hasFixedFee(project) ? project.fixedFee! : projectTotalCost * multiplier;
 
   const sortedPhases = [...phases].sort((a,b) => a.order - b.order);
   const sortedPayments = [...payments].sort((a, b) => a.order - b.order);

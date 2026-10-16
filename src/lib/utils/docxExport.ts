@@ -1,5 +1,6 @@
 
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType } from 'docx';
+import { computeProjectFinancials, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { saveAs } from 'file-saver';
 import { DocumentBlock, Project, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Payment } from '@/lib/firebase/schema';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
@@ -78,7 +79,7 @@ export const exportToDocx = async (
       }
     }
     else if (block.type === 'financial_summary') {
-      const profitMultiplier = 1 + ((project.profitMargin || 30) / 100);
+      const profitMultiplier = feeMultiplierFor(project, computeProjectFinancials(project, phases, allocations, costs, members).totalCost);
       
       const tableRows = [
         new TableRow({
@@ -186,7 +187,7 @@ export const exportToDocx = async (
       docElements.push(new Paragraph({ spacing: { after: 400 } }));
     }
     else if (block.type === 'payment_schedule') {
-      const profitMultiplier = 1 + ((project.profitMargin || 30) / 100);
+      const profitMultiplier = feeMultiplierFor(project, computeProjectFinancials(project, phases, allocations, costs, members).totalCost);
       let totalProjectFee = 0;
 
       for (const phase of phases) {

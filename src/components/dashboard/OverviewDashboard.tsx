@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories } from '@/lib/firebase/db';
 import { Project, Phase, TeamMember, TeamCategory, Allocation, ProjectCost, User } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -179,9 +180,9 @@ export function OverviewDashboard() {
         totalCost += c.quantity * c.unitCost;
       });
 
-      const profitMarginPercent = proj.profitMargin ?? 30;
-      const multiplier = 1 + (profitMarginPercent / 100);
-      const totalFee = totalCost * multiplier;
+      const profitMarginPercent = effectiveMarginPercent(proj, totalCost);
+      const multiplier = feeMultiplierFor(proj, totalCost);
+      const totalFee = hasFixedFee(proj) ? proj.fixedFee! : totalCost * multiplier;
 
       if (proj.status === 'Draft' || proj.status === 'Proposed') {
         pipeline += totalFee;

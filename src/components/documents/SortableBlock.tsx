@@ -1,6 +1,7 @@
 
 "use client";
 import React, { useState } from 'react';
+import { computeProjectFinancials, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DocumentBlock, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Project, Payment } from '@/lib/firebase/schema';
@@ -110,7 +111,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
 
     if (block.type === 'financial_summary') {
       let totalProjectFee = 0;
-      const profitMultiplier = 1 + ((project.profitMargin || 30) / 100);
+      const profitMultiplier = feeMultiplierFor(project, computeProjectFinancials(project, phases, allocations, costs, members).totalCost);
 
       return (
         <div className="overflow-hidden rounded-xl border border-ink-200 dark:border-ink-700 mt-2">
@@ -199,7 +200,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
 
     if (block.type === 'payment_schedule') {
       let totalProjectFee = 0;
-      const profitMultiplier = 1 + ((project.profitMargin || 30) / 100);
+      const profitMultiplier = feeMultiplierFor(project, computeProjectFinancials(project, phases, allocations, costs, members).totalCost);
 
       for (const phase of phases) {
         let phaseCost = 0;

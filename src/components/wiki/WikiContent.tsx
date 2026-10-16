@@ -323,6 +323,7 @@ export function WikiContent() {
               <ul className="list-disc pl-5 space-y-2 mt-4">
                 <li><strong>Bottom-Up Method:</strong> Instead of guessing a flat fee and hoping it covers your costs, you calculate exactly how much time the project needs.</li>
                 <li><strong>Real-time Totals:</strong> The <em>Fee Proposal</em> tab aggregates every hour allocated across all phases, multiplies them by the external billing rates, and presents the final recommended fee to charge the client.</li>
+                <li><strong>Fixed fee:</strong> When a client has agreed a set amount, switch on <strong>Fixed</strong> next to <em>Total fee</em> and click the fee to type it. The profit margin is then calculated as (fee − cost) ÷ cost and turns red if costs exceed the fee. Phase fees, the payment schedule, documents and exports are scaled so they add up to the fixed amount. Switch it off to go back to cost + margin.</li>
                 <li><strong>Jump to the project:</strong> Click the project name at the top of the Fee Proposal canvas to open that project in <em>Projects &amp; Phases</em>.</li>
               </ul>
 

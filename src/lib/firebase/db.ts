@@ -192,6 +192,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
     name: newName || `${project.name} (Copy)`,
     description: project.description || '',
     profitMargin: project.profitMargin ?? 30, // keep a deliberate 0%
+    fixedFee: isTemplate ? undefined : (project.fixedFee || undefined),
     companyId: requireCompanyId(),
     createdAt: Date.now(),
     isTemplate: isTemplate,

@@ -536,7 +536,7 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
             <div className="absolute inset-0 overflow-x-hidden overflow-y-auto p-8 z-10">
               {project && (() => {
                 const projectPhases = phases.filter(p => p.projectId === project.id);
-                const { totalCost, profitMarginPercent, totalFee } = computeProjectFinancials(project, projectPhases, localAllocations, localProjectCosts, members);
+                const { totalCost, profitMarginPercent, totalFee, isFixedFee } = computeProjectFinancials(project, projectPhases, localAllocations, localProjectCosts, members);
 
                 return (
                   <div id="tour-title-block" className="mb-6">
@@ -548,6 +548,11 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                       marginEditable
                       onMarginChange={async (val) => {
                         await updateProject(project.id!, { profitMargin: val });
+                        onAllocationAdded();
+                      }}
+                      isFixedFee={isFixedFee}
+                      onFixedFeeChange={async (fee) => {
+                        await updateProject(project.id!, { fixedFee: fee });
                         onAllocationAdded();
                       }}
                       showRefreshRates={isAdmin}

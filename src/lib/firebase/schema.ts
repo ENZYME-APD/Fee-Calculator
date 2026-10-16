@@ -64,6 +64,7 @@ export interface Project {
   description: string;
   createdAt: number;
   profitMargin?: number;
+  fixedFee?: number | null; // when set (> 0) the total fee is fixed and the margin is calculated from it
   isTemplate?: boolean;
   area?: number;
   startDate?: number;
