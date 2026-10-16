@@ -19,7 +19,10 @@ import {
   RotateCcw,
   UserCheck,
   Edit2,
-  Undo2
+  Undo2,
+  Eye,
+  EyeOff,
+  Tags
 } from 'lucide-react';
 import { 
   ForecastProfile, 
@@ -31,7 +34,8 @@ import {
   Phase, 
   Payment,
   TeamMember,
-  Allocation
+  Allocation,
+  ForecastGroup
 } from '@/lib/firebase/schema';
 import { 
   getForecastProfile, 
@@ -52,6 +56,7 @@ import { SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button'
 import { EditPillModal } from './EditPillModal';
 import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
+import { GROUP_COLORS, ManageGroupsModal } from './groups';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -152,6 +157,29 @@ export function FinancialForecastView() {
   // Rows and Outflows
   const [rows, setRows] = useState<ForecastRow[]>([]);
   const [outflows, setOutflows] = useState<ForecastOutflowItem[]>([]);
+  // Custom groups (shared, saved with the forecast) and groups switched off for a what-if
+  // (this page only, never saved, so it can't change what partners see)
+  const [groups, setGroups] = useState<ForecastGroup[]>([]);
+  const [disabledGroups, setDisabledGroups] = useState<Set<string>>(new Set());
+  const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
+  const groupById = useMemo(() => Object.fromEntries(groups.map(g => [g.id, g])) as Record<string, ForecastGroup>, [groups]);
+  const isOff = (groupId?: string) => !!groupId && !!groupById[groupId] && disabledGroups.has(groupId);
+  const toggleGroupEnabled = (groupId: string) => setDisabledGroups(prev => {
+    const next = new Set(prev);
+    if (next.has(groupId)) next.delete(groupId); else next.add(groupId);
+    return next;
+  });
+  // Lines that count in the totals
+  const activeRows = useMemo(() => rows.filter(r => !isOff(r.groupId)), [rows, groupById, disabledGroups]); // eslint-disable-line react-hooks/exhaustive-deps
+  const activeOutflows = useMemo(() => outflows.filter(o => !isOff(o.groupId)), [outflows, groupById, disabledGroups]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Editing the group list also drops references to deleted groups
+  const handleGroupsChange = (next: ForecastGroup[]) => {
+    const ids = new Set(next.map(g => g.id));
+    setGroups(next);
+    setRows(prev => prev.some(r => r.groupId && !ids.has(r.groupId)) ? prev.map(r => (r.groupId && !ids.has(r.groupId) ? { ...r, groupId: undefined } : r)) : prev);
+    setOutflows(prev => prev.some(o => o.groupId && !ids.has(o.groupId)) ? prev.map(o => (o.groupId && !ids.has(o.groupId) ? { ...o, groupId: undefined } : o)) : prev);
+    setDisabledGroups(prev => new Set([...prev].filter(id => ids.has(id))));
+  };
 
   // Modals state
   const [pillModalOpen, setPillModalOpen] = useState(false);
@@ -202,6 +230,7 @@ export function FinancialForecastView() {
           setInvoicingConversion(existingProfile.invoicingConversionPercent ?? DEFAULT_SETTINGS.invoicingConversion);
           setRows(existingProfile.rows || []);
           setOutflows(existingProfile.outflows || []);
+          setGroups(existingProfile.groups || []);
         } else {
           // New forecast: start with a running-costs line linked to Team resources + Overheads.
           setOutflows([{
@@ -245,7 +274,8 @@ export function FinancialForecastView() {
           possibleConversionPercent: Math.round(possibleConversion),
           invoicingConversionPercent: Math.round(invoicingConversion),
           rows,
-          outflows
+          outflows,
+          groups
         });
         savePending.current = false;
         setSaveError(false);
@@ -260,7 +290,7 @@ export function FinancialForecastView() {
     return () => {
       if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
     };
-  }, [loading, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows]);
+  }, [loading, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows, groups]);
 
   // Warn before reloading or closing the tab while a change hasn't been saved yet
   useEffect(() => {
@@ -286,7 +316,7 @@ export function FinancialForecastView() {
   const dynamicReferrals = useMemo(() => {
     const map: Record<string, { total: number; monthly: Record<string, number> }> = {};
 
-    rows.forEach(row => {
+    activeRows.forEach(row => {
       Object.entries(row.cells).forEach(([mKey, monthCell]) => {
         // Referral commissions apply to collections
         (monthCell.collections || []).forEach(pill => {
@@ -306,7 +336,7 @@ export function FinancialForecastView() {
     });
 
     return map;
-  }, [rows]);
+  }, [activeRows]);
 
   const referralNames = useMemo(() => Object.keys(dynamicReferrals).sort(), [dynamicReferrals]);
 
@@ -404,7 +434,6 @@ export function FinancialForecastView() {
           name: proj.name,
           type: 'project',
           projectId: proj.id,
-          colorTag: 'accent',
           notes: proj.status || undefined,
           cells,
         });
@@ -608,7 +637,7 @@ export function FinancialForecastView() {
       let mPossible = 0;
       let mInvoicing = 0;
       let mCollections = 0;
-      rows.forEach(r => {
+      activeRows.forEach(r => {
         const cell = r.cells[m];
         if (cell) {
           (cell.possible || []).forEach(p => mPossible += p.amount);
@@ -619,7 +648,7 @@ export function FinancialForecastView() {
 
       // Fixed and debt outflows, plus referral commissions on this month's collections
       let mOutflows = 0;
-      outflows.forEach(item => { mOutflows += outflowAmount(item, m, runningCosts.total); });
+      activeOutflows.forEach(item => { mOutflows += outflowAmount(item, m, runningCosts.total); });
       Object.values(dynamicReferrals).forEach(refData => { mOutflows += (refData.monthly[m] || 0); });
 
       return {
@@ -651,7 +680,7 @@ export function FinancialForecastView() {
     }
 
     return stats;
-  }, [monthKeys, startMonthKey, openingMonthKey, rows, outflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion, runningCosts.total]);
+  }, [monthKeys, startMonthKey, openingMonthKey, activeRows, activeOutflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion, runningCosts.total]);
 
   // Left column: frozen while scrolling sideways. The notes column can be hidden (remembered per browser).
   const [showNotes, setShowNotes] = useState(true);
@@ -694,9 +723,9 @@ export function FinancialForecastView() {
       }))
     : rows;
   // Arrows move a row past its visible neighbour, so hidden rows never swallow a click.
-  const moveVisible = (row: ForecastRow, dir: -1 | 1) => {
-    const i = visibleRows.indexOf(row);
-    const neighbour = visibleRows[i + dir];
+  const moveVisible = (row: ForecastRow, dir: -1 | 1, list: ForecastRow[] = visibleRows) => {
+    const i = list.indexOf(row);
+    const neighbour = list[i + dir];
     if (neighbour) dropRowOn(row.id, neighbour.id, dir < 0 ? 'before' : 'after');
   };
 
@@ -723,8 +752,9 @@ export function FinancialForecastView() {
       const from = prev.findIndex(r => r.id === draggedId);
       if (from < 0 || draggedId === targetId) return prev;
       const next = [...prev];
-      const [moved] = next.splice(from, 1);
+      const [picked] = next.splice(from, 1);
       const targetIdx = next.findIndex(r => r.id === targetId);
+      const moved = { ...picked, groupId: next[targetIdx]?.groupId };
       next.splice(pos === 'before' ? targetIdx : targetIdx + 1, 0, moved);
       return next;
     });
@@ -732,6 +762,105 @@ export function FinancialForecastView() {
 
   // Sum of a per-month value over the months on screen (for the totals column)
   const sumVisible = (fn: (m: string) => number) => monthKeys.reduce((sum, m) => sum + fn(m), 0);
+
+  // --- Groups: sections, collapse state, subtotal bars ---
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try { setCollapsedGroups(new Set(JSON.parse(localStorage.getItem('forecast.collapsedGroups') || '[]'))); } catch {}
+  }, []);
+  const toggleGroupCollapsed = (key: string) => setCollapsedGroups(prev => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    try { localStorage.setItem('forecast.collapsedGroups', JSON.stringify([...next])); } catch {}
+    return next;
+  });
+  // Groups in their saved order, then lines with no group. One plain section when there are no groups.
+  function sectionsOf<T extends { groupId?: string }>(items: T[], prefix: string) {
+    if (groups.length === 0) return [{ key: `${prefix}:all`, group: null as ForecastGroup | null, items, showBar: false }];
+    const out = groups
+      .map(g => ({ key: `${prefix}:${g.id}`, group: g as ForecastGroup | null, items: items.filter(i => i.groupId === g.id), showBar: true }))
+      .filter(sct => sct.items.length > 0);
+    const rest = items.filter(i => !i.groupId || !groupById[i.groupId]);
+    if (rest.length) out.push({ key: `${prefix}:__none`, group: null, items: rest, showBar: true });
+    return out;
+  }
+  // Dims a line or bar but keeps the frozen label's background opaque (and keeps .keep-on controls bright)
+  const OFF_DIM = '[&>*:not(.sticky)]:opacity-40 [&>.sticky>*:not(.keep-on)]:opacity-40';
+  const groupUsage = useMemo(() => {
+    const u: Record<string, number> = {};
+    [...rows, ...outflows].forEach(l => { if (l.groupId) u[l.groupId] = (u[l.groupId] || 0) + 1; });
+    return u;
+  }, [rows, outflows]);
+  const groupBarLabel = (key: string, group: ForecastGroup | null, count: number) => {
+    const off = !!group && disabledGroups.has(group.id);
+    const open = !collapsedGroups.has(key);
+    return (
+      <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} ${group ? GROUP_COLORS[group.color].stripe : ''} border-r-2 border-ink-200 dark:border-ink-700 pl-3 pr-2 py-2 flex items-center justify-between gap-2`}>
+        <button onClick={() => toggleGroupCollapsed(key)} aria-expanded={open} className="flex items-center gap-1.5 min-w-0 text-ink-800 dark:text-ink-200 hover:text-ink-950 dark:hover:text-ink-50">
+          <ChevronRight size={13} className={`shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
+          <span className={`shrink-0 w-2.5 h-2.5 rounded-full ${group ? GROUP_COLORS[group.color].dot : 'bg-ink-300 dark:bg-ink-600'}`} />
+          <span className={`truncate ${off ? 'line-through' : ''}`}>{group ? group.name : 'No group'}</span>
+          <span className="shrink-0 font-medium text-ink-500 dark:text-ink-400">({count})</span>
+        </button>
+        {group && (
+          <button
+            onClick={() => toggleGroupEnabled(group.id)}
+            className={`keep-on shrink-0 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold transition-colors ${
+              off ? 'bg-ink-200 dark:bg-ink-800 text-ink-700 dark:text-ink-200' : 'text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
+            }`}
+            title={off ? 'Excluded from all totals. Click to include it again.' : 'Exclude this group from all totals to see its effect. Only on this page; nothing is saved.'}
+            aria-pressed={off}
+          >
+            {off ? <EyeOff size={12} /> : <Eye size={12} />}
+            <span>{off ? 'Excluded' : 'Included'}</span>
+          </button>
+        )}
+      </div>
+    );
+  };
+  const stageSum = (items: ForecastRow[], m: string, st: ForecastStage) =>
+    items.reduce((sum, r) => sum + (r.cells[m]?.[st] || []).reduce((a, p) => a + p.amount, 0), 0);
+  const renderInflowGroupBar = (key: string, group: ForecastGroup | null, items: ForecastRow[]) => {
+    const off = !!group && disabledGroups.has(group.id);
+    const cell = (v: number, cls: string) => <span className={`flex items-center justify-center ${cls}`}>{v ? fmt(v) : ''}</span>;
+    return (
+      <div className={`flex bg-ink-50 dark:bg-ink-950 text-xs font-semibold tabular-nums ${off ? OFF_DIM : ''}`}>
+        {groupBarLabel(key, group, items.length)}
+        {monthKeys.map(m => (
+          <div key={m} className="w-[360px] shrink-0 grid grid-cols-3 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 py-2 px-1.5 text-center">
+            {cell(stageSum(items, m, 'possible'), 'text-warning-700 dark:text-warning-300')}
+            {cell(stageSum(items, m, 'invoicing'), 'text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800')}
+            {cell(stageSum(items, m, 'collections'), 'text-positive-700 dark:text-positive-300')}
+          </div>
+        ))}
+        <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 grid grid-cols-3 py-2 px-1.5 text-center">
+          {cell(sumVisible(m => stageSum(items, m, 'possible')), 'text-warning-700 dark:text-warning-300')}
+          {cell(sumVisible(m => stageSum(items, m, 'invoicing')), 'text-accent-700 dark:text-accent-300 border-x border-ink-200 dark:border-ink-800')}
+          {cell(sumVisible(m => stageSum(items, m, 'collections')), 'text-positive-700 dark:text-positive-300')}
+        </div>
+      </div>
+    );
+  };
+  const renderOutflowGroupBar = (key: string, group: ForecastGroup | null, items: ForecastOutflowItem[]) => {
+    const off = !!group && disabledGroups.has(group.id);
+    const monthTotal = (m: string) => items.reduce((sum, it) => sum + outflowAmount(it, m, runningCosts.total), 0);
+    return (
+      <div className={`flex bg-ink-50 dark:bg-ink-950 text-xs font-semibold tabular-nums ${off ? OFF_DIM : ''}`}>
+        {groupBarLabel(key, group, items.length)}
+        {monthKeys.map(m => {
+          const v = monthTotal(m);
+          return (
+            <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 py-2 px-3 text-right text-negative-600 dark:text-negative-400">
+              {v ? `-${fmt(v)}` : ''}
+            </div>
+          );
+        })}
+        <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 py-2 px-3 text-right text-negative-600 dark:text-negative-400">
+          {(() => { const t = sumVisible(monthTotal); return t ? `-${fmt(t)}` : ''; })()}
+        </div>
+      </div>
+    );
+  };
 
   if (authLoading || !isAdmin || loading) {
     return (
@@ -856,6 +985,11 @@ export function FinancialForecastView() {
             <span>Sync projects</span>
           </SecondaryButton>
 
+          <SecondaryButton onClick={() => setManageGroupsOpen(true)} title="Create, rename, recolour or delete groups">
+            <Tags size={14} />
+            <span>Groups</span>
+          </SecondaryButton>
+
           {isSaving ? (
             <span className="text-[11px] text-ink-500 dark:text-ink-400 italic">Saving…</span>
           ) : saveError ? (
@@ -863,6 +997,15 @@ export function FinancialForecastView() {
           ) : null}
         </div>
       </div>
+
+      {disabledGroups.size > 0 && (
+        <div className="mx-6 mt-4 px-4 py-2.5 rounded-lg border border-warning-200 dark:border-warning-800/60 bg-warning-50 dark:bg-warning-950/40 text-sm text-warning-800 dark:text-warning-200 flex items-center justify-between gap-4">
+          <span>
+            Excluded from totals: <span className="font-semibold">{[...disabledGroups].map(id => groupById[id]?.name).filter(Boolean).join(', ')}</span>. Only on this page; nothing is saved.
+          </span>
+          <button onClick={() => setDisabledGroups(new Set())} className="shrink-0 font-semibold hover:underline">Include all</button>
+        </div>
+      )}
 
       {syncMessage && (
         <div className="mx-6 mt-4 px-4 py-2.5 rounded-lg border border-accent-200 dark:border-accent-800/60 bg-accent-50 dark:bg-accent-950/40 text-sm text-accent-800 dark:text-accent-200 flex items-center justify-between gap-4">
@@ -974,15 +1117,15 @@ export function FinancialForecastView() {
                 No rows have amounts in these months. <button onClick={toggleHideEmpty} className="font-semibold text-accent-700 dark:text-accent-400 hover:underline">Show empty rows</button>
               </div>
             )}
-            {visibleRows.map((row, rowIdx) => {
-              // Colour stripe drawn inside the first cell (inset shadow), so it takes no width and
+            {sectionsOf(visibleRows, 'in').map(section => (
+              <React.Fragment key={section.key}>
+              {section.showBar && renderInflowGroupBar(section.key, section.group, section.items)}
+              {!(section.showBar && collapsedGroups.has(section.key)) && section.items.map((row, rowIdx) => {
+              // Group colour stripe drawn inside the first cell (inset shadow), so it takes no width and
               // rows stay aligned with the header and totals.
-              const tagStripe = 
-                row.colorTag === 'negative' ? 'shadow-[inset_4px_0_0_var(--negative-500)]' :
-                row.colorTag === 'warning' ? 'shadow-[inset_4px_0_0_var(--warning-500)]' :
-                row.colorTag === 'positive' ? 'shadow-[inset_4px_0_0_var(--positive-500)]' :
-                row.colorTag === 'accent' ? 'shadow-[inset_4px_0_0_var(--accent-500)]' :
-                '';
+              const rowGroup = row.groupId ? groupById[row.groupId] : undefined;
+              const tagStripe = rowGroup ? GROUP_COLORS[rowGroup.color].stripe : '';
+              const rowOff = isOff(row.groupId);
 
               return (
                 <div
@@ -1002,7 +1145,7 @@ export function FinancialForecastView() {
                     if (draggedId && dropTarget) dropRowOn(draggedId, row.id, dropTarget.pos);
                     setDropTarget(null);
                   }}
-                  className={`flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors ${
+                  className={`flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors ${rowOff ? OFF_DIM : ''} ${
                     dropTarget?.rowId === row.id
                       ? dropTarget.pos === 'before' ? 'shadow-[inset_0_2px_0_var(--accent-500)]' : 'shadow-[inset_0_-2px_0_var(--accent-500)]'
                       : ''
@@ -1069,8 +1212,8 @@ export function FinancialForecastView() {
                           )}
                         </div>
                         <div className="flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
-                          <IconButton onClick={() => moveVisible(row, -1)} disabled={rowIdx === 0} className="w-6 h-6 hover:text-accent-600" title="Move up"><ArrowUp size={12} /></IconButton>
-                          <IconButton onClick={() => moveVisible(row, 1)} disabled={rowIdx === visibleRows.length - 1} className="w-6 h-6 hover:text-accent-600" title="Move down"><ArrowDown size={12} /></IconButton>
+                          <IconButton onClick={() => moveVisible(row, -1, section.items)} disabled={rowIdx === 0} className="w-6 h-6 hover:text-accent-600" title="Move up"><ArrowUp size={12} /></IconButton>
+                          <IconButton onClick={() => moveVisible(row, 1, section.items)} disabled={rowIdx === section.items.length - 1} className="w-6 h-6 hover:text-accent-600" title="Move down"><ArrowDown size={12} /></IconButton>
                           <IconButton onClick={() => setEditingRow(row)} className="w-6 h-6 hover:text-accent-600" title="Edit row"><Edit2 size={12} /></IconButton>
                           <IconButton onClick={() => setResetRowTarget(row)} className="w-6 h-6 hover:text-warning-600" title="Reset row: re-sync from its fee proposal, or clear its amounts"><Undo2 size={12} /></IconButton>
                           <IconButton onClick={() => setDeleteRowTarget(row.id)} className="w-6 h-6 hover:text-negative-600" title="Delete row"><Trash2 size={12} /></IconButton>
@@ -1196,6 +1339,8 @@ export function FinancialForecastView() {
                 </div>
               );
             })}
+              </React.Fragment>
+            ))}
           </div>
 
           {/* Subtotals by Stage */}
@@ -1332,13 +1477,18 @@ export function FinancialForecastView() {
             })}
 
             {/* Standard fixed / debt outflows */}
-            {outflows.map(item => {
+            {sectionsOf(outflows, 'out').map(section => (
+              <React.Fragment key={section.key}>
+              {section.showBar && renderOutflowGroupBar(section.key, section.group, section.items)}
+              {!(section.showBar && collapsedGroups.has(section.key)) && section.items.map(item => {
               const isLinked = isLinkedLine(item);
+              const itemGroup = item.groupId ? groupById[item.groupId] : undefined;
+              const itemOff = isOff(item.groupId);
               const canLink = item.type === 'burn';
               const showAdjust = item.type === 'burn';
               return (
-              <div key={item.id} className="flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors">
-                <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-white dark:bg-ink-900 ${FROZEN_EDGE} p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between gap-3`}>
+              <div key={item.id} className={`flex group hover:bg-ink-50/50 dark:hover:bg-ink-800/20 transition-colors ${itemOff ? OFF_DIM : ''}`}>
+                <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-white dark:bg-ink-900 ${FROZEN_EDGE} ${itemGroup ? GROUP_COLORS[itemGroup.color].stripe : ''} p-3 border-r-2 border-ink-200 dark:border-ink-700 flex items-center justify-between gap-3`}>
                   <div className="min-w-0 flex-1">
                     {editingOutflowId === item.id ? (
                       <input
@@ -1379,6 +1529,21 @@ export function FinancialForecastView() {
                       >
                         Link to Team resources + Overheads
                       </button>
+                    )}
+                    {groups.length > 0 && (
+                      <select
+                        value={item.groupId && groupById[item.groupId] ? item.groupId : ''}
+                        onChange={e => {
+                          const gid = e.target.value || undefined;
+                          setOutflows(prev => prev.map(o => (o.id === item.id ? { ...o, groupId: gid } : o)));
+                        }}
+                        className="mt-1 -ml-0.5 max-w-full bg-transparent text-[11px] text-ink-500 dark:text-ink-400 hover:text-ink-800 dark:hover:text-ink-200 cursor-pointer rounded focus:outline-none"
+                        aria-label="Group"
+                        title="Group"
+                      >
+                        <option value="">No group</option>
+                        {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                      </select>
                     )}
                   </div>
                   {item.id !== 'burn_base' && (
@@ -1452,6 +1617,8 @@ export function FinancialForecastView() {
               </div>
               );
             })}
+              </React.Fragment>
+            ))}
           </div>
 
           {/* Outflow Subtotal */}
@@ -1549,12 +1716,24 @@ export function FinancialForecastView() {
         isOpen={addRowModalOpen}
         onAdd={newRow => setRows(prev => [...prev, newRow])}
         onClose={() => setAddRowModalOpen(false)}
+        groups={groups}
+        onCreateGroup={g => setGroups(prev => [...prev, g])}
+      />
+
+      <ManageGroupsModal
+        isOpen={manageGroupsOpen}
+        groups={groups}
+        usage={groupUsage}
+        onChange={handleGroupsChange}
+        onClose={() => setManageGroupsOpen(false)}
       />
 
       {/* Edit Row Modal */}
       <EditRowModal
         isOpen={!!editingRow}
         row={editingRow}
+        groups={groups}
+        onCreateGroup={g => setGroups(prev => [...prev, g])}
         onSave={updatedRow => {
           setRows(prev => prev.map(r => r.id === updatedRow.id ? updatedRow : r));
           setEditingRow(null);

@@ -192,12 +192,21 @@ export interface ForecastPill {
   referralPercent?: number;
 }
 
+// Custom group (e.g. "India", "Spain") that collapses rows together in the forecast
+export type ForecastGroupColor = 'accent' | 'info' | 'positive' | 'warning' | 'clay' | 'negative' | 'ink';
+export interface ForecastGroup {
+  id: string;
+  name: string;
+  color: ForecastGroupColor;
+}
+
 export interface ForecastRow {
   id: string;
   name: string;
   type: 'project' | 'external' | 'retainer';
   projectId?: string;
-  colorTag?: 'default' | 'accent' | 'negative' | 'warning' | 'positive';
+  groupId?: string;
+  colorTag?: 'default' | 'accent' | 'negative' | 'warning' | 'positive'; // legacy, replaced by groups
   notes?: string;
   // monthKey format YYYY-MM -> stage -> pills array
   cells: Record<string, Partial<Record<ForecastStage, ForecastPill[]>>>;
@@ -212,6 +221,7 @@ export interface ForecastOutflowItem {
   initialBalance?: number; // for debt tracking
   linkedToOverheads?: boolean; // base amount = monthly salaries (Team resources) + active overhead items / 12 (Overheads)
   monthlyAdjustments?: Record<string, number>; // YYYY-MM -> +/- correction on top of the month's amount
+  groupId?: string;
 }
 
 export interface ForecastProfile {
@@ -225,6 +235,7 @@ export interface ForecastProfile {
   visibleMonthsCount: number; // default 6
   rows: ForecastRow[];
   outflows: ForecastOutflowItem[];
+  groups?: ForecastGroup[]; // shared by inflow and outflow lines
   updatedAt: number;
 }
 

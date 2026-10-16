@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { X, Trash2 } from 'lucide-react';
-import { ForecastRow } from '@/lib/firebase/schema';
-import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
+import { ForecastRow, ForecastGroup } from '@/lib/firebase/schema';
+import { PrimaryButton, SecondaryButton, fieldClass } from '@/components/ui/Button';
+import { GroupPicker } from './groups';
 
 interface EditRowModalProps {
   isOpen: boolean;
@@ -10,19 +11,21 @@ interface EditRowModalProps {
   onSave: (updatedRow: ForecastRow) => void;
   onDelete?: (rowId: string) => void;
   onClose: () => void;
+  groups: ForecastGroup[];
+  onCreateGroup: (group: ForecastGroup) => void;
 }
 
-export function EditRowModal({ isOpen, row, onSave, onDelete, onClose }: EditRowModalProps) {
+export function EditRowModal({ isOpen, row, onSave, onDelete, onClose, groups, onCreateGroup }: EditRowModalProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState<'project' | 'external' | 'retainer'>('project');
-  const [colorTag, setColorTag] = useState<'default' | 'accent' | 'negative' | 'warning' | 'positive'>('default');
+  const [groupId, setGroupId] = useState<string | undefined>(undefined);
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
     if (row) {
       setName(row.name || '');
       setType((row.type as any) || 'project');
-      setColorTag(row.colorTag || 'default');
+      setGroupId(row.groupId);
       setNotes(row.notes || '');
     }
   }, [row]);
@@ -37,7 +40,7 @@ export function EditRowModal({ isOpen, row, onSave, onDelete, onClose }: EditRow
       ...row,
       name: name.trim(),
       type,
-      colorTag,
+      groupId,
       notes: notes.trim() || undefined,
     });
     onClose();
@@ -51,7 +54,7 @@ export function EditRowModal({ isOpen, row, onSave, onDelete, onClose }: EditRow
             <h2 className="text-base font-bold text-ink-900 dark:text-ink-100">
               Edit workstream
             </h2>
-            <p className="text-xs text-ink-500">Update project name, description or color tag</p>
+            <p className="text-xs text-ink-500">Update name, notes, type or group</p>
           </div>
           <button 
             type="button" 
@@ -106,34 +109,7 @@ export function EditRowModal({ isOpen, row, onSave, onDelete, onClose }: EditRow
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">
-              Color highlight tag
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              {[
-                { id: 'default', label: 'Neutral', bg: 'bg-ink-400' },
-                { id: 'accent', label: 'Brand', bg: 'bg-accent-500' },
-                { id: 'negative', label: 'Red (Special)', bg: 'bg-negative-500' },
-                { id: 'warning', label: 'Amber', bg: 'bg-warning-500' },
-                { id: 'positive', label: 'Green', bg: 'bg-positive-500' },
-              ].map(c => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setColorTag(c.id as any)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                    colorTag === c.id
-                      ? 'border-accent-500 bg-accent-50 dark:bg-accent-950/30 text-accent-700 dark:text-accent-300'
-                      : 'border-ink-200 dark:border-ink-800 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${c.bg}`} />
-                  <span>{c.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <GroupPicker groups={groups} value={groupId} onChange={setGroupId} onCreate={onCreateGroup} />
 
           <div className="flex items-center justify-between pt-3 border-t border-ink-100 dark:border-ink-800 mt-2">
             {onDelete ? (

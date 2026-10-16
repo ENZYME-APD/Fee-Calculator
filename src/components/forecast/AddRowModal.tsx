@@ -1,19 +1,22 @@
 "use client";
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { ForecastRow } from '@/lib/firebase/schema';
+import { ForecastRow, ForecastGroup } from '@/lib/firebase/schema';
 import { PrimaryButton, SecondaryButton, fieldClass } from '@/components/ui/Button';
+import { GroupPicker } from './groups';
 
 interface AddRowModalProps {
   isOpen: boolean;
   onAdd: (row: ForecastRow) => void;
   onClose: () => void;
+  groups: ForecastGroup[];
+  onCreateGroup: (group: ForecastGroup) => void;
 }
 
-export function AddRowModal({ isOpen, onAdd, onClose }: AddRowModalProps) {
+export function AddRowModal({ isOpen, onAdd, onClose, groups, onCreateGroup }: AddRowModalProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState<'project' | 'external' | 'retainer'>('external');
-  const [colorTag, setColorTag] = useState<'default' | 'accent' | 'negative' | 'warning' | 'positive'>('negative');
+  const [groupId, setGroupId] = useState<string | undefined>(undefined);
   const [notes, setNotes] = useState('');
 
   if (!isOpen) return null;
@@ -26,7 +29,7 @@ export function AddRowModal({ isOpen, onAdd, onClose }: AddRowModalProps) {
       id: `row_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       name: name.trim(),
       type,
-      colorTag,
+      groupId,
       notes: notes.trim() || undefined,
       cells: {},
     });
@@ -85,34 +88,7 @@ export function AddRowModal({ isOpen, onAdd, onClose }: AddRowModalProps) {
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">
-              Color highlight tag
-            </label>
-            <div className="flex items-center gap-3">
-              {[
-                { id: 'default', label: 'Neutral', bg: 'bg-ink-400' },
-                { id: 'accent', label: 'Brand', bg: 'bg-accent-500' },
-                { id: 'negative', label: 'Red (External)', bg: 'bg-negative-500' },
-                { id: 'warning', label: 'Amber', bg: 'bg-warning-500' },
-                { id: 'positive', label: 'Green', bg: 'bg-positive-500' },
-              ].map(c => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setColorTag(c.id as any)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                    colorTag === c.id
-                      ? 'border-accent-500 bg-accent-50 dark:bg-accent-950/30 text-accent-700 dark:text-accent-300'
-                      : 'border-ink-200 dark:border-ink-800 text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${c.bg}`} />
-                  <span>{c.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <GroupPicker groups={groups} value={groupId} onChange={setGroupId} onCreate={onCreateGroup} />
 
           <div>
             <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">
