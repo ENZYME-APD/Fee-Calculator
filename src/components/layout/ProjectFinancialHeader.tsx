@@ -35,6 +35,13 @@ export function ProjectFinancialHeader({
 }: ProjectFinancialHeaderProps) {
   const [isEditingMargin, setIsEditingMargin] = useState(false);
   const [marginInput, setMarginInput] = useState(profitMarginPercent.toString());
+  // Save once per edit, whether it ends with Enter or by clicking away
+  const commitMargin = () => {
+    if (!isEditingMargin) return;
+    const val = parseFloat(marginInput);
+    if (!isNaN(val) && val !== profitMarginPercent) onMarginChange?.(val);
+    setIsEditingMargin(false);
+  };
 
   return (
     <div className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 flex-wrap transition-colors">
@@ -69,7 +76,7 @@ export function ProjectFinancialHeader({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                (e.currentTarget.querySelector('input') as HTMLInputElement | null)?.blur();
+                commitMargin();
               }}
               className="flex items-center gap-1"
             >
@@ -80,12 +87,7 @@ export function ProjectFinancialHeader({
                 onChange={(e) => setMarginInput(e.target.value)}
                 className="w-14 px-1.5 py-0.5 text-sm border border-ink-300 dark:border-ink-600 rounded text-right font-bold text-ink-800 dark:text-ink-200 bg-ink-50 dark:bg-ink-800 focus:outline-none focus:border-accent-500"
                 autoFocus
-                onBlur={() => {
-                  // Clicking away saves too, not only Enter
-                  const val = parseFloat(marginInput);
-                  if (!isNaN(val) && val !== profitMarginPercent) onMarginChange?.(val);
-                  setIsEditingMargin(false);
-                }}
+                onBlur={commitMargin} // clicking away saves too, not only Enter
                 onKeyDown={(e) => { if (e.key === 'Escape') { setMarginInput(profitMarginPercent.toString()); setIsEditingMargin(false); } }}
               />
               <span className="text-sm font-bold text-ink-600 dark:text-ink-400">%</span>
