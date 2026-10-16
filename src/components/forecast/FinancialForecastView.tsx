@@ -1019,21 +1019,17 @@ export function FinancialForecastView() {
       </button>
     );
   };
-  // Everything: all groups in both sections; with no groups, the two sections themselves
+  // Everything: both sections and every group inside them
   const everyGroupKey = [...groupKeysFor('in'), ...groupKeysFor('out')];
-  const everythingCollapsed = everyGroupKey.length > 0 ? allCollapsed(everyGroupKey) : collapsed.inflows && collapsed.outflows;
+  const everythingCollapsed = collapsed.inflows && collapsed.outflows;
   const toggleEverything = () => {
-    if (everyGroupKey.length > 0) {
-      setGroupsCollapsed(everyGroupKey, !everythingCollapsed);
-      if (everythingCollapsed) setCollapsed({ inflows: false, outflows: false });
-    } else {
-      const next = !everythingCollapsed;
-      setCollapsed({ inflows: next, outflows: next });
-      try {
-        localStorage.setItem('forecast.collapseInflows', next ? '1' : '0');
-        localStorage.setItem('forecast.collapseOutflows', next ? '1' : '0');
-      } catch {}
-    }
+    const next = !everythingCollapsed;
+    setGroupsCollapsed(everyGroupKey, next);
+    setCollapsed({ inflows: next, outflows: next });
+    try {
+      localStorage.setItem('forecast.collapseInflows', next ? '1' : '0');
+      localStorage.setItem('forecast.collapseOutflows', next ? '1' : '0');
+    } catch {}
   };
 
   type OutflowSection = { key: string; group: ForecastGroup | null; items: ForecastOutflowItem[]; showBar: boolean };
@@ -1389,7 +1385,7 @@ export function FinancialForecastView() {
                     <button
                       onClick={toggleEverything}
                       className="text-[11px] font-semibold text-accent-700 dark:text-accent-400 hover:underline whitespace-nowrap"
-                      title={everythingCollapsed ? 'Expand every section and group' : 'Collapse every group (or both sections when there are no groups)'}
+                      title={everythingCollapsed ? 'Expand Inflows, Outflows and every group' : 'Collapse Inflows, Outflows and every group'}
                     >
                       {everythingCollapsed ? 'Expand all' : 'Collapse all'}
                     </button>
