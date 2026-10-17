@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Calculator, Building, CheckCircle2, FileSpreadsheet, FolderKanban, Users, Share2, BarChart3, Database } from 'lucide-react';
+import { ArrowRight, Calculator, CheckCircle2, FolderKanban, Users, Share2, BarChart3, TrendingUp } from 'lucide-react';
 import { AuthRedirect } from '@/components/marketing/AuthRedirect';
 
 export default function LandingPage() {
@@ -18,18 +18,18 @@ export default function LandingPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-500 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-600"></span>
             </span>
-            Fee Calculator v2 is live
+            Launch offer: 50% off your first 6 months
           </div>
           
           <h1 className="text-5xl sm:text-7xl font-extrabold text-ink-900 dark:text-ink-50 tracking-tight mb-8 leading-tight">
-            Architectural Fees,<br />
+            Know what a project costs<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-600 to-accent-600 dark:from-accent-400 dark:to-accent-400">
-              Calculated Intelligently.
+              before you quote the fee.
             </span>
           </h1>
           
           <p className="text-lg sm:text-xl text-ink-600 dark:text-ink-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-            The smartest way for modern architectural practices to estimate costs, build complex fee proposals, and manage team allocation seamlessly.
+            Fee Calculator prices every proposal from your team's real hourly cost and overheads, then carries it through phases, payment schedules and a month-by-month cash-flow forecast.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -37,16 +37,17 @@ export default function LandingPage() {
               href="/login?signup=true" 
               className="px-6 py-2.5 bg-accent-600 hover:bg-accent-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-accent-600/20 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm"
             >
-              Start 7-Day Free Trial
+              Start your free trial
               <ArrowRight size={16} />
             </Link>
             <Link 
               href="#pricing" 
               className="px-6 py-2.5 bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-700 text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800 font-semibold rounded-xl transition-all text-sm flex items-center justify-center"
             >
-              View Pricing
+              See pricing
             </Link>
           </div>
+          <p className="mt-5 text-sm text-ink-500 dark:text-ink-400">7 days free · No card needed · Cancel anytime</p>
         </div>
       </section>
 
@@ -55,7 +56,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-ink-900 dark:text-ink-50 mb-4">Everything you need to run profitable projects</h2>
-            <p className="text-ink-500 dark:text-ink-400 max-w-2xl mx-auto">Built by architects, for architects. Stop guessing your fees and start calculating them with precision.</p>
+            <p className="text-ink-500 dark:text-ink-400 max-w-2xl mx-auto">Built by architects, for architects, and used on our own projects at Enzyme APD. Stop guessing fees and start pricing them from the numbers.</p>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -63,48 +64,48 @@ export default function LandingPage() {
               <div className="h-12 w-12 bg-accent-100 dark:bg-accent-900/30 rounded-2xl flex items-center justify-center mb-6">
                 <Calculator size={24} className="text-accent-600 dark:text-accent-400" />
               </div>
-              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Precision Costing</h3>
-              <p className="text-ink-500 dark:text-ink-400">Calculate exactly how much a project will cost based on your team's real hourly rates and overheads.</p>
+              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Fees from real costs</h3>
+              <p className="text-ink-500 dark:text-ink-400">Every hour is priced at what it really costs you, salary plus overheads, so the margin you quote is the margin you make.</p>
             </div>
             
             <div className="bg-white dark:bg-ink-900 p-8 rounded-3xl border border-ink-200 dark:border-ink-800 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-12 w-12 bg-accent-100 dark:bg-accent-900/30 rounded-2xl flex items-center justify-center mb-6">
                 <FolderKanban size={24} className="text-accent-600 dark:text-accent-400" />
               </div>
-              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Phase Management</h3>
-              <p className="text-ink-500 dark:text-ink-400">Break down your projects into RIBA or custom phases, allocate hours, and track progress effortlessly.</p>
+              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Phase planning</h3>
+              <p className="text-ink-500 dark:text-ink-400">Break projects into RIBA or your own phases, plan them on a timeline and see the cost and fee of each one.</p>
             </div>
             
             <div className="bg-white dark:bg-ink-900 p-8 rounded-3xl border border-ink-200 dark:border-ink-800 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-12 w-12 bg-positive-100 dark:bg-positive-900/30 rounded-2xl flex items-center justify-center mb-6">
                 <Users size={24} className="text-positive-600 dark:text-positive-400" />
               </div>
-              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Team Allocation</h3>
-              <p className="text-ink-500 dark:text-ink-400">Assign roles to team members and ensure you always have the right mix of seniors and juniors on the job.</p>
+              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Team allocation</h3>
+              <p className="text-ink-500 dark:text-ink-400">Drag people into phases and test the mix of senior and junior time until the fee and the workload both work.</p>
             </div>
             
             <div className="bg-white dark:bg-ink-900 p-8 rounded-3xl border border-ink-200 dark:border-ink-800 shadow-sm hover:shadow-md transition-shadow">
-              <div className="h-12 w-12 bg-negative-100 dark:bg-negative-900/30 rounded-2xl flex items-center justify-center mb-6">
-                <Share2 size={24} className="text-negative-600 dark:text-negative-400" />
+              <div className="h-12 w-12 bg-clay-100 dark:bg-clay-900/30 rounded-2xl flex items-center justify-center mb-6">
+                <Share2 size={24} className="text-clay-600 dark:text-clay-400" />
               </div>
-              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Collaborative</h3>
-              <p className="text-ink-500 dark:text-ink-400">Team can work together on fees and pipeline in real-time. Share proposals effortlessly.</p>
+              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Shared with your partners</h3>
+              <p className="text-ink-500 dark:text-ink-400">Up to 10 colleagues work on the same projects, rates and templates. Salaries and overheads stay visible to admins only.</p>
             </div>
             
             <div className="bg-white dark:bg-ink-900 p-8 rounded-3xl border border-ink-200 dark:border-ink-800 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-12 w-12 bg-info-100 dark:bg-info-900/30 rounded-2xl flex items-center justify-center mb-6">
                 <BarChart3 size={24} className="text-info-600 dark:text-info-400" />
               </div>
-              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Business Intelligence</h3>
-              <p className="text-ink-500 dark:text-ink-400">Complete dashboard to view pipeline and understand the overall health of your business.</p>
+              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Pipeline dashboard</h3>
+              <p className="text-ink-500 dark:text-ink-400">See every proposal, its stage and its value in one place, and how much work you have secured for the year.</p>
             </div>
             
             <div className="bg-white dark:bg-ink-900 p-8 rounded-3xl border border-ink-200 dark:border-ink-800 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-12 w-12 bg-warning-100 dark:bg-warning-900/30 rounded-2xl flex items-center justify-center mb-6">
-                <Database size={24} className="text-warning-600 dark:text-warning-400" />
+                <TrendingUp size={24} className="text-warning-600 dark:text-warning-400" />
               </div>
-              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Centralised Database</h3>
-              <p className="text-ink-500 dark:text-ink-400">Store all your templates, categories, and historical project data in one secure location.</p>
+              <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Cash-flow forecast</h3>
+              <p className="text-ink-500 dark:text-ink-400">Invoices, likely work and collections month by month against your fixed overheads, so you can see your bank balance months ahead.</p>
             </div>
           </div>
         </div>
@@ -169,8 +170,8 @@ export default function LandingPage() {
               <div className="hidden md:block absolute top-6 left-12 w-full h-0.5 bg-accent-100 dark:bg-accent-900/50" />
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="w-12 h-12 rounded-full bg-accent-600 text-white flex items-center justify-center font-bold text-xl mb-4 shadow-lg shadow-accent-600/20">1</div>
-                <h3 className="text-lg font-bold text-ink-900 dark:text-ink-50 mb-2">Set Up Your Team</h3>
-                <p className="text-sm text-ink-500 dark:text-ink-400">Add your team members manually or upload them from a CSV. Set their internal costs and external billing rates.</p>
+                <h3 className="text-lg font-bold text-ink-900 dark:text-ink-50 mb-2">Set up your team</h3>
+                <p className="text-sm text-ink-500 dark:text-ink-400">Add people by hand or from a CSV with their salary and overheads. Their true hourly cost is worked out for you.</p>
               </div>
             </div>
             
@@ -178,7 +179,7 @@ export default function LandingPage() {
               <div className="hidden md:block absolute top-6 left-12 w-full h-0.5 bg-accent-100 dark:bg-accent-900/50" />
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="w-12 h-12 rounded-full bg-accent-600 text-white flex items-center justify-center font-bold text-xl mb-4 shadow-lg shadow-accent-600/20">2</div>
-                <h3 className="text-lg font-bold text-ink-900 dark:text-ink-50 mb-2">Create a Project</h3>
+                <h3 className="text-lg font-bold text-ink-900 dark:text-ink-50 mb-2">Create a project</h3>
                 <p className="text-sm text-ink-500 dark:text-ink-400">Use preset templates for standard architectural phases (like RIBA) or start from scratch. Everything is fully editable.</p>
               </div>
             </div>
@@ -187,7 +188,7 @@ export default function LandingPage() {
               <div className="hidden md:block absolute top-6 left-12 w-full h-0.5 bg-accent-100 dark:bg-accent-900/50" />
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="w-12 h-12 rounded-full bg-accent-600 text-white flex items-center justify-center font-bold text-xl mb-4 shadow-lg shadow-accent-600/20">3</div>
-                <h3 className="text-lg font-bold text-ink-900 dark:text-ink-50 mb-2">Allocate Hours</h3>
+                <h3 className="text-lg font-bold text-ink-900 dark:text-ink-50 mb-2">Allocate hours</h3>
                 <p className="text-sm text-ink-500 dark:text-ink-400">Drag and drop team members into your project phases to allocate hours and calculate costs interactively.</p>
               </div>
             </div>
@@ -195,8 +196,8 @@ export default function LandingPage() {
             <div className="relative">
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="w-12 h-12 rounded-full bg-accent-600 text-white flex items-center justify-center font-bold text-xl mb-4 shadow-lg shadow-accent-600/20">4</div>
-                <h3 className="text-lg font-bold text-ink-900 dark:text-ink-50 mb-2">Review Proposal</h3>
-                <p className="text-sm text-ink-500 dark:text-ink-400">Review your automated fee proposal, edit payment schedules, and export your accurate calculation.</p>
+                <h3 className="text-lg font-bold text-ink-900 dark:text-ink-50 mb-2">Send the proposal</h3>
+                <p className="text-sm text-ink-500 dark:text-ink-400">Set the payment schedule, export the proposal to Word or Excel, and follow the cash in the forecast.</p>
               </div>
             </div>
           </div>
@@ -207,12 +208,13 @@ export default function LandingPage() {
       <section id="pricing" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-ink-900 dark:text-ink-50 mb-4">Simple, transparent pricing</h2>
-            <p className="text-ink-500 dark:text-ink-400 max-w-2xl mx-auto mb-4">Choose the plan that best fits your practice.</p>
+            <h2 className="text-3xl font-bold text-ink-900 dark:text-ink-50 mb-4">One price for your whole practice</h2>
+            <p className="text-ink-500 dark:text-ink-400 max-w-2xl mx-auto mb-4">One subscription covers your company, up to 10 users. Every feature is in both plans; yearly simply costs less.</p>
             
-            {/* Early Adopter Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-warning-100 dark:bg-warning-900/30 border border-warning-200 dark:border-warning-800 text-warning-700 dark:text-warning-400 text-sm font-bold shadow-sm">
-              ✨ Use code <span className="bg-warning-200 dark:bg-warning-800 px-1.5 py-0.5 rounded text-warning-900 dark:text-warning-200">FIRST50</span> for 50% Off! (First 50 users) ✨
+            {/* Launch offer */}
+            <div className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-2 rounded-full bg-warning-100 dark:bg-warning-900/30 border border-warning-200 dark:border-warning-800 text-warning-700 dark:text-warning-400 text-sm font-bold shadow-sm">
+              Launch offer: code <span className="bg-warning-200 dark:bg-warning-800 px-1.5 py-0.5 rounded text-warning-900 dark:text-warning-200">LAUNCH50</span> gives 50% off your first 6 months
+              <span className="font-medium">· ends 30 April 2027</span>
             </div>
           </div>
           
@@ -221,23 +223,24 @@ export default function LandingPage() {
             {/* Monthly Plan */}
             <div className="bg-white dark:bg-ink-900 rounded-3xl border border-ink-200 dark:border-ink-800 p-8 flex flex-col shadow-sm">
               <h3 className="text-2xl font-bold text-ink-900 dark:text-ink-50 mb-2">Monthly</h3>
-              <p className="text-ink-500 dark:text-ink-400 mb-6">Perfect for small practices starting out.</p>
+              <p className="text-ink-500 dark:text-ink-400 mb-6">Pay as you go and cancel anytime.</p>
               
               <div className="mb-8">
                 <div className="flex items-end gap-2 mb-2">
                   <span className="text-5xl font-extrabold text-ink-900 dark:text-ink-50">$9.99</span>
                   <span className="text-ink-500 font-medium pb-1">/month</span>
                 </div>
-                <p className="text-sm text-positive-600 dark:text-positive-400 font-bold">Only $4.99/mo with code FIRST50</p>
+                <p className="text-sm text-positive-600 dark:text-positive-400 font-bold">$4.99/month for your first 6 months with LAUNCH50</p>
               </div>
               
               <ul className="space-y-4 mb-8 flex-1">
                 {[
-                  'Unlimited Projects',
-                  'Unlimited Team Members',
-                  'Custom Hourly Rates',
-                  'Export to CSV & PDF',
-                  'Email Support'
+                  'Unlimited projects and proposals',
+                  'Fees priced from real salaries and overheads',
+                  'Phase planning with live cost and fee',
+                  'Payment schedules and cash-flow forecast',
+                  'Proposals exported to Word and Excel',
+                  'Up to 10 users, with email support'
                 ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-3 text-ink-600 dark:text-ink-300">
                     <CheckCircle2 size={20} className="text-accent-600 dark:text-accent-500 shrink-0" />
@@ -254,7 +257,7 @@ export default function LandingPage() {
             {/* Yearly Plan (Popular) */}
             <div className="bg-ink-900 dark:bg-ink-800 rounded-3xl border border-accent-600 p-8 flex flex-col shadow-xl relative transform md:-translate-y-4">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-accent-600 text-white px-4 py-1 rounded-full text-xs font-medium">
-                Most popular
+                Best value
               </div>
               
               <h3 className="text-2xl font-bold text-white mb-2">Yearly</h3>
@@ -265,17 +268,16 @@ export default function LandingPage() {
                   <span className="text-5xl font-extrabold text-white">$49.90</span>
                   <span className="text-ink-500 font-medium pb-1">/year</span>
                 </div>
-                <p className="text-sm text-positive-400 font-bold">Only $24.95/yr with code FIRST50</p>
-                <p className="text-xs text-ink-500 mt-1">That's just $2.08 per month!</p>
+                <p className="text-sm text-positive-400 font-bold">$24.95 for your first year with LAUNCH50</p>
+                <p className="text-xs text-ink-500 mt-1">$4.16 a month, 58% less than paying monthly</p>
               </div>
               
               <ul className="space-y-4 mb-8 flex-1">
                 {[
-                  'Everything in Monthly',
-                  '2 Months Free',
-                  'Priority Support',
-                  'Early Access to Features',
-                  '1-on-1 Onboarding Call'
+                  'Everything in monthly',
+                  'A 1-on-1 onboarding call to set up your rates',
+                  'Priority support',
+                  'Early access to new features'
                 ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-3 text-ink-300">
                     <CheckCircle2 size={20} className="text-accent-400 shrink-0" />
@@ -290,6 +292,23 @@ export default function LandingPage() {
             </div>
             
           </div>
+          <p className="text-center text-sm text-ink-500 dark:text-ink-400 mt-10">Both plans start with a 7-day free trial. No card needed to start.</p>
+        </div>
+      </section>
+
+      {/* Closing call to action */}
+      <section className="py-20 border-t border-ink-200 dark:border-ink-800/50 bg-ink-50 dark:bg-ink-900/50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-ink-900 dark:text-ink-50 mb-4">Price your next proposal from the numbers</h2>
+          <p className="text-ink-500 dark:text-ink-400 mb-8">Set up your team and overheads once, and every fee after that starts from what the work really costs.</p>
+          <Link
+            href="/login?signup=true"
+            className="inline-flex px-6 py-3 bg-accent-600 hover:bg-accent-700 text-white font-semibold rounded-xl transition-all shadow-md shadow-accent-600/20 hover:-translate-y-0.5 items-center gap-2 text-sm"
+          >
+            Start your free trial
+            <ArrowRight size={16} />
+          </Link>
+          <p className="mt-4 text-sm text-ink-500 dark:text-ink-400">50% off your first 6 months with LAUNCH50</p>
         </div>
       </section>
     </div>

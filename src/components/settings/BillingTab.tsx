@@ -98,17 +98,17 @@ export function BillingTab({ company }: { company: Company }) {
               disabled={loading !== null}
               className="w-full py-3 px-4 bg-ink-900 hover:bg-ink-800 dark:bg-ink-100 dark:hover:bg-white text-white dark:text-ink-900 font-bold rounded-xl transition-all disabled:opacity-50"
             >
-              {loading === process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY ? 'Loading...' : 'Subscribe Monthly'}
+              {loading === process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY ? 'Loading...' : 'Subscribe monthly'}
             </button>
             <p className="text-center text-xs text-ink-500 mt-4 font-medium">
-              Use code <span className="font-bold text-ink-700 dark:text-ink-300">FIRST50</span> for 50% off!
+              Launch offer: code <span className="font-bold text-ink-700 dark:text-ink-300">LAUNCH50</span> at checkout for 50% off your first 6 months
             </p>
           </div>
 
           {/* Yearly */}
           <div className="border-2 border-accent-600 rounded-2xl p-6 relative bg-accent-50/50 dark:bg-accent-900/10">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent-600 text-white px-3 py-1 text-xs font-bold rounded-full">
-              SAVE 58%
+              Save 58%
             </div>
             <h3 className="text-lg font-bold text-accent-900 dark:text-accent-100">Yearly plan</h3>
             <div className="my-4 flex items-baseline gap-1">
@@ -125,10 +125,10 @@ export function BillingTab({ company }: { company: Company }) {
               disabled={loading !== null}
               className="w-full py-3 px-4 bg-accent-600 hover:bg-accent-700 text-white font-bold rounded-xl transition-all shadow-md shadow-accent-600/20 disabled:opacity-50"
             >
-              {loading === process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY ? 'Loading...' : 'Subscribe Yearly'}
+              {loading === process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY ? 'Loading...' : 'Subscribe yearly'}
             </button>
             <p className="text-center text-xs text-accent-600 dark:text-accent-400 mt-4 font-medium">
-              Use code <span className="font-bold bg-accent-100 dark:bg-accent-900/50 px-1.5 py-0.5 rounded text-accent-800 dark:text-accent-200">FIRST50</span> at checkout to get 50% off!
+              Launch offer: code <span className="font-bold bg-accent-100 dark:bg-accent-900/50 px-1.5 py-0.5 rounded text-accent-800 dark:text-accent-200">LAUNCH50</span> at checkout for 50% off your first year
             </p>
           </div>
         </div>
