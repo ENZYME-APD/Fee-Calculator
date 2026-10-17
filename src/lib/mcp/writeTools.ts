@@ -13,9 +13,9 @@ type Json = Record<string, unknown>;
 const STATUSES = ['Draft', 'Proposed', 'Active', 'Completed', 'Lost'];
 const STAGES: Record<string, ForecastStage> = { invoiced: 'invoicing', invoicing: 'invoicing', possible: 'possible', collections: 'collections', collection: 'collections' };
 
-const strip = <T extends { id?: string }>(d: T): Omit<T, 'id'> => { const { id: _id, ...rest } = d; return rest; };
+export const strip = <T extends { id?: string }>(d: T): Omit<T, 'id'> => { const { id: _id, ...rest } = d; return rest; };
 
-function num(args: Json, key: string): number | undefined {
+export function num(args: Json, key: string): number | undefined {
   const v = args[key];
   if (v === undefined || v === null || v === '') return undefined;
   const n = Number(v);
@@ -23,7 +23,7 @@ function num(args: Json, key: string): number | undefined {
   return n;
 }
 
-function pick<T extends { id?: string; name: string }>(items: T[], ref: string, what: string, listHint: string): T {
+export function pick<T extends { id?: string; name: string }>(items: T[], ref: string, what: string, listHint: string): T {
   const r = ref.trim().toLowerCase();
   const exact = items.find(i => i.id === ref) || items.find(i => i.name.toLowerCase() === r);
   if (exact) return exact;
@@ -56,7 +56,7 @@ async function totalsAfter(ctx: McpContext, projectId: string) {
   };
 }
 
-const done = (summary: string, changeId: string, extra: Json = {}) => ({
+export const done = (summary: string, changeId: string, extra: Json = {}) => ({
   done: summary, change_id: changeId, ...extra,
   undo: 'If this was not intended, call undo_change with this change_id.',
 });
@@ -74,7 +74,7 @@ function findPhase(phases: Phase[], ref: string): Phase {
 
 // ---------- forecast helpers ----------
 
-async function loadForecast(data: CompanyData): Promise<ForecastProfile & { id: string }> {
+export async function loadForecast(data: CompanyData): Promise<ForecastProfile & { id: string }> {
   const f = await data.forecast();
   if (!f?.id) throw new ToolError('This company has not set up the Financial forecast yet. Open it once in the app first.');
   return JSON.parse(JSON.stringify(f));
@@ -100,9 +100,9 @@ function findLine(profile: ForecastProfile, ref: string): ForecastRow {
 }
 
 const pillId = () => `pill_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-const FORECAST_NOTE = 'If someone has the Financial forecast page open, ask them to reload it before editing, or their next save will replace this change.';
+export const FORECAST_NOTE = 'If someone has the Financial forecast page open, ask them to reload it before editing, or their next save will replace this change.';
 
-function forecastOp(profile: ForecastProfile & { id: string }): DocOp {
+export function forecastOp(profile: ForecastProfile & { id: string }): DocOp {
   return { collection: 'forecastProfile', id: profile.id, data: { ...strip(profile), updatedAt: Date.now() } };
 }
 
@@ -291,13 +291,25 @@ export const WRITE_TOOLS: ToolDef[] = [
       const next: Json = { ...strip(phase) };
       const changed: string[] = [];
       const name = str(args, 'name'); if (name) { next.name = name; changed.push(`name → ${name}`); }
-      const weeks = num(args, 'duration_weeks'); if (weeks !== undefined) { next.durationWeeks = weeks; changed.push(`duration → ${weeks} weeks`); }
+      const weeks = num(args, 'duration_weeks');
+      const ops: DocOp[] = [];
+      if (weeks !== undefined) {
+        if (weeks <= 0) throw new ToolError('duration_weeks must be more than 0.');
+        next.durationWeeks = weeks; changed.push(`duration → ${weeks} weeks`);
+        // Same as the app: hours given as a % of the phase follow its length (40 h weeks)
+        const allocations = (await data.allocations()).filter(a => a.phaseId === phase.id && a.allocationType === 'percentage');
+        for (const a of allocations) {
+          ops.push({ collection: 'allocations', id: a.id!, data: { ...strip(a), hours: (a.allocationValue / 100) * weeks * 40 } as Json });
+        }
+        if (allocations.length) changed.push(`${allocations.length} percentage allocation${allocations.length > 1 ? 's' : ''} re-timed`);
+      }
       for (const k of ['description', 'tasks', 'inclusions', 'omissions', 'deliverables']) {
         if (typeof args[k] === 'string') { next[k] = args[k]; changed.push(k); }
       }
       if (!changed.length) throw new ToolError('Say what to change.');
-      const changeId = await applyChange(ctx, 'update_phase', `Updated phase "${phase.name}" in "${project.name}": ${changed.join(', ')}`, [{ collection: 'phases', id: phase.id!, data: next }]);
-      return done(`Updated "${phase.name}": ${changed.join(', ')}.`, changeId);
+      ops.unshift({ collection: 'phases', id: phase.id!, data: next });
+      const changeId = await applyChange(ctx, 'update_phase', `Updated phase "${phase.name}" in "${project.name}": ${changed.join(', ')}`, ops);
+      return done(`Updated "${phase.name}": ${changed.join(', ')}.`, changeId, weeks !== undefined ? { totals: await totalsAfter(ctx, project.id!) } : {});
     },
   },
   {

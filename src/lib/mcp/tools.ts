@@ -113,7 +113,7 @@ export const currentMonth = () => { const d = new Date(); return `${d.getUTCFull
 
 // Mirrors the forecast page: a linked line (the fixed operational burn by default) uses the live
 // Team resources + Overheads figure; other lines use the month's expenses, else the every-month amount.
-function isLinkedLine(item: ForecastOutflowItem) { return item.linkedToOverheads ?? item.id === 'burn_base'; }
+export function isLinkedLine(item: ForecastOutflowItem) { return item.linkedToOverheads ?? item.id === 'burn_base'; }
 function outflowAmount(item: ForecastOutflowItem, m: string, linkedMonthly: number): number {
   let base: number;
   if (isLinkedLine(item)) base = linkedMonthly;
@@ -126,7 +126,7 @@ function outflowAmount(item: ForecastOutflowItem, m: string, linkedMonthly: numb
   return base + (item.monthlyAdjustments?.[m] ?? 0);
 }
 
-async function runningCosts(data: CompanyData) {
+export async function runningCosts(data: CompanyData) {
   const [members, categories, overheads] = await Promise.all([data.members(), data.categories(), data.overheads()]);
   const external = new Set(categories.filter(c => c.type === 'external').map(c => c.id));
   const salaries = Math.round(members.filter(m => !m.category || !external.has(m.category)).reduce((s, m) => s + (m.salary || 0), 0));
@@ -431,7 +431,12 @@ export const TOOLS: ToolDef[] = [
             })
             .filter(l => l.invoiced || l.possible || l.collections);
           row.outflow_lines = [
-            ...outflows.map(o => ({ line: o.name, group: o.groupId ? groupName.get(o.groupId) || null : null, amount: round(outflowAmount(o, m, rc.total)) })),
+            ...outflows.map(o => ({
+              line: o.name, line_id: o.id, group: o.groupId ? groupName.get(o.groupId) || null : null, amount: round(outflowAmount(o, m, rc.total)),
+              ...(isLinkedLine(o) ? { linked_to_team_and_overheads: true } : {}),
+              ...(o.monthlyAdjustments?.[m] ? { adjustment: o.monthlyAdjustments[m] } : {}),
+              ...(o.monthlyPills?.[m]?.length ? { expenses: o.monthlyPills[m].map(p => ({ expense_id: p.id, amount: p.amount, description: p.description || null })) } : {}),
+            })),
             ...Object.entries(referrals(m)).map(([name, amount]) => ({ line: `Referral: ${name}`, group: null, amount })),
           ].filter(l => l.amount);
         }

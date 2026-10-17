@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Building, Plus, Trash2, Info, RefreshCw, CheckCircle2, ChevronDown, ChevronRight, Upload, Download } from 'lucide-react';
-import { getTeamMembers, getOverheadsProfile, updateOverheadsProfile, updateTeamMember, getCategories } from '@/lib/firebase/db';
+import { getTeamMembers, getOverheadsProfile, updateOverheadsProfile, updateTeamMember, getCategories, OverheadsConflictError } from '@/lib/firebase/db';
 import { TeamMember, OverheadsProfile, OverheadCategory, OverheadItem, TeamCategory } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -66,7 +66,9 @@ export default function OverheadsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  
+  // Saving refuses if the overheads changed elsewhere (another admin or an AI assistant) since loading
+  const [conflict, setConflict] = useState(false);
+
   const [isNonBillableCollapsed, setIsNonBillableCollapsed] = useState(false);
   const [showConsultants, setShowConsultants] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
@@ -201,6 +203,7 @@ export default function OverheadsPage() {
   }, [yearlyIncomeTarget, workingHoursPerYear, categories]);
 
   const handleSave = async () => {
+    if (conflict) return;
     setSaving(true);
     try {
       const totalYearlyOverhead = computedStats.totalOverheadsYearly;
@@ -212,10 +215,11 @@ export default function OverheadsPage() {
         workingHoursPerYear,
         categories,
         calculatedOverheadPerPerson: overheadPerPerson
-      });
+      }, profile?.updatedAt ?? null);
       const prof = await getOverheadsProfile();
       setProfile(prof);
     } catch(e) {
+      if (e instanceof OverheadsConflictError) { setConflict(true); return; }
       console.error(e);
     } finally {
       setSaving(false);
@@ -375,6 +379,14 @@ export default function OverheadsPage() {
   return (
     <div className="flex flex-col h-full w-full p-8 text-ink-900 dark:text-ink-50">
       <div className="max-w-7xl mx-auto w-full flex flex-col h-full min-h-0">
+        {conflict && (
+          <div className="mb-4 px-4 py-2.5 rounded-lg border border-negative-200 dark:border-negative-800/60 bg-negative-50 dark:bg-negative-950/40 text-sm text-negative-800 dark:text-negative-200 flex items-center justify-between gap-4 shrink-0">
+            <span>
+              <span className="font-semibold">The overheads were changed elsewhere</span>, by another admin or an AI assistant. Your latest edit wasn&apos;t saved, so nothing of theirs is overwritten. Reload to see the current version, then redo your edit.
+            </span>
+            <button onClick={() => window.location.reload()} className="shrink-0 font-semibold hover:underline">Reload</button>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-6 shrink-0">
           <div>
             <h1 className="text-[22px] font-bold text-ink-900 dark:text-ink-50 tracking-tight">Overheads calculator</h1>

@@ -759,26 +759,32 @@ export const getOverheadsProfile = async (): Promise<OverheadsProfile | null> =>
   return extractData(snap.docs[0]) as OverheadsProfile;
 };
 
-export const updateOverheadsProfile = async (profile: Partial<OverheadsProfile>) => {
+/** Thrown when the saved overheads were changed elsewhere (another admin, or an AI assistant) since this page loaded them. */
+export class OverheadsConflictError extends Error {}
+
+/** Saves the overheads. With expectedUpdatedAt, refuses if the stored copy changed since. Returns the updatedAt it wrote. */
+export const updateOverheadsProfile = async (profile: Partial<OverheadsProfile>, expectedUpdatedAt?: number | null): Promise<number> => {
   const companyId = requireCompanyId();
   const q = query(collection(db, 'overheadsProfile'), where('companyId', '==', companyId));
   const snap = await getDocs(q);
-  
+  const updatedAt = Date.now();
   if (snap.empty) {
-    const docRef = await addDoc(collection(db, 'overheadsProfile'), sanitize({ 
-      ...profile, 
-      companyId,
-      updatedAt: Date.now()
-    }));
-    return docRef.id;
-  } else {
-    const docRef = snap.docs[0].ref;
-    await updateDoc(docRef, sanitize({
+    await addDoc(collection(db, 'overheadsProfile'), sanitize({
       ...profile,
-      updatedAt: Date.now()
+      companyId,
+      updatedAt
+    }));
+  } else {
+    const stored = snap.docs[0].data().updatedAt ?? null;
+    if (expectedUpdatedAt !== undefined && expectedUpdatedAt !== null && stored !== expectedUpdatedAt) {
+      throw new OverheadsConflictError('The overheads were changed elsewhere.');
+    }
+    await updateDoc(snap.docs[0].ref, sanitize({
+      ...profile,
+      updatedAt
     }) as any);
-    return snap.docs[0].id;
   }
+  return updatedAt;
 };
 
 // --- Forecast Profile ---
