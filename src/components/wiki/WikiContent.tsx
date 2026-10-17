@@ -172,7 +172,7 @@ export function WikiContent() {
                 <li>Click <strong>"Add Team Member"</strong>.</li>
                 <li>Assign them a Role (e.g., Senior Architect, Draftsman) and set their internal and external hourly rates.</li>
               </ol>
-              <img src="/screenshots/team-resources.jpg" alt="Team Resources screen listing team members grouped by category with salary, overheads, and derived cost per hour" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+              <img src="/screenshots/team-resources.jpg?v=20261016" alt="Team Resources screen listing team members grouped by category with salary, overheads, and derived cost per hour" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Bulk Uploading via CSV</h4>
               <p>For large teams, use the bulk CSV import feature to instantly load your entire roster.</p>
@@ -260,7 +260,7 @@ export function WikiContent() {
                 <li><strong>Graphic Bars:</strong> Next to each phase, a colored graphic bar visually indicates the proportion of total project hours or budget consumed by this phase relative to others.</li>
                 <li><strong>Phase Summaries:</strong> At the bottom of each phase block, a summary shows the total hours allocated within that specific phase, the blended hourly rate, and the total cost/revenue generated just by that phase.</li>
               </ul>
-              <img src="/screenshots/projects-phases.jpg" alt="Projects and Phases screen showing a project's phase list with durations and the live payment schedule" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+              <img src="/screenshots/projects-phases.jpg?v=20261016" alt="Projects and Phases screen showing a project's phase list with durations and the live payment schedule" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
             </div>
           </section>
 
@@ -285,7 +285,7 @@ export function WikiContent() {
                 <li>Click the drag handle (six dots) next to a team member and <strong>drag them into the drop zone</strong> of a specific Phase.</li>
                 <li>Once dropped, an Allocation row appears. Enter the number of hours this person will work during this phase.</li>
               </ol>
-              <img src="/screenshots/fee-proposal.jpg" alt="Fee Proposal canvas with the team pool sidebar on the left and phase drop zones on the right" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+              <img src="/screenshots/fee-proposal.jpg?v=20261016" alt="Fee Proposal canvas with the team pool sidebar on the left and phase drop zones on the right" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Duplicating Resources Across Phases</h4>
               <p>
@@ -363,7 +363,7 @@ export function WikiContent() {
               
               <div className="space-y-6">
                 <div>
-                                    <img src="/screenshots/wiki-planning.jpg" alt="Project Planning Gantt view showing team members assigned to a weekly timeline with budgeted vs planned cost" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+                                    <img src="/screenshots/wiki-planning.jpg?v=20261016" alt="Project Planning Gantt view showing team members assigned to a weekly timeline with budgeted vs planned cost" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
                   <h3 className="text-lg font-bold text-ink-800 dark:text-ink-200 mb-2">Generating Tasks</h3>
                   <p className="text-ink-600 dark:text-ink-400 mb-3">
                     When you first open a project in the Planner, you can click <strong className="text-accent-600 dark:text-accent-400">Sync Budget</strong> to instantly create tasks for every team member allocated in the Fee Calculator, distributed across the correct phases.
@@ -448,7 +448,7 @@ export function WikiContent() {
               <p className="text-ink-600 dark:text-ink-400 mb-6">
                 The <strong className="text-ink-800 dark:text-ink-200">Document Builder</strong> automatically turns your Fee Proposal data into a professional document ready to send to clients.
               </p>
-              <img src="/screenshots/wiki-document-builder.jpg" alt="Document Builder showing a generated fee proposal with project scope and financial summary blocks" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+              <img src="/screenshots/wiki-document-builder.jpg?v=20261016" alt="Document Builder showing a generated fee proposal with project scope and financial summary blocks" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
               
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -494,7 +494,7 @@ export function WikiContent() {
               <p>
                 The Financial Summary panel is the most important dashboard for understanding project profitability.
               </p>
-              <img src="/screenshots/fee-proposal.jpg" alt="Fee Proposal header showing Total Cost, Profit Margin, and Total Fee for a project" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+              <img src="/screenshots/fee-proposal.jpg?v=20261016" alt="Fee Proposal header showing Total Cost, Profit Margin, and Total Fee for a project" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
               
               <div className="grid sm:grid-cols-2 gap-4 mt-6">
                 <div className="p-4 border border-ink-200 dark:border-ink-700 rounded-xl">
@@ -532,7 +532,7 @@ export function WikiContent() {
               <p>
                 Once your total Fee Proposal is calculated, you must structure how the client pays you. 
               </p>
-              <img src="/screenshots/projects-phases.jpg" alt="Payment Schedule panel showing milestones, their percentages, and estimated dollar amounts" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+              <img src="/screenshots/projects-phases.jpg?v=20261016" alt="Payment Schedule panel showing milestones, their percentages, and estimated dollar amounts" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
               
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Payment Creation & Editing</h4>
               <ol className="list-decimal pl-5 space-y-2">
@@ -569,7 +569,7 @@ export function WikiContent() {
               <p>
                 You can customize the platform to suit your company's region by setting global preferences. These settings propagate instantly across all of your projects, team members, and fee proposals.
               </p>
-              <img src="/screenshots/wiki-settings.jpg" alt="Settings page General Preferences tab showing currency and area unit options" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+              <img src="/screenshots/wiki-settings.jpg?v=20261016" alt="Settings page General Preferences tab showing currency and area unit options" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
               
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Changing Currency & Units</h4>
               <ol className="list-decimal pl-5 space-y-2">
@@ -603,7 +603,7 @@ export function WikiContent() {
               <p>
                 To accurately set your team's <strong>Internal Rate</strong>, you must calculate your true cost of doing business. Your internal rate is not just a person's raw salary; it must include their share of the company's overhead expenses.
               </p>
-              <img src="/screenshots/overheads.jpg" alt="Overheads Calculator showing expense categories, non-billable time, and the resulting cost multiplier" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+              <img src="/screenshots/overheads.jpg?v=20261016" alt="Overheads Calculator showing expense categories, non-billable time, and the resulting cost multiplier" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">1. Expense Categories to Consider</h4>
               <p>When calculating total annual overhead, ensure you include these often-missed categories:</p>

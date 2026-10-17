@@ -115,25 +115,25 @@ export default function LandingPage() {
       <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-24">
         {[
           {
-            img: '/screenshots/team-resources.jpg',
+            img: '/screenshots/team-resources.jpg?v=20261016',
             alt: 'Team Resources screen listing team members grouped by category with salary, overheads, and derived cost per hour',
             title: 'Your team, priced accurately',
             body: "Set each person's salary and overheads once — internal staff or external consultants — and the app derives their true hourly cost automatically. No more guessing what an hour of someone's time actually costs you.",
           },
           {
-            img: '/screenshots/overheads.jpg',
+            img: '/screenshots/overheads.jpg?v=20261016',
             alt: 'Overheads Calculator showing target income, overhead categories, and the resulting cost multiplier',
             title: 'Overheads built into every rate',
             body: 'Model rent, software, insurance, and non-billable time by category, and sync the result straight into your team’s hourly rates. Change one overhead line and every project’s cost updates with it.',
           },
           {
-            img: '/screenshots/projects-phases.jpg',
+            img: '/screenshots/projects-phases.jpg?v=20261016',
             alt: 'Projects and Phases screen showing a project’s phases, live total cost and fee, and payment schedule',
             title: 'Phases, costs & payment schedules in one place',
             body: 'Break a project into phases, and watch total cost, profit margin, and fee recalculate live as you work. Build the payment schedule from a preset — by phase, monthly, or weighted to each phase’s actual cost — or do it by hand.',
           },
           {
-            img: '/screenshots/fee-proposal.jpg',
+            img: '/screenshots/fee-proposal.jpg?v=20261016',
             alt: 'Fee Proposal canvas with team members and cost chips dragged into project phases, showing cost breakdowns',
             title: 'Drag, drop, and the fee calculates itself',
             body: 'Drag team members and expenses straight into project phases. Every allocation locks in that rate at the moment you assign it, so a salary change later never retroactively changes a fee you already sent a client.',
