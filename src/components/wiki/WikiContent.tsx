@@ -437,6 +437,15 @@ export function WikiContent() {
                     </p>
                   </div>
                 </div>
+                <div className="bg-ink-50 dark:bg-ink-800/50 p-4 rounded-xl border border-ink-200 dark:border-ink-700">
+                  <h4 className="font-bold text-ink-800 dark:text-ink-200 mb-2 text-sm flex items-center gap-2">
+                    <Bot size={14} className="text-ink-500" />
+                    AI Assistants
+                  </h4>
+                  <p className="text-xs text-ink-600 dark:text-ink-400">
+                    AI assistants connect through your own sign-in or an access key, and get exactly your permissions: they never see salaries, rates, overheads or the forecast unless you are an admin. Admins set company rules for who may connect and who may let an assistant make changes, and these apply on every request. Keys and sign-ins are stored only as one-way fingerprints, sign-ins expire after an hour and renew automatically, and every change an assistant makes is logged and can be undone. See <a href="#ai-access" className="underline">AI Access</a>.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

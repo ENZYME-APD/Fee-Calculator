@@ -50,6 +50,8 @@ export function MarketingHeader() {
           
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/#features" className="text-sm font-medium text-ink-600 dark:text-ink-300 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">Features</Link>
+            <Link href="/#forecast" className="text-sm font-medium text-ink-600 dark:text-ink-300 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">Forecast</Link>
+            <Link href="/#ai" className="text-sm font-medium text-ink-600 dark:text-ink-300 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">AI</Link>
             <Link href="/#pricing" className="text-sm font-medium text-ink-600 dark:text-ink-300 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">Pricing</Link>
             <Link href="/wiki" className="text-sm font-medium text-ink-600 dark:text-ink-300 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">Wiki</Link>
           </nav>
@@ -90,6 +92,8 @@ export function MarketingHeader() {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 px-4 py-6 space-y-4 shadow-xl">
           <Link href="/#features" className="block text-base font-medium text-ink-900 dark:text-ink-50" onClick={() => setIsMobileMenuOpen(false)}>Features</Link>
+          <Link href="/#forecast" className="block text-base font-medium text-ink-900 dark:text-ink-50" onClick={() => setIsMobileMenuOpen(false)}>Forecast</Link>
+          <Link href="/#ai" className="block text-base font-medium text-ink-900 dark:text-ink-50" onClick={() => setIsMobileMenuOpen(false)}>AI</Link>
           <Link href="/#pricing" className="block text-base font-medium text-ink-900 dark:text-ink-50" onClick={() => setIsMobileMenuOpen(false)}>Pricing</Link>
           <Link href="/wiki" className="block text-base font-medium text-ink-900 dark:text-ink-50" onClick={() => setIsMobileMenuOpen(false)}>Wiki</Link>
           

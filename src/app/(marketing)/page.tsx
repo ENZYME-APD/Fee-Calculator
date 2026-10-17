@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Calculator, CheckCircle2, FolderKanban, Users, Share2, BarChart3, TrendingUp } from 'lucide-react';
+import { ArrowRight, Calculator, CheckCircle2, FolderKanban, Users, Share2, BarChart3, TrendingUp, Bot, Sparkles, ShieldCheck, Undo2 } from 'lucide-react';
 import { AuthRedirect } from '@/components/marketing/AuthRedirect';
 
 export default function LandingPage() {
@@ -29,7 +29,7 @@ export default function LandingPage() {
           </h1>
           
           <p className="text-lg sm:text-xl text-ink-600 dark:text-ink-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Fee Calculator prices every proposal from your team's real hourly cost and overheads, then carries it through phases, payment schedules and a month-by-month cash-flow forecast.
+            Fee Calculator prices every proposal from your team's real hourly cost and overheads, then carries it through phases, payment schedules and a month-by-month cash-flow forecast. And your AI assistant can work with all of it.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -157,6 +157,105 @@ export default function LandingPage() {
       </div>
       </section>
 
+
+      {/* Cash-flow forecast spotlight */}
+      <section id="forecast" className="py-20 sm:py-28 bg-ink-50 dark:bg-ink-900/50 border-t border-ink-200 dark:border-ink-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 text-sm font-semibold text-accent-700 dark:text-accent-400 mb-4">
+              <TrendingUp size={16} /> Financial forecast
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-ink-900 dark:text-ink-50 mb-5">See your bank balance six months before it happens</h2>
+            <p className="text-lg text-ink-500 dark:text-ink-400 mb-8 leading-relaxed">
+              Your proposals already know what you will invoice and when. The forecast puts that next to what the practice costs to run, so you can see a tight month coming while there is still time to act.
+            </p>
+            <ul className="space-y-4">
+              {[
+                ['Built from your proposals', 'Sync your active and proposed projects: every payment milestone lands in the month its phase reaches it.'],
+                ['Invoiced, likely and collected', 'Keep the invoicing schedule apart from the cash you expect, and weight likely work so the forecast stays honest.'],
+                ['Running costs included', 'Salaries and overheads flow in from Team resources and the Overheads calculator, with your own lines for loans, partners or one-off costs.'],
+                ['Test a scenario', 'Group lines, switch a group off and see what losing a client or a slow quarter does to your closing cash.'],
+              ].map(([t, d]) => (
+                <li key={t} className="flex gap-3">
+                  <CheckCircle2 size={20} className="text-accent-600 dark:text-accent-500 shrink-0 mt-0.5" />
+                  <span className="text-ink-600 dark:text-ink-300"><span className="font-semibold text-ink-900 dark:text-ink-100">{t}.</span> {d}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Illustrative forecast (sample figures) */}
+          <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 shadow-xl p-5 sm:p-6" aria-label="Example forecast with sample figures">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-semibold text-ink-900 dark:text-ink-100">Closing bank cash</span>
+              <span className="text-xs text-ink-500 dark:text-ink-400">Sample figures</span>
+            </div>
+            <div className="grid grid-cols-6 gap-2 items-end h-40 mb-3">
+              {[{ m: 'Nov', v: 82 }, { m: 'Dec', v: 64 }, { m: 'Jan', v: 41 }, { m: 'Feb', v: 28 }, { m: 'Mar', v: 55 }, { m: 'Apr', v: 73 }].map(b => (
+                <div key={b.m} className="flex flex-col items-center gap-1.5 h-full justify-end">
+                  <span className="text-[11px] tabular-nums text-ink-500 dark:text-ink-400">{b.v}k</span>
+                  <div className={`w-full rounded-t-md ${b.v < 35 ? 'bg-warning-400 dark:bg-warning-500' : 'bg-accent-500 dark:bg-accent-500'}`} style={{ height: `${b.v}%` }} />
+                  <span className="text-xs text-ink-500 dark:text-ink-400">{b.m}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-xl bg-warning-50 dark:bg-warning-950/40 border border-warning-200 dark:border-warning-900 px-3 py-2 text-sm text-warning-800 dark:text-warning-200">
+              February drops to 28k: move the stage 2 invoice forward or chase the January collection.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI assistants */}
+      <section id="ai" className="py-20 sm:py-28 bg-white dark:bg-ink-950 border-t border-ink-200 dark:border-ink-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+          {/* Illustrative conversation (sample project and figures) */}
+          <div className="order-2 lg:order-1 bg-ink-50 dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 shadow-xl p-5 sm:p-6 space-y-4" aria-label="Example conversation with an AI assistant, sample data">
+            <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-accent-600 text-white px-4 py-2.5 text-sm">
+              Which proposals are under 20% margin, and what would Riverside Library cost with one more week of design development?
+            </div>
+            <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 px-4 py-3 text-sm text-ink-700 dark:text-ink-200 space-y-2">
+              <p>Two proposals are under 20%: Cedar Court (18%) and Harbour Lofts (15%).</p>
+              <p>An extra week of design development on Riverside Library adds 1,640 in cost. At its 30% margin the fee goes from 23,681 to 25,813.</p>
+              <p className="text-ink-500 dark:text-ink-400">Shall I add the week and update the payment schedule?</p>
+            </div>
+            <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-accent-600 text-white px-4 py-2.5 text-sm">Yes, go ahead.</div>
+            <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 px-4 py-3 text-sm text-ink-700 dark:text-ink-200 flex items-start gap-2">
+              <CheckCircle2 size={16} className="text-positive-600 dark:text-positive-400 shrink-0 mt-0.5" />
+              <span>Done. Design development is now 5 weeks and the fee is 25,813. You can undo this in Settings → AI access.</span>
+            </div>
+            <p className="text-xs text-ink-500 dark:text-ink-400 text-center">Sample conversation with made-up figures</p>
+          </div>
+
+          <div className="order-1 lg:order-2">
+            <div className="inline-flex items-center gap-2 text-sm font-semibold text-accent-700 dark:text-accent-400 mb-4">
+              <Sparkles size={16} /> Works with your AI
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-ink-900 dark:text-ink-50 mb-5">Ask Claude or ChatGPT about your practice</h2>
+            <p className="text-lg text-ink-500 dark:text-ink-400 mb-8 leading-relaxed">
+              Connect the assistant you already use and it can read your proposals, phases, team and forecast, answer questions in plain language, and, if you allow it, draft and update proposals for you.
+            </p>
+            <ul className="space-y-4">
+              {[
+                [Bot, 'Connect in a minute', 'Add one address in Claude, ChatGPT, Cursor or any MCP assistant and sign in with your Fee Calculator account.'],
+                [ShieldCheck, 'It sees what you can see', 'Salaries, rates and the forecast stay with admins. Admins decide who may connect and who may let it make changes.'],
+                [Undo2, 'Every change can be undone', 'The assistant asks before it changes anything, and each change is logged with a one-click undo.'],
+              ].map(([Icon, t, d]) => {
+                const I = Icon as typeof Bot;
+                return (
+                  <li key={t as string} className="flex gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-accent-100 dark:bg-accent-900/30 flex items-center justify-center shrink-0">
+                      <I size={18} className="text-accent-600 dark:text-accent-400" />
+                    </div>
+                    <span className="text-ink-600 dark:text-ink-300"><span className="font-semibold text-ink-900 dark:text-ink-100 block">{t as string}</span>{d as string}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* How it Works Section */}
       <section id="how-it-works" className="py-24 bg-white dark:bg-ink-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -239,6 +338,7 @@ export default function LandingPage() {
                   'Fees priced from real salaries and overheads',
                   'Phase planning with live cost and fee',
                   'Payment schedules and cash-flow forecast',
+                  'AI access from Claude, ChatGPT and other assistants',
                   'Proposals exported to Word and Excel',
                   'Up to 10 users, with email support'
                 ].map((feature, i) => (
@@ -265,11 +365,11 @@ export default function LandingPage() {
               
               <div className="mb-8">
                 <div className="flex items-end gap-2 mb-2">
-                  <span className="text-5xl font-extrabold text-white">$49.90</span>
+                  <span className="text-5xl font-extrabold text-white">$69</span>
                   <span className="text-ink-500 font-medium pb-1">/year</span>
                 </div>
-                <p className="text-sm text-positive-400 font-bold">$24.95 for your first year with LAUNCH50</p>
-                <p className="text-xs text-ink-500 mt-1">$4.16 a month, 58% less than paying monthly</p>
+                <p className="text-sm text-positive-400 font-bold">$34.50 for your first year with LAUNCH50</p>
+                <p className="text-xs text-ink-500 mt-1">$5.75 a month, 42% less than paying monthly</p>
               </div>
               
               <ul className="space-y-4 mb-8 flex-1">

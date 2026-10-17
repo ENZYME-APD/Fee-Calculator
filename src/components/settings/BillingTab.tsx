@@ -108,17 +108,17 @@ export function BillingTab({ company }: { company: Company }) {
           {/* Yearly */}
           <div className="border-2 border-accent-600 rounded-2xl p-6 relative bg-accent-50/50 dark:bg-accent-900/10">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent-600 text-white px-3 py-1 text-xs font-bold rounded-full">
-              Save 58%
+              Save 42%
             </div>
             <h3 className="text-lg font-bold text-accent-900 dark:text-accent-100">Yearly plan</h3>
             <div className="my-4 flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold text-ink-900 dark:text-ink-50">$49.90</span>
+              <span className="text-4xl font-extrabold text-ink-900 dark:text-ink-50">$69</span>
               <span className="text-ink-500 font-medium">/year</span>
             </div>
             <ul className="space-y-3 mb-8 text-sm text-ink-600 dark:text-ink-300">
               <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> All monthly features</li>
               <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> Priority support</li>
-              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> 7 months free equivalent</li>
+              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> 5 months free compared with monthly</li>
             </ul>
             <button
               onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY!)}
