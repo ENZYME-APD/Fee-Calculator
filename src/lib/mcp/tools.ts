@@ -139,7 +139,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'get_company_overview',
     title: 'Company overview',
-    description: 'Start here. Returns the company name, currency, your role, what you can see, and the pipeline: number of projects and total fee by status (Draft, Active, Completed, Lost).',
+    description: 'Start here. Returns the company name, currency, your role, what you can see, and the pipeline: number of projects and total fee by status (Draft, Proposed, Active, Completed, Lost).',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     run: async (_args, ctx, data) => {
       const projects = (await data.projects()).filter(p => !p.isTemplate);
@@ -171,7 +171,7 @@ export const TOOLS: ToolDef[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        status: { type: 'string', description: 'Only projects with this status: Draft, Active, Completed or Lost.' },
+        status: { type: 'string', description: 'Only projects with this status: Draft, Proposed, Active, Completed or Lost.' },
         templates: { type: 'boolean', description: 'List project templates instead of projects. Default false.' },
       },
       additionalProperties: false,

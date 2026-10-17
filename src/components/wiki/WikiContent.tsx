@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ShieldAlert, Bookmark,
+import { ShieldAlert, Bookmark, Bot,
   FileText,
   Download, 
   Book, 
@@ -143,6 +143,11 @@ export function WikiContent() {
               <li>
                 <Link href="#financial-forecast" className="flex items-center gap-2 text-ink-600 dark:text-ink-400 hover:text-accent-600 dark:hover:text-accent-400 font-medium">
                   <ChevronRight size={16} className="shrink-0" /> 10. Financial Forecast
+                </Link>
+              </li>
+              <li>
+                <Link href="#ai-access" className="flex items-center gap-2 text-ink-600 dark:text-ink-400 hover:text-accent-600 dark:hover:text-accent-400 font-medium">
+                  <ChevronRight size={16} className="shrink-0" /> 11. AI Access (MCP)
                 </Link>
               </li>
             </ul>
@@ -700,6 +705,42 @@ export function WikiContent() {
                 <h5 className="font-bold text-accent-900 dark:text-accent-300 mb-2">Saving and working together</h5>
                 <p className="text-sm">
                   Changes save about a second after you make them. If a save fails, a red <em>Couldn&apos;t save</em> message appears in the top bar, and the browser warns you before you leave with unsaved changes. Each open page saves the whole forecast, so if several admins edit at once, refresh before making changes to avoid overwriting each other&apos;s work.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="ai-access" className="scroll-mt-32">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
+                <Bot size={24} className="text-accent-600 dark:text-accent-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-ink-900 dark:text-ink-50">11. AI Access (MCP)</h2>
+            </div>
+
+            <div className="prose prose-ink dark:prose-invert max-w-none text-ink-600 dark:text-ink-400">
+              <p>
+                You can connect Fee Calculator to an AI assistant such as Claude, ChatGPT or Cursor through MCP (Model Context Protocol), and ask it questions about your practice: &ldquo;Which active projects have the lowest margin?&rdquo;, &ldquo;Summarise the Riverside Library fee by phase&rdquo; or &ldquo;When does our bank cash drop below 50,000?&rdquo;. The connection is <strong>read-only</strong>: the assistant can look, but it cannot change anything.
+              </p>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Connecting</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Go to <strong>Settings → AI access</strong>, give the key a name (for example the assistant and device it is for) and click <strong>Create access key</strong>. Copy the key straight away: it is only shown once.</li>
+                <li><strong>Claude (web and desktop):</strong> Settings → Connectors → Add custom connector, and paste the connector address shown under your key.</li>
+                <li><strong>Claude Code, Cursor and other MCP clients:</strong> copy the command or configuration shown on the same page. These send the key as a header.</li>
+              </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">What the assistant can see</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>Everyone:</strong> the company overview and pipeline by status, projects with their cost, fee and margin, each project&apos;s phases, hours, direct costs and payment schedule, and the team list (names, positions and categories).</li>
+                <li><strong>Admins only:</strong> salaries, overheads and hourly rates per person, the overheads model, and the month-by-month cash-flow forecast with closing bank cash.</li>
+                <li>The key works with your account&apos;s current role and company. If your role changes, or you are removed from the company, the key follows straight away.</li>
+              </ul>
+
+              <div className="mt-6 bg-warning-50 dark:bg-warning-900/10 border border-warning-200 dark:border-warning-800/50 rounded-2xl p-6">
+                <h5 className="font-bold text-warning-900 dark:text-warning-300 mb-2">Keep keys private</h5>
+                <p className="text-sm">
+                  Anyone with your key can read what you can read, so treat it like a password. Use one key per assistant, and revoke it in Settings → AI access if it leaks or you stop using it. The list shows when each key was last used. When you share a conversation, remember the assistant may have shown figures from your account in it.
                 </p>
               </div>
             </div>
