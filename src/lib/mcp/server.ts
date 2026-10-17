@@ -2,12 +2,13 @@ import { resolveToken } from './auth';
 import { ChangeError } from './changes';
 import { CompanyData, ToolError, toolsFor } from './tools';
 import { WRITE_TOOLS } from './writeTools';
+import { ADMIN_WRITE_TOOLS } from './adminWriteTools';
 
 // A small, stateless MCP server over Streamable HTTP: each POST carries JSON-RPC messages and gets
 // a plain JSON reply. No sessions or server-sent events are needed.
 
 const SUPPORTED_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
-const SERVER_INFO = { name: 'fee-calculator', title: 'Fee Calculator', version: '1.1.0' };
+const SERVER_INFO = { name: 'fee-calculator', title: 'Fee Calculator', version: '1.2.0' };
 const ABOUT =
   'Fee Calculator holds an architecture practice\'s fee proposals (projects split into phases with team hours and costs), ' +
   'payment schedules, team, overheads and a cash-flow forecast. Call get_company_overview first. ' +
@@ -16,7 +17,7 @@ const READ_ONLY = ' This connection is read-only.';
 const CAN_WRITE =
   ' This connection can also make changes. Before changing anything, tell the user exactly what you will change and wait for them to confirm. ' +
   'Each change returns a change_id; undo_change reverts it.';
-const DESTRUCTIVE = new Set(['remove_direct_cost', 'remove_forecast_entry', 'set_payment_schedule', 'undo_change']);
+const DESTRUCTIVE = new Set(['remove_direct_cost', 'remove_forecast_entry', 'set_payment_schedule', 'undo_change', 'remove_overhead_item', 'remove_outflow_expense', 'sync_overheads_to_team']);
 
 /** Where OAuth clients learn how to sign in, sent with every 401. */
 export function resourceMetadataUrl(req: Request): string {
@@ -68,7 +69,7 @@ export async function handleMcpPost(req: Request, token: string | null): Promise
   }
   const ctx = auth.ctx;
   const data = new CompanyData(ctx.companyId);
-  const tools = toolsFor(ctx, WRITE_TOOLS);
+  const tools = toolsFor(ctx, [...WRITE_TOOLS, ...ADMIN_WRITE_TOOLS]);
 
   const handle = async (msg: RpcMessage): Promise<unknown | null> => {
     const isRequest = msg && msg.id !== undefined && msg.id !== null;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { getClient, issueCode, redirectMatches } from '@/lib/mcp/oauth';
+import { connectRefusal, getAiSettings, mayChange, mayConnect } from '@/lib/mcp/settings';
 
 // Backs the consent page at /oauth/authorize.
 // GET: checks the app and its return address before anything is shown.
@@ -49,7 +50,9 @@ export async function POST(req: Request) {
   const user = (await adminDb.collection('users').doc(uid).get()).data();
   if (!user?.companyId) return NextResponse.json({ error: 'Your account is not part of a company.' }, { status: 403 });
   const isAdmin = user.role === 'admin' || String(user.email || '').toLowerCase().endsWith('@weareenzyme.com');
-  const canWrite = body.allow_changes === true && (user.role !== 'viewer' || isAdmin);
+  const rules = await getAiSettings(user.companyId);
+  if (!mayConnect(rules, user.role, isAdmin)) return NextResponse.json({ error: connectRefusal(rules) }, { status: 403 });
+  const canWrite = body.allow_changes === true && (user.role !== 'viewer' || isAdmin) && mayChange(rules, user.role, isAdmin);
 
   const code = await issueCode({
     clientId, uid, redirectUri, codeChallenge: body.code_challenge, canWrite,

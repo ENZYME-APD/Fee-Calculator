@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { generateToken, hashToken, MAX_TOKENS_PER_USER, McpTokenDoc, OAuthGrantDoc } from '@/lib/mcp/auth';
 import { revokeGrant } from '@/lib/mcp/oauth';
+import { connectRefusal, getAiSettings, mayChange, mayConnect } from '@/lib/mcp/settings';
 
 // The signed-in user's AI connections: access keys (create, list, revoke; a key is shown once) and
 // apps connected by signing in (list, disconnect).
@@ -49,7 +50,9 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const name = (typeof body.name === 'string' ? body.name.trim() : '').slice(0, 60) || 'AI assistant';
   const isAdmin = user.role === 'admin' || String(user.email || '').toLowerCase().endsWith('@weareenzyme.com');
-  const canWrite = body.canWrite === true && (user.role !== 'viewer' || isAdmin);
+  const rules = await getAiSettings(user.companyId);
+  if (!mayConnect(rules, user.role, isAdmin)) return NextResponse.json({ error: connectRefusal(rules) }, { status: 403 });
+  const canWrite = body.canWrite === true && (user.role !== 'viewer' || isAdmin) && mayChange(rules, user.role, isAdmin);
   const token = generateToken();
   const doc: McpTokenDoc = { uid, name, hint: token.slice(0, 12), createdAt: Date.now(), canWrite, kind: 'key' };
   await adminDb.collection('mcpTokens').doc(hashToken(token)).set(doc);

@@ -741,8 +741,17 @@ export function WikiContent() {
                 <li><strong>Projects:</strong> create one (blank or from a template, priced at today&apos;s rates), and change its name, status, start date, area, margin or fixed fee.</li>
                 <li><strong>Phases and team:</strong> add and edit phases, set a person&apos;s hours on a phase, and add or remove direct costs.</li>
                 <li><strong>Payment schedules:</strong> replace a project&apos;s milestones, by percentage or fixed amount.</li>
-                <li><strong>Forecast (admins only):</strong> add, edit, move, copy or remove entries. Ask anyone with the forecast open to reload it first, so their next save doesn&apos;t replace the change.</li>
-                <li>It can&apos;t delete projects or phases, or change team salaries, overheads, users or billing. Viewers can only connect read-only.</li>
+                <li><strong>Forecast (admins only):</strong> add, edit, move, copy or remove entries. If the forecast or overheads page is open while the assistant changes it, that page won&apos;t save over the change: it asks you to reload.</li>
+                <li><strong>Team (admins only):</strong> add people and change their position, salary, overheads, category or non-billable share. The cost per hour is recalculated as (monthly salary + overheads) ÷ 160. Allocations already made keep the rate agreed at the time.</li>
+                <li><strong>Overheads (admins only):</strong> add, change or remove overhead items, set the income target and working hours, and sync overheads to the team&apos;s rates.</li>
+                <li><strong>Forecast outflows (admins only):</strong> add expense lines, add or remove expenses in a month, and add + or − corrections, for example on the fixed operational burn.</li>
+                <li>It can&apos;t delete projects, phases or people, or change users or billing. Viewers can only connect read-only.</li>
+              </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Company rules (admins)</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>In <strong>Settings → AI access → Company rules</strong>, choose <strong>who can connect</strong> an assistant (everyone, admins and members, admins only, or nobody) and <strong>who can let it make changes</strong> (admins and members, or admins only).</li>
+                <li>The rules apply straight away, including to apps and keys that are already connected: someone no longer allowed loses access on their next request, and connections that may no longer make changes become read-only.</li>
               </ul>
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Checking and undoing changes</h4>

@@ -41,7 +41,7 @@ service cloud.firestore {
     // Company finances (bank balance, debts, commissions): admins only, for reads too.
     // Written and read only by the server (AI access keys).
     function isServerOnlyCollection(path) {
-      return path.split('/')[0] in ['mcpTokens', 'mcpChanges', 'oauthClients', 'oauthCodes', 'oauthGrants'];
+      return path.split('/')[0] in ['mcpTokens', 'mcpChanges', 'oauthClients', 'oauthCodes', 'oauthGrants', 'aiSettings'];
     }
 
     function isAdminOnlyCollection(path) {

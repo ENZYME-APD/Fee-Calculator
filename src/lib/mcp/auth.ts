@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { adminDb } from '@/lib/firebase/admin';
 import { Company, User } from '@/lib/firebase/schema';
+import { connectRefusal, getAiSettings, mayChange, mayConnect } from './settings';
 
 // Credentials for the AI connection (MCP): personal access keys made in Settings → AI access, and
 // OAuth access tokens issued when someone signs in from Claude, ChatGPT or another client.
@@ -122,6 +123,9 @@ export async function resolveToken(token: string | null | undefined): Promise<Re
 
   const email = (user.email || '').toLowerCase();
   const isAdmin = user.role === 'admin' || email.endsWith('@weareenzyme.com');
+  // The company's AI access rules apply to existing keys and sign-ins too, on every request
+  const rules = await getAiSettings(user.companyId);
+  if (!mayConnect(rules, user.role, isAdmin)) return { ok: false, status: 403, message: connectRefusal(rules) };
   return {
     ok: true,
     ctx: {
@@ -132,7 +136,7 @@ export async function resolveToken(token: string | null | undefined): Promise<Re
       role: user.role,
       // Same rule as the app: admins of the company, plus Enzyme superadmins
       isAdmin,
-      canWrite: !!data.canWrite && (user.role !== 'viewer' || isAdmin),
+      canWrite: !!data.canWrite && (user.role !== 'viewer' || isAdmin) && mayChange(rules, user.role, isAdmin),
       clientName: data.name,
       company,
     },

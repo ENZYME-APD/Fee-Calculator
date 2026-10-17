@@ -20,7 +20,8 @@ function Consent() {
 
   const clientId = params.get('client_id') || '';
   const redirectUri = params.get('redirect_uri') || '';
-  const isViewer = dbUser?.role === 'viewer' && !user?.email?.toLowerCase().endsWith('@weareenzyme.com');
+  const [rulesReadOnly, setRulesReadOnly] = useState(false);
+  const isViewer = (dbUser?.role === 'viewer' && !user?.email?.toLowerCase().endsWith('@weareenzyme.com')) || rulesReadOnly;
 
   useEffect(() => {
     if (loading) return;
@@ -29,9 +30,26 @@ function Consent() {
       return;
     }
     if (params.get('response_type') !== 'code') { setError('This sign-in request is not supported (response_type must be code).'); return; }
-    fetch(`/api/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}`)
-      .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error); setClient(d); })
-      .catch(e => setError(e.message || 'Could not check this app.'));
+    (async () => {
+      try {
+        // The company's AI access rules for this user
+        const token = await auth.currentUser?.getIdToken();
+        const rr = await fetch('/api/ai-settings', { headers: { Authorization: `Bearer ${token}` } });
+        if (rr.ok) {
+          const rd = await rr.json();
+          if (!rd.you.canConnect) {
+            throw new Error(rd.settings.connect === 'none'
+              ? 'AI access is switched off for your company. An admin can turn it on in Settings → AI access.'
+              : 'Your company has limited AI access to other roles. Ask an admin if you need it.');
+          }
+          setRulesReadOnly(!rd.you.canAllowChanges);
+        }
+        const r = await fetch(`/api/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}`);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+        setClient(d);
+      } catch (e) { setError((e as Error).message || 'Could not check this app.'); }
+    })();
   }, [loading, user, clientId, redirectUri, params, router]);
 
   const decide = async (approve: boolean) => {
@@ -99,7 +117,7 @@ function Consent() {
                 <span className="font-semibold text-ink-900 dark:text-ink-100">Allow it to make changes</span>
                 <span className="block text-ink-500 dark:text-ink-400 text-xs mt-0.5">
                   {isViewer
-                    ? 'Viewers can only connect read-only.'
+                    ? 'Your role or your company\'s AI rules only allow a read-only connection.'
                     : 'Create and edit projects, phases, hours, costs and payment schedules (and the forecast, for admins). Every change is logged and can be undone in Settings → AI access.'}
                 </span>
               </span>

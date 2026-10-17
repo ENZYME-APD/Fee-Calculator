@@ -72,14 +72,21 @@ export function AIAccessTab() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [newToken, setNewToken] = useState<string | null>(null);
+  // Company rules (admins edit them) and what they mean for this user
+  const [rules, setRules] = useState<{ connect: string; changes: string } | null>(null);
+  const [draft, setDraft] = useState<{ connect: string; changes: string } | null>(null);
+  const [you, setYou] = useState<{ isAdmin: boolean; canConnect: boolean; canAllowChanges: boolean } | null>(null);
+  const [savingRules, setSavingRules] = useState(false);
+  const canConnect = you ? you.canConnect : true;
+  const canAllowChanges = you ? you.canAllowChanges : !isViewer;
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://feecalc.weareenzyme.com';
 
   const setState = (d: { keys?: KeyRow[]; apps?: AppRow[] }) => { if (d.keys) setKeys(d.keys); if (d.apps) setApps(d.apps); };
 
   const load = useCallback(async () => {
     try {
-      const [k, c] = await Promise.all([api('/api/mcp-keys'), api('/api/mcp-changes')]);
-      setState(k); setChanges(c.changes);
+      const [k, c, r] = await Promise.all([api('/api/mcp-keys'), api('/api/mcp-changes'), api('/api/ai-settings')]);
+      setState(k); setChanges(c.changes); setRules(r.settings); setDraft(r.settings); setYou(r.you);
     } catch (e) { setError((e as Error).message); }
     setLoading(false);
   }, []);
@@ -89,10 +96,18 @@ export function AIAccessTab() {
     e.preventDefault();
     setBusy(true); setError('');
     try {
-      const d = await api('/api/mcp-keys', 'POST', { name: name || 'AI assistant', canWrite: keyCanWrite && !isViewer });
+      const d = await api('/api/mcp-keys', 'POST', { name: name || 'AI assistant', canWrite: keyCanWrite && canAllowChanges });
       setState(d); setNewToken(d.token); setName(''); setKeyCanWrite(false);
     } catch (err) { setError((err as Error).message); }
     setBusy(false);
+  };
+
+  const saveRules = async () => {
+    if (!draft) return;
+    setSavingRules(true); setError('');
+    try { const r = await api('/api/ai-settings', 'POST', draft); setRules(r.settings); setDraft(r.settings); setYou(r.you); }
+    catch (err) { setError((err as Error).message); }
+    setSavingRules(false);
   };
 
   const revokeKey = async (k: KeyRow) => {
@@ -141,7 +156,40 @@ export function AIAccessTab() {
         </div>
       )}
 
-      <Section title="Connect by signing in (recommended)" hint="Add this address in your assistant. It opens Fee Calculator so you can sign in and choose whether it may make changes.">
+      {you?.isAdmin && draft && (
+        <Section title="Company rules" hint="Who in your company may use AI assistants. Applies straight away, including to apps and keys already connected.">
+          <div className="rounded-2xl border border-ink-200 dark:border-ink-800 p-4 flex flex-wrap items-end gap-4">
+            <div className="min-w-[220px] flex-1">
+              <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">Who can connect an assistant</label>
+              <select value={draft.connect} onChange={e => setDraft({ ...draft, connect: e.target.value })} className={`${fieldClass} w-full`}>
+                <option value="everyone">Everyone (viewers read-only)</option>
+                <option value="members">Admins and members</option>
+                <option value="admins">Admins only</option>
+                <option value="none">Nobody (AI access off)</option>
+              </select>
+            </div>
+            <div className="min-w-[220px] flex-1">
+              <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">Who can let it make changes</label>
+              <select value={draft.changes} onChange={e => setDraft({ ...draft, changes: e.target.value })} disabled={draft.connect === 'none'} className={`${fieldClass} w-full`}>
+                <option value="members">Admins and members</option>
+                <option value="admins">Admins only</option>
+              </select>
+            </div>
+            <PrimaryButton type="button" onClick={saveRules} disabled={savingRules || (rules?.connect === draft.connect && rules?.changes === draft.changes)}>
+              {savingRules ? 'Saving…' : 'Save rules'}
+            </PrimaryButton>
+          </div>
+        </Section>
+      )}
+
+      {!canConnect && (
+        <div className="flex items-start gap-2 text-sm text-ink-700 dark:text-ink-300 bg-ink-50 dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-xl px-3 py-3">
+          <AlertCircle size={16} className="shrink-0 mt-0.5" />
+          {rules?.connect === 'none' ? 'AI access is switched off for your company.' : 'Your company has limited AI access to other roles.'} Ask an admin if you need it.
+        </div>
+      )}
+
+      {canConnect && <Section title="Connect by signing in (recommended)" hint={canAllowChanges ? 'Add this address in your assistant. It opens Fee Calculator so you can sign in and choose whether it may make changes.' : 'Add this address in your assistant. It opens Fee Calculator so you can sign in. Your connection will be read-only.'}>
         <div className="space-y-4">
           <CopyBox label="Server address" value={`${origin}/api/mcp`} />
           <ul className="text-sm text-ink-700 dark:text-ink-300 space-y-1.5 list-disc pl-5">
@@ -150,7 +198,7 @@ export function AIAccessTab() {
             <li><span className="font-semibold">Claude Code:</span> run <code className="text-xs font-mono bg-ink-100 dark:bg-ink-800 rounded px-1">claude mcp add --transport http fee-calculator {origin}/api/mcp</code>, then <code className="text-xs font-mono bg-ink-100 dark:bg-ink-800 rounded px-1">/mcp</code> to sign in.</li>
           </ul>
         </div>
-      </Section>
+      </Section>}
 
       <Section title="Connected apps">
         {loading ? <p className="text-sm text-ink-500 dark:text-ink-400">Loading…</p> : apps.length === 0 ? (
@@ -194,14 +242,14 @@ export function AIAccessTab() {
         )}
       </Section>
 
-      <Section title="Access keys" hint="For assistants that can't sign in. Paste the key into the assistant's settings instead.">
+      {canConnect && <Section title="Access keys" hint="For assistants that can't sign in. Paste the key into the assistant's settings instead.">
         <form onSubmit={create} className="flex flex-wrap items-end gap-3 mb-4">
           <div className="flex-1 min-w-[220px]">
             <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">Key name</label>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Cursor on my laptop" maxLength={60} className={`${fieldClass} w-full`} />
           </div>
-          <label className={`flex items-center gap-2 text-sm pb-2 ${isViewer ? 'opacity-50' : 'cursor-pointer'} text-ink-700 dark:text-ink-300`}>
-            <input type="checkbox" checked={keyCanWrite && !isViewer} disabled={isViewer} onChange={e => setKeyCanWrite(e.target.checked)} /> Allow changes
+          <label className={`flex items-center gap-2 text-sm pb-2 ${!canAllowChanges ? 'opacity-50' : 'cursor-pointer'} text-ink-700 dark:text-ink-300`}>
+            <input type="checkbox" checked={keyCanWrite && canAllowChanges} disabled={!canAllowChanges} onChange={e => setKeyCanWrite(e.target.checked)} /> Allow changes
           </label>
           <PrimaryButton type="submit" disabled={busy}><KeyRound size={14} /> {busy ? 'Creating…' : 'Create access key'}</PrimaryButton>
         </form>
@@ -237,7 +285,7 @@ export function AIAccessTab() {
         <p className="text-xs text-ink-500 dark:text-ink-400 mt-3">
           Treat a key like a password: anyone with it can do what the key allows. Revoke it if it leaks or you stop using that assistant.
         </p>
-      </Section>
+      </Section>}
     </div>
   );
 }
