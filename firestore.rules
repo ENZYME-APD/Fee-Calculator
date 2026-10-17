@@ -39,6 +39,11 @@ service cloud.firestore {
     }
 
     // Company finances (bank balance, debts, commissions): admins only, for reads too.
+    // Written and read only by the server (AI access keys).
+    function isServerOnlyCollection(path) {
+      return path.split('/')[0] == 'mcpTokens';
+    }
+
     function isAdminOnlyCollection(path) {
       return path.split('/')[0] == 'forecastProfile';
     }
@@ -79,16 +84,16 @@ service cloud.firestore {
 
     // All other collections (strictly enforced by companyId)
     match /{document=**} {
-      allow create: if request.auth != null &&
+      allow create: if request.auth != null && !isServerOnlyCollection(document) &&
         (request.resource.data.companyId == getUserCompanyId() || isSuperadmin()) &&
         (!isSensitiveCollection(document) || isAdmin()) &&
         (!isAdminOnlyCollection(document) || isAdmin());
 
-      allow read: if request.auth != null &&
+      allow read: if request.auth != null && !isServerOnlyCollection(document) &&
         (resource.data.companyId == getUserCompanyId() || isSuperadmin()) &&
         (!isAdminOnlyCollection(document) || isAdmin());
 
-      allow update, delete: if request.auth != null &&
+      allow update, delete: if request.auth != null && !isServerOnlyCollection(document) &&
         (resource.data.companyId == getUserCompanyId() || isSuperadmin()) &&
         (!isSensitiveCollection(document) || isAdmin()) &&
         (!isAdminOnlyCollection(document) || isAdmin());

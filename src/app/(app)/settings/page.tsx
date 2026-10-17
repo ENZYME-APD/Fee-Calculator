@@ -9,6 +9,7 @@ import { ProfileTab } from '@/components/settings/ProfileTab';
 import { SecurityTab } from '@/components/settings/SecurityTab';
 import { PreferencesTab } from '@/components/settings/PreferencesTab';
 import { CategoriesTab } from '@/components/settings/CategoriesTab';
+import { AIAccessTab } from '@/components/settings/AIAccessTab';
 import { Card, CardBody } from '@/components/ui/Card';
 
 export default function SettingsPage() {
@@ -16,12 +17,12 @@ export default function SettingsPage() {
   const searchParams = useSearchParams();
   const [company, setCompany] = useState<Company | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'categories' | 'team' | 'security'>('preferences');
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'categories' | 'team' | 'security' | 'ai'>('preferences');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['profile', 'preferences', 'categories', 'team', 'security'].includes(tabParam)) {
+    if (tabParam && ['profile', 'preferences', 'categories', 'team', 'security', 'ai'].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -86,6 +87,14 @@ export default function SettingsPage() {
               My Profile
             </button>
             <button
+              onClick={() => setActiveTab('ai')}
+              className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                activeTab === 'ai' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
+              }`}
+            >
+              AI access
+            </button>
+            <button
               onClick={() => setActiveTab('security')}
               className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 activeTab === 'security' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
@@ -103,6 +112,7 @@ export default function SettingsPage() {
             {activeTab === 'categories' && company && <CategoriesTab company={company} />}
             {activeTab === 'team' && company && <TeamTab company={company} />}
             {activeTab === 'security' && <SecurityTab />}
+            {activeTab === 'ai' && <AIAccessTab />}
           </CardBody>
         </Card>
       </div>
