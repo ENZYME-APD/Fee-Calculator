@@ -10,6 +10,16 @@ const nextConfig: any = {
   // firebase-admin from bundling makes it load natively from node_modules
   // at runtime instead, which doesn't have this problem.
   serverExternalPackages: ['firebase-admin'],
+  // The AI sign-in consent screen must never be shown inside another site's frame (clickjacking)
+  async headers() {
+    return [{
+      source: '/oauth/:path*',
+      headers: [
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+      ],
+    }];
+  },
 };
 
 export default nextConfig;

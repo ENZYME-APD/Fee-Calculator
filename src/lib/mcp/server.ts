@@ -1,15 +1,27 @@
 import { resolveToken } from './auth';
+import { ChangeError } from './changes';
 import { CompanyData, ToolError, toolsFor } from './tools';
+import { WRITE_TOOLS } from './writeTools';
 
 // A small, stateless MCP server over Streamable HTTP: each POST carries JSON-RPC messages and gets
-// a plain JSON reply. No sessions or server-sent events are needed for read-only tools.
+// a plain JSON reply. No sessions or server-sent events are needed.
 
 const SUPPORTED_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
-const SERVER_INFO = { name: 'fee-calculator', title: 'Fee Calculator', version: '1.0.0' };
-const INSTRUCTIONS =
+const SERVER_INFO = { name: 'fee-calculator', title: 'Fee Calculator', version: '1.1.0' };
+const ABOUT =
   'Fee Calculator holds an architecture practice\'s fee proposals (projects split into phases with team hours and costs), ' +
   'payment schedules, team, overheads and a cash-flow forecast. Call get_company_overview first. ' +
-  'Amounts are in the company currency it returns. This connection is read-only.';
+  'Amounts are in the company currency it returns.';
+const READ_ONLY = ' This connection is read-only.';
+const CAN_WRITE =
+  ' This connection can also make changes. Before changing anything, tell the user exactly what you will change and wait for them to confirm. ' +
+  'Each change returns a change_id; undo_change reverts it.';
+const DESTRUCTIVE = new Set(['remove_direct_cost', 'remove_forecast_entry', 'set_payment_schedule', 'undo_change']);
+
+/** Where OAuth clients learn how to sign in, sent with every 401. */
+export function resourceMetadataUrl(req: Request): string {
+  return `${new URL(req.url).origin}/.well-known/oauth-protected-resource`;
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -47,11 +59,16 @@ export async function handleMcpPost(req: Request, token: string | null): Promise
   const auth = await resolveToken(token);
   if (!auth.ok) {
     const id = !Array.isArray(body) && body && typeof body === 'object' ? ((body as RpcMessage).id ?? null) : null;
-    return json(rpcError(id, -32001, auth.message), auth.status);
+    const res = json(rpcError(id, -32001, auth.message), auth.status);
+    if (auth.status === 401) {
+      res.headers.set('WWW-Authenticate', `Bearer resource_metadata="${resourceMetadataUrl(req)}"`);
+      res.headers.set('Access-Control-Expose-Headers', 'WWW-Authenticate');
+    }
+    return res;
   }
   const ctx = auth.ctx;
   const data = new CompanyData(ctx.companyId);
-  const tools = toolsFor(ctx);
+  const tools = toolsFor(ctx, WRITE_TOOLS);
 
   const handle = async (msg: RpcMessage): Promise<unknown | null> => {
     const isRequest = msg && msg.id !== undefined && msg.id !== null;
@@ -68,7 +85,7 @@ export async function handleMcpPost(req: Request, token: string | null): Promise
             protocolVersion: SUPPORTED_VERSIONS.includes(asked) ? asked : SUPPORTED_VERSIONS[0],
             capabilities: { tools: { listChanged: false } },
             serverInfo: SERVER_INFO,
-            instructions: INSTRUCTIONS,
+            instructions: ABOUT + (ctx.canWrite ? CAN_WRITE : READ_ONLY),
           },
         };
       }
@@ -80,7 +97,13 @@ export async function handleMcpPost(req: Request, token: string | null): Promise
           result: {
             tools: tools.map(t => ({
               name: t.name, title: t.title, description: t.description, inputSchema: t.inputSchema,
-              annotations: { title: t.title, readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+              annotations: {
+                title: t.title,
+                readOnlyHint: !t.writes || t.name === 'list_recent_changes',
+                destructiveHint: DESTRUCTIVE.has(t.name),
+                idempotentHint: !t.writes,
+                openWorldHint: false,
+              },
             })),
           },
         };
@@ -93,8 +116,9 @@ export async function handleMcpPost(req: Request, token: string | null): Promise
           const result = await tool.run(args, ctx, data);
           return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }], isError: false } };
         } catch (e) {
-          const message = e instanceof ToolError ? e.message : 'Something went wrong reading Fee Calculator data.';
-          if (!(e instanceof ToolError)) console.error('MCP tool error', name, e);
+          const known = e instanceof ToolError || e instanceof ChangeError;
+          const message = known ? (e as Error).message : 'Something went wrong in Fee Calculator. Check list_recent_changes before retrying a change.';
+          if (!known) console.error('MCP tool error', name, e);
           return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: message }], isError: true } };
         }
       }

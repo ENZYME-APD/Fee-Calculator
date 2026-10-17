@@ -790,7 +790,15 @@ export const getForecastProfile = async (): Promise<ForecastProfile | null> => {
   return extractData(snap.docs[0]) as ForecastProfile;
 };
 
-export const updateForecastProfile = async (input: Partial<ForecastProfile>) => {
+/** Thrown when the saved forecast was changed elsewhere (another admin, or an AI assistant) since this page loaded it. */
+export class ForecastConflictError extends Error {}
+
+/**
+ * Saves the forecast. With expectedUpdatedAt, refuses (ForecastConflictError) if the stored copy has
+ * been changed since that version, so an open page never silently overwrites newer work.
+ * Returns the updatedAt it wrote.
+ */
+export const updateForecastProfile = async (input: Partial<ForecastProfile>, expectedUpdatedAt?: number | null): Promise<number> => {
   const companyId = requireCompanyId();
   // Firestore rejects the whole write if any nested field is undefined (e.g. a pill with no
   // invoice number), so strip them at every level.
@@ -798,20 +806,23 @@ export const updateForecastProfile = async (input: Partial<ForecastProfile>) => 
   const q = query(collection(db, 'forecastProfile'), where('companyId', '==', companyId));
   const snap = await getDocs(q);
   
+  const updatedAt = Date.now();
   if (snap.empty) {
-    const docRef = await addDoc(collection(db, 'forecastProfile'), sanitize({ 
-      ...profile, 
-      companyId,
-      updatedAt: Date.now()
-    }));
-    return docRef.id;
-  } else {
-    const docRef = snap.docs[0].ref;
-    await updateDoc(docRef, sanitize({
+    await addDoc(collection(db, 'forecastProfile'), sanitize({
       ...profile,
-      updatedAt: Date.now()
+      companyId,
+      updatedAt
+    }));
+  } else {
+    const stored = snap.docs[0].data().updatedAt ?? null;
+    if (expectedUpdatedAt !== undefined && expectedUpdatedAt !== null && stored !== expectedUpdatedAt) {
+      throw new ForecastConflictError('The forecast was changed elsewhere.');
+    }
+    await updateDoc(snap.docs[0].ref, sanitize({
+      ...profile,
+      updatedAt
     }) as any);
-    return snap.docs[0].id;
   }
+  return updatedAt;
 };
 

@@ -31,6 +31,9 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite');
   const isSignupParam = searchParams.get('signup') === 'true';
+  // Where to go after signing in (e.g. back to an AI assistant's connection screen). Same-site paths only.
+  const nextParam = searchParams.get('next') || '';
+  const nextPath = nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.startsWith('/\\') ? nextParam : '/overview';
   const [isLogin, setIsLogin] = useState(!isSignupParam);
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -69,7 +72,7 @@ function LoginContent() {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        router.push('/overview');
+        router.push(nextPath);
       } else {
         // Sign up
         if (!inviteData && !companyName.trim()) throw new Error("Company name is required");
@@ -103,7 +106,7 @@ function LoginContent() {
           // Bootstrap sample data
           await bootstrapCompanyData(companyId, userCred.user.uid);
         }
-        router.push('/overview');
+        router.push(nextPath);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
@@ -142,7 +145,7 @@ function LoginContent() {
         if (inviteData) {
           await provision(user, { mode: 'invite', token: inviteToken! });
         }
-        router.push('/overview');
+        router.push(nextPath);
       } else {
         if (inviteData) {
           await provision(user, { mode: 'invite', token: inviteToken!, displayName: user.displayName || undefined });
@@ -151,7 +154,7 @@ function LoginContent() {
           const { companyId } = await provision(user, { mode: 'signup', companyName: cName, displayName: user.displayName || undefined });
           await bootstrapCompanyData(companyId, user.uid);
         }
-        router.push('/overview');
+        router.push(nextPath);
       }
     } catch (err: any) {
       setError(err.message || 'Google Sign-in failed.');

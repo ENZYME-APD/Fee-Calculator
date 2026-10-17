@@ -43,7 +43,7 @@ import {
 } from '@/lib/firebase/schema';
 import { 
   getForecastProfile, 
-  updateForecastProfile, 
+  updateForecastProfile, ForecastConflictError, 
   getProjects, 
   getPhases, 
   getPayments, 
@@ -158,6 +158,9 @@ export function FinancialForecastView() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  // Version of the saved forecast this page is working from; saving refuses if it has changed since
+  const savedVersion = useRef<number | null>(null);
+  const [conflict, setConflict] = useState(false);
   // True from the first unsaved change until the write lands; used to warn before leaving
   const savePending = useRef(false);
   const [profile, setProfile] = useState<ForecastProfile | null>(null);
@@ -268,6 +271,7 @@ export function FinancialForecastView() {
           .reduce((sum, i) => sum + (i.yearlyCost || 0), 0) / 12);
         setRunningCosts({ salaries, overheads: overheadItems, total: salaries + overheadItems });
         if (existingProfile) {
+          savedVersion.current = existingProfile.updatedAt ?? null;
           setProfile(existingProfile);
           setStartMonthKey(existingProfile.startMonthKey || getCurrentMonthKey());
           setOpeningMonthKey(existingProfile.openingMonthKey || existingProfile.startMonthKey || getCurrentMonthKey());
@@ -312,12 +316,13 @@ export function FinancialForecastView() {
     }
 
     if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+    if (conflict) return; // changed elsewhere: don't overwrite it, the banner asks for a reload
     savePending.current = true;
 
     autoSaveTimeout.current = setTimeout(async () => {
       setIsSaving(true);
       try {
-        await updateForecastProfile({
+        savedVersion.current = await updateForecastProfile({
           startMonthKey,
           openingMonthKey,
           visibleMonthsCount,
@@ -327,10 +332,11 @@ export function FinancialForecastView() {
           rows,
           outflows,
           groups
-        });
+        }, savedVersion.current);
         savePending.current = false;
         setSaveError(false);
       } catch (e) {
+        if (e instanceof ForecastConflictError) { savePending.current = false; setConflict(true); return; }
         console.error("Failed to auto-save forecast", e);
         setSaveError(true);
       } finally {
@@ -341,7 +347,7 @@ export function FinancialForecastView() {
     return () => {
       if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
     };
-  }, [loading, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows, groups]);
+  }, [loading, conflict, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows, groups]);
 
   // Warn before reloading or closing the tab while a change hasn't been saved yet
   useEffect(() => {
@@ -1334,6 +1340,15 @@ export function FinancialForecastView() {
           ) : null}
         </div>
       </div>
+
+      {conflict && (
+        <div className="mx-6 mt-4 px-4 py-2.5 rounded-lg border border-negative-200 dark:border-negative-800/60 bg-negative-50 dark:bg-negative-950/40 text-sm text-negative-800 dark:text-negative-200 flex items-center justify-between gap-4">
+          <span>
+            <span className="font-semibold">This forecast was changed elsewhere</span>, by another admin or an AI assistant. Your latest edit wasn&apos;t saved, so nothing of theirs is overwritten. Reload to see the current version, then redo your edit.
+          </span>
+          <button onClick={() => window.location.reload()} className="shrink-0 font-semibold hover:underline">Reload</button>
+        </div>
+      )}
 
       {disabledGroups.size > 0 && (
         <div className="mx-6 mt-4 px-4 py-2.5 rounded-lg border border-warning-200 dark:border-warning-800/60 bg-warning-50 dark:bg-warning-950/40 text-sm text-warning-800 dark:text-warning-200 flex items-center justify-between gap-4">

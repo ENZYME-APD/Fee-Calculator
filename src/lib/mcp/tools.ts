@@ -22,6 +22,7 @@ export interface ToolDef {
   description: string;
   inputSchema: Json;
   adminOnly?: boolean;
+  writes?: boolean; // changes data: only offered when the credential and role allow changes
   run: (args: Json, ctx: McpContext, data: CompanyData) => Promise<unknown>;
 }
 
@@ -59,23 +60,23 @@ export class CompanyData {
 
 // ---------- helpers ----------
 
-const round = (n: number) => Math.round(n * 100) / 100;
-const isoDate = (ts?: number) => (ts ? new Date(ts).toISOString().slice(0, 10) : null);
-const byOrder = <T extends { order?: number }>(a: T, b: T) => (a.order ?? 0) - (b.order ?? 0);
+export const round = (n: number) => Math.round(n * 100) / 100;
+export const isoDate = (ts?: number) => (ts ? new Date(ts).toISOString().slice(0, 10) : null);
+export const byOrder = <T extends { order?: number }>(a: T, b: T) => (a.order ?? 0) - (b.order ?? 0);
 
-function str(args: Json, key: string): string | undefined {
+export function str(args: Json, key: string): string | undefined {
   const v = args[key];
   return typeof v === 'string' && v.trim() ? v.trim() : undefined;
 }
-function bool(args: Json, key: string, fallback: boolean): boolean {
+export function bool(args: Json, key: string, fallback: boolean): boolean {
   return typeof args[key] === 'boolean' ? (args[key] as boolean) : fallback;
 }
-function int(args: Json, key: string, fallback: number, min: number, max: number): number {
+export function int(args: Json, key: string, fallback: number, min: number, max: number): number {
   const v = Number(args[key]);
   return Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : fallback;
 }
 
-async function projectBundle(data: CompanyData, project: Project) {
+export async function projectBundle(data: CompanyData, project: Project) {
   const [phases, allocations, costs, members, payments] = await Promise.all([
     data.phases(), data.allocations(), data.projectCosts(), data.members(), data.payments(),
   ]);
@@ -90,7 +91,7 @@ async function projectBundle(data: CompanyData, project: Project) {
   return { ...p, fin };
 }
 
-async function findProject(data: CompanyData, ref: string): Promise<Project> {
+export async function findProject(data: CompanyData, ref: string): Promise<Project> {
   const projects = await data.projects();
   const exact = projects.find(p => p.id === ref) || projects.find(p => p.name.toLowerCase() === ref.toLowerCase());
   if (exact) return exact;
@@ -102,13 +103,13 @@ async function findProject(data: CompanyData, ref: string): Promise<Project> {
   throw new ToolError(`No project matches "${ref}". Call list_projects to see the names and ids.`);
 }
 
-function monthKey(offsetFrom: string, offset: number): string {
+export function monthKey(offsetFrom: string, offset: number): string {
   const [y, m] = offsetFrom.split('-').map(Number);
   const d = new Date(Date.UTC(y, m - 1 + offset, 1));
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
-const monthIndex = (k: string) => { const [y, m] = k.split('-').map(Number); return y * 12 + m - 1; };
-const currentMonth = () => { const d = new Date(); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
+export const monthIndex = (k: string) => { const [y, m] = k.split('-').map(Number); return y * 12 + m - 1; };
+export const currentMonth = () => { const d = new Date(); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
 
 // Mirrors the forecast page: a linked line (the fixed operational burn by default) uses the live
 // Team resources + Overheads figure; other lines use the month's expenses, else the every-month amount.
@@ -351,7 +352,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'get_cash_flow_forecast',
     title: 'Cash-flow forecast',
-    description: 'Admins only. Month-by-month cash flow from the Financial forecast page. Inflows: invoiced (the invoicing schedule, not cash), possible (likely work, weighted by the conversion %), collections (cash expected in). Outflows: the fixed operational burn, other expense lines and referral commissions. Returns expected and optimistic inflow, net cash movement and closing bank cash per month. Optionally includes the amount of every line.',
+    description: 'Admins only. Month-by-month cash flow from the Financial forecast page. Inflows: invoiced (the invoicing schedule, not cash), possible (likely work, weighted by the conversion %), collections (cash expected in). Outflows: the fixed operational burn, other expense lines and referral commissions. Returns expected and optimistic inflow, net cash movement and closing bank cash per month. Optionally includes the amount of every line, with the entry ids the forecast-editing tools use.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -424,7 +425,9 @@ export const TOOLS: ToolDef[] = [
             .map(r => {
               const c: Partial<Record<'possible' | 'invoicing' | 'collections', { amount: number }[]>> = r.cells?.[m] || {};
               const s = (k: 'possible' | 'invoicing' | 'collections') => round((c[k] || []).reduce((t2, p) => t2 + (p.amount || 0), 0));
-              return { line: r.name, group: r.groupId ? groupName.get(r.groupId) || null : null, invoiced: s('invoicing'), possible: s('possible'), collections: s('collections') };
+              const entries = (['invoicing', 'possible', 'collections'] as const).flatMap(k =>
+                (c[k] || []).map(p => ({ entry_id: (p as { id?: string }).id, stage: k === 'invoicing' ? 'invoiced' : k, amount: p.amount, label: (p as { label?: string }).label || null })));
+              return { line: r.name, line_id: r.id, group: r.groupId ? groupName.get(r.groupId) || null : null, invoiced: s('invoicing'), possible: s('possible'), collections: s('collections'), entries };
             })
             .filter(l => l.invoiced || l.possible || l.collections);
           row.outflow_lines = [
@@ -448,6 +451,6 @@ export const TOOLS: ToolDef[] = [
   },
 ];
 
-export function toolsFor(ctx: McpContext): ToolDef[] {
-  return TOOLS.filter(t => !t.adminOnly || ctx.isAdmin);
+export function toolsFor(ctx: McpContext, extra: ToolDef[] = []): ToolDef[] {
+  return [...TOOLS, ...extra].filter(t => (!t.adminOnly || ctx.isAdmin) && (!t.writes || ctx.canWrite));
 }

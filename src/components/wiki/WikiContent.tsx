@@ -720,27 +720,49 @@ export function WikiContent() {
 
             <div className="prose prose-ink dark:prose-invert max-w-none text-ink-600 dark:text-ink-400">
               <p>
-                You can connect Fee Calculator to an AI assistant such as Claude, ChatGPT or Cursor through MCP (Model Context Protocol), and ask it questions about your practice: &ldquo;Which active projects have the lowest margin?&rdquo;, &ldquo;Summarise the Riverside Library fee by phase&rdquo; or &ldquo;When does our bank cash drop below 50,000?&rdquo;. The connection is <strong>read-only</strong>: the assistant can look, but it cannot change anything.
+                You can connect Fee Calculator to an AI assistant such as Claude, ChatGPT or Cursor through MCP (Model Context Protocol), and ask it questions about your practice: &ldquo;Which active projects have the lowest margin?&rdquo;, &ldquo;Summarise the Riverside Library fee by phase&rdquo; or &ldquo;When does our bank cash drop below 50,000?&rdquo;. If you allow it, the assistant can also do the work for you: &ldquo;Create a proposal for Harbour Lofts from the residential template&rdquo;, &ldquo;Add 40 hours for Amara to concept design&rdquo; or &ldquo;Move the stage 2 payment to March&rdquo;.
               </p>
 
-              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Connecting</h4>
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Connecting by signing in (recommended)</h4>
               <ul className="list-disc pl-5 space-y-2">
-                <li>Go to <strong>Settings → AI access</strong>, give the key a name (for example the assistant and device it is for) and click <strong>Create access key</strong>. Copy the key straight away: it is only shown once.</li>
-                <li><strong>Claude (web and desktop):</strong> Settings → Connectors → Add custom connector, and paste the connector address shown under your key.</li>
-                <li><strong>Claude Code, Cursor and other MCP clients:</strong> copy the command or configuration shown on the same page. These send the key as a header.</li>
+                <li>Copy the <strong>server address</strong> from <strong>Settings → AI access</strong> and add it in your assistant as a custom connector or MCP server. In Claude: Settings → Connectors → Add custom connector, then click Connect.</li>
+                <li>Fee Calculator opens in your browser. Sign in if needed, choose whether the assistant may <strong>make changes</strong>, and click <strong>Allow</strong>.</li>
+                <li>The app then appears under <strong>Connected apps</strong> in Settings → AI access, where you can disconnect it at any time.</li>
+              </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Connecting with an access key</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>For assistants that can&apos;t sign in, create an <strong>access key</strong> in Settings → AI access, ticking <strong>Allow changes</strong> if it should be able to edit. Copy the key straight away: it is only shown once.</li>
+                <li>Paste the command or configuration shown with the key into the assistant&apos;s settings. These send the key as a header.</li>
+              </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">What it can change</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>Projects:</strong> create one (blank or from a template, priced at today&apos;s rates), and change its name, status, start date, area, margin or fixed fee.</li>
+                <li><strong>Phases and team:</strong> add and edit phases, set a person&apos;s hours on a phase, and add or remove direct costs.</li>
+                <li><strong>Payment schedules:</strong> replace a project&apos;s milestones, by percentage or fixed amount.</li>
+                <li><strong>Forecast (admins only):</strong> add, edit, move, copy or remove entries. Ask anyone with the forecast open to reload it first, so their next save doesn&apos;t replace the change.</li>
+                <li>It can&apos;t delete projects or phases, or change team salaries, overheads, users or billing. Viewers can only connect read-only.</li>
+              </ul>
+
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Checking and undoing changes</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Assistants are asked to tell you what they will change and wait for your go-ahead before changing anything.</li>
+                <li>Every change is listed under <strong>Recent AI changes</strong> in Settings → AI access, with who made it and through which app. Admins see the whole company&apos;s changes.</li>
+                <li><strong>Undo</strong> puts back exactly what was there before. If someone has edited the same thing since, undo stops rather than overwrite their work. You can also ask the assistant to undo its last change.</li>
               </ul>
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">What the assistant can see</h4>
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Everyone:</strong> the company overview and pipeline by status, projects with their cost, fee and margin, each project&apos;s phases, hours, direct costs and payment schedule, and the team list (names, positions and categories).</li>
                 <li><strong>Admins only:</strong> salaries, overheads and hourly rates per person, the overheads model, and the month-by-month cash-flow forecast with closing bank cash.</li>
-                <li>The key works with your account&apos;s current role and company. If your role changes, or you are removed from the company, the key follows straight away.</li>
+                <li>Keys and connected apps work with your account&apos;s current role and company. If your role changes, or you are removed from the company, they follow straight away.</li>
               </ul>
 
               <div className="mt-6 bg-warning-50 dark:bg-warning-900/10 border border-warning-200 dark:border-warning-800/50 rounded-2xl p-6">
                 <h5 className="font-bold text-warning-900 dark:text-warning-300 mb-2">Keep keys private</h5>
                 <p className="text-sm">
-                  Anyone with your key can read what you can read, so treat it like a password. Use one key per assistant, and revoke it in Settings → AI access if it leaks or you stop using it. The list shows when each key was last used. When you share a conversation, remember the assistant may have shown figures from your account in it.
+                  Anyone with your key can do what the key allows, so treat it like a password. Signing in is safer than a key, because nothing has to be copied. Use one key per assistant, and revoke it in Settings → AI access if it leaks or you stop using it. The list shows when each key was last used. When you share a conversation, remember the assistant may have shown figures from your account in it.
                 </p>
               </div>
             </div>
