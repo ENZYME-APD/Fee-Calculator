@@ -2,6 +2,18 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, D
 import { db, auth } from './config';
 import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User, ProjectTask, DocumentBlock , SavedBlock, OverheadsProfile, ForecastProfile } from './schema';
 
+import { logActivity } from '@/lib/activity';
+
+// What a document was called before it's deleted, for the change log
+const beforeDelete = async (col: string, id: string): Promise<{ label?: string; refs?: { projectId?: string; phaseId?: string; memberId?: string } }> => {
+  try {
+    const snap = await getDoc(doc(db, col, id));
+    const d = snap.data() as any;
+    if (!d) return {};
+    return { label: d.name || d.title || d.email || undefined, refs: { projectId: d.projectId, phaseId: d.phaseId, memberId: d.memberId } };
+  } catch { return {}; }
+};
+
 const sanitize = (obj: any) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
 const extractData = (docSnap: DocumentData) => ({ id: docSnap.id, ...docSnap.data() });
@@ -27,6 +39,7 @@ export const getCompany = async (id: string): Promise<any> => {
 export const updateCompany = async (id: string, updates: any) => {
   const docRef = doc(db, 'companies', id);
   await updateDoc(docRef, sanitize(updates));
+  logActivity({ action: 'update', area: 'companies', docId: id, changes: sanitize(updates) });
 };
 
 export const getAllCompaniesForSuperadmin = async (): Promise<any[]> => {
@@ -42,11 +55,14 @@ export const getAllUsersForSuperadmin = async (): Promise<User[]> => {
 // --- Invites ---
 export const createInvite = async (invite: Omit<Invite, 'id'>) => {
   const docRef = await addDoc(collection(db, 'invites'), sanitize(invite));
+  logActivity({ action: 'create', area: 'invites', docId: docRef.id, summary: `Invited ${invite.email} as ${invite.role}` });
   return docRef.id;
 };
 
 export const deleteInvite = async (id: string) => {
+  const was = await beforeDelete('invites', id);
   await deleteDoc(doc(db, 'invites', id));
+  logActivity({ action: 'delete', area: 'invites', docId: id, summary: `Cancelled the invite${was.label ? ` for ${was.label}` : ''}` });
 };
 
 export const getInvitesByCompany = async (): Promise<Invite[]> => {
@@ -66,15 +82,19 @@ export const getCategories = async (): Promise<TeamCategory[]> => {
 
 export const addCategory = async (category: Omit<TeamCategory, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'categories'), sanitize({ ...category, companyId: requireCompanyId() }));
+  logActivity({ action: 'create', area: 'categories', docId: docRef.id, label: category.name });
   return docRef.id;
 };
 
 export const updateCategory = async (id: string, updates: Partial<Omit<TeamCategory, 'id' | 'companyId'>>) => {
   await updateDoc(doc(db, 'categories', id), sanitize(updates) as any);
+  logActivity({ action: 'update', area: 'categories', docId: id, changes: sanitize(updates) });
 };
 
 export const deleteCategory = async (id: string) => {
+  const was = await beforeDelete('categories', id);
   await deleteDoc(doc(db, 'categories', id));
+  logActivity({ action: 'delete', area: 'categories', docId: id, label: was.label });
 };
 
 export const batchAddCategories = async (categories: Omit<TeamCategory, 'id' | 'companyId'>[]) => {
@@ -85,6 +105,7 @@ export const batchAddCategories = async (categories: Omit<TeamCategory, 'id' | '
     batch.set(newRef, sanitize({ ...cat, companyId }));
   }
   await batch.commit();
+  if (categories.length) logActivity({ action: 'create', area: 'categories', count: categories.length, summary: `Added ${categories.length} team categor${categories.length === 1 ? 'y' : 'ies'}` });
 };
 
 // --- Team Members ---
@@ -97,6 +118,7 @@ export const getTeamMembers = async (): Promise<TeamMember[]> => {
 
 export const addTeamMember = async (member: Omit<TeamMember, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'teamMembers'), sanitize({ ...member, companyId: requireCompanyId() }));
+  logActivity({ action: 'create', area: 'teamMembers', docId: docRef.id, label: member.name, changes: { position: member.position, salary: member.salary, overheads: member.overheads, costPerHour: member.costPerHour } });
   return docRef.id;
 };
 
@@ -107,10 +129,12 @@ export const batchAddTeamMembers = async (members: Omit<TeamMember, 'id' | 'comp
     batch.set(newRef, sanitize({ ...member, companyId: requireCompanyId() }));
   }
   await batch.commit();
+  if (members.length) logActivity({ action: 'create', area: 'teamMembers', count: members.length, summary: `Added ${members.length} team member${members.length === 1 ? '' : 's'} (${members.slice(0, 5).map(m => m.name).join(', ')}${members.length > 5 ? '…' : ''})` });
 };
 
 export const updateTeamMember = async (id: string, updates: Partial<Omit<TeamMember, 'id' | 'companyId'>>) => {
   await updateDoc(doc(db, 'teamMembers', id), sanitize(updates) as any);
+  logActivity({ action: 'update', area: 'teamMembers', docId: id, changes: sanitize(updates) });
 };
 
 export const batchUpdateTeamMembers = async (updates: {id: string, data: Partial<TeamMember>}[]) => {
@@ -120,10 +144,13 @@ export const batchUpdateTeamMembers = async (updates: {id: string, data: Partial
     batch.update(docRef, update.data as DocumentData);
   }
   await batch.commit();
+  updates.forEach(u => logActivity({ action: 'update', area: 'teamMembers', docId: u.id, changes: sanitize(u.data) }));
 };
 
 export const deleteTeamMember = async (id: string) => {
+  const was = await beforeDelete('teamMembers', id);
   await deleteDoc(doc(db, 'teamMembers', id));
+  logActivity({ action: 'delete', area: 'teamMembers', docId: id, label: was.label });
 };
 
 export const getTeamMember = async (id: string): Promise<TeamMember | null> => {
@@ -152,16 +179,20 @@ export const addProject = async (project: Omit<Project, 'id' | 'companyId'>) => 
     status: project.status || 'Draft',
     startDate: project.startDate || Date.now()
   }));
+  logActivity({ action: 'create', area: 'projects', docId: docRef.id, label: project.name, summary: `Created ${project.isTemplate ? 'template' : 'project'} "${project.name}"` });
   return docRef.id;
 };
 
 export const updateProject = async (id: string, project: Partial<Omit<Project, 'id' | 'companyId'>>) => {
   const docRef = doc(db, 'projects', id);
   await updateDoc(docRef, sanitize(project) as any);
+  logActivity({ action: 'update', area: 'projects', docId: id, changes: sanitize(project) });
 };
 
 export const deleteProject = async (id: string) => {
+  const was = await beforeDelete('projects', id);
   await deleteDoc(doc(db, 'projects', id));
+  logActivity({ action: 'delete', area: 'projects', docId: id, label: was.label, summary: `Deleted project "${was.label || id}"` });
 };
 
 export const duplicateProject = async (id: string, includeAllocations: boolean = true, newName?: string, isTemplate: boolean = false): Promise<string> => {
@@ -247,6 +278,7 @@ export const duplicateProject = async (id: string, includeAllocations: boolean =
   }
 
   await batch.commit();
+  logActivity({ action: 'create', area: 'projects', docId: newProjectId, summary: `${isTemplate ? 'Saved' : 'Duplicated'} "${project.name}" as ${isTemplate ? 'template' : 'project'} "${newName || `${project.name} (Copy)`}"` });
   return newProjectId;
 };
 
@@ -262,6 +294,7 @@ export const getPhases = async (projectId?: string): Promise<Phase[]> => {
 
 export const addPhase = async (phase: Omit<Phase, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'phases'), sanitize({ ...phase, companyId: requireCompanyId() }));
+  logActivity({ action: 'create', area: 'phases', docId: docRef.id, label: phase.name, refs: { projectId: phase.projectId } });
   return docRef.id;
 };
 
@@ -286,9 +319,11 @@ export const updatePhase = async (id: string, phase: Partial<Omit<Phase, 'id' | 
   } else {
     await updateDoc(docRef, sanitize(phase) as any);
   }
+  logActivity({ action: 'update', area: 'phases', docId: id, changes: sanitize(phase) });
 };
 
 export const deletePhase = async (id: string) => {
+  const was = await beforeDelete('phases', id);
   const batch = writeBatch(db);
   batch.delete(doc(db, 'phases', id));
   
@@ -308,9 +343,11 @@ export const deletePhase = async (id: string) => {
   });
   
   await batch.commit();
+  logActivity({ action: 'delete', area: 'phases', docId: id, label: was.label, refs: was.refs, summary: `Deleted phase "${was.label || id}" with its team hours, tasks and direct costs` });
 };
 
 export const clearPhase = async (phaseId: string) => {
+  const was = await beforeDelete('phases', phaseId);
   const batch = writeBatch(db);
   
   // Delete all allocations for this phase
@@ -332,6 +369,7 @@ export const clearPhase = async (phaseId: string) => {
   });
   
   await batch.commit();
+  logActivity({ action: 'delete', area: 'phases', docId: phaseId, refs: was.refs, summary: `Cleared phase "${was.label || phaseId}": removed its team hours, direct costs and payments` });
 };
 
 // Project Costs
@@ -346,6 +384,7 @@ export const getProjectCosts = async (projectId?: string) => {
 
 export const addProjectCost = async (cost: Omit<ProjectCost, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'projectCosts'), sanitize({ ...cost, companyId: requireCompanyId() }));
+  logActivity({ action: 'create', area: 'projectCosts', docId: docRef.id, label: cost.name, refs: { projectId: cost.projectId }, changes: { quantity: cost.quantity, unitCost: cost.unitCost } });
   return docRef.id;
 };
 
@@ -358,19 +397,25 @@ export const getUsersByCompany = async () => {
 
 export const updateUser = async (uid: string, updates: Partial<User>) => {
   await updateDoc(doc(db, 'users', uid), sanitize(updates) as any);
+  logActivity({ action: 'update', area: 'users', docId: uid, changes: sanitize(updates), summary: updates.role ? `Changed a user's role to ${updates.role}` : undefined });
 };
 
 export const removeUserFromCompany = async (uid: string) => {
+  const was = await beforeDelete('users', uid);
   await deleteDoc(doc(db, 'users', uid));
+  logActivity({ action: 'delete', area: 'users', docId: uid, summary: `Removed ${was.label || 'a user'} from the company` });
 };
 
 
 export const updateProjectCost = async (id: string, cost: Partial<Omit<ProjectCost, 'id' | 'companyId'>>) => {
   await updateDoc(doc(db, 'projectCosts', id), sanitize(cost) as any);
+  logActivity({ action: 'update', area: 'projectCosts', docId: id, changes: sanitize(cost) });
 };
 
 export const deleteProjectCost = async (id: string) => {
+  const was = await beforeDelete('projectCosts', id);
   await deleteDoc(doc(db, 'projectCosts', id));
+  logActivity({ action: 'delete', area: 'projectCosts', docId: id, label: was.label, refs: was.refs });
 };
 
 export const importProjectData = async (data: any) => {
@@ -442,6 +487,7 @@ export const importProjectData = async (data: any) => {
   }
 
   await batch.commit();
+  logActivity({ action: 'create', area: 'projects', docId: newProjectId, summary: `Imported project "${project.name}"` });
   
   return newProjectId;
 };
@@ -467,6 +513,7 @@ export const addAllocation = async (allocation: Omit<Allocation, 'id' | 'company
     collection(db, 'allocations'),
     sanitize({ ...allocation, costPerHourSnapshot, companyId: requireCompanyId() })
   );
+  logActivity({ action: 'create', area: 'allocations', docId: docRef.id, refs: { projectId: allocation.projectId, phaseId: allocation.phaseId, memberId: allocation.memberId }, changes: { hours: allocation.hours } });
   return docRef.id;
 };
 
@@ -479,10 +526,13 @@ export const updateAllocation = async (id: string, allocation: Partial<Omit<Allo
     updates.costPerHourSnapshot = member?.costPerHour;
   }
   await updateDoc(doc(db, 'allocations', id), sanitize(updates) as any);
+  logActivity({ action: 'update', area: 'allocations', docId: id, changes: sanitize(updates) });
 };
 
 export const deleteAllocation = async (id: string) => {
+  const was = await beforeDelete('allocations', id);
   await deleteDoc(doc(db, 'allocations', id));
+  logActivity({ action: 'delete', area: 'allocations', docId: id, refs: was.refs });
 };
 
 // Admin action: re-pull every allocation's costPerHourSnapshot in a project
@@ -506,7 +556,10 @@ export const refreshProjectAllocationRates = async (projectId: string): Promise<
       updated++;
     }
   });
-  if (updated > 0) await batch.commit();
+  if (updated > 0) {
+    await batch.commit();
+    logActivity({ action: 'update', area: 'allocations', count: updated, refs: { projectId }, summary: `Refreshed ${updated} agreed hourly rate${updated === 1 ? '' : 's'} to the team's current rates` });
+  }
   return updated;
 };
 
@@ -527,15 +580,19 @@ export const getAllPayments = async (): Promise<Payment[]> => {
 
 export const addPayment = async (payment: Omit<Payment, 'id' | 'companyId'>) => {
   const docRef = await addDoc(collection(db, 'payments'), sanitize({ ...payment, companyId: requireCompanyId() }));
+  logActivity({ action: 'create', area: 'payments', docId: docRef.id, label: payment.name, refs: { projectId: payment.projectId } });
   return docRef.id;
 };
 
 export const updatePayment = async (id: string, payment: Partial<Omit<Payment, 'id' | 'companyId'>>) => {
   await updateDoc(doc(db, 'payments', id), sanitize(payment) as any);
+  logActivity({ action: 'update', area: 'payments', docId: id, changes: sanitize(payment) });
 };
 
 export const deletePayment = async (id: string) => {
+  const was = await beforeDelete('payments', id);
   await deleteDoc(doc(db, 'payments', id));
+  logActivity({ action: 'delete', area: 'payments', docId: id, label: was.label, refs: was.refs });
 };
 
 export const batchAddPayments = async (payments: Omit<Payment, 'id' | 'companyId'>[]) => {
@@ -545,6 +602,7 @@ export const batchAddPayments = async (payments: Omit<Payment, 'id' | 'companyId
     batch.set(newRef, sanitize({ ...payment, companyId: requireCompanyId() }));
   }
   await batch.commit();
+  if (payments.length) logActivity({ action: 'create', area: 'payments', count: payments.length, refs: { projectId: payments[0].projectId }, summary: `Added ${payments.length} payment milestone${payments.length === 1 ? '' : 's'}` });
 };
 
 export const batchUpdatePayments = async (updates: {id: string, data: Partial<Payment>}[]) => {
@@ -554,6 +612,7 @@ export const batchUpdatePayments = async (updates: {id: string, data: Partial<Pa
     batch.update(docRef, sanitize(update.data) as any);
   }
   await batch.commit();
+  if (updates.length) logActivity({ action: 'update', area: 'payments', count: updates.length, docId: updates.length === 1 ? updates[0].id : undefined, summary: updates.length === 1 ? undefined : `Changed ${updates.length} payment milestones` });
 };
 
 export const clearPayments = async (projectId: string) => {
@@ -563,6 +622,7 @@ export const clearPayments = async (projectId: string) => {
     batch.delete(doc.ref);
   });
   await batch.commit();
+  if (!paymentsSnap.empty) logActivity({ action: 'delete', area: 'payments', count: paymentsSnap.size, refs: { projectId }, summary: `Cleared the payment schedule (${paymentsSnap.size} milestone${paymentsSnap.size === 1 ? '' : 's'})` });
 };
 
 // --- Bootstrapping Sample Data ---
@@ -622,6 +682,7 @@ export const clearSampleData = async (companyId: string) => {
     deleteSamples('projectCosts'),
     deleteSamples('payments'),
   ]);
+  logActivity({ action: 'delete', area: 'sampleData', summary: 'Removed the sample data' });
 };
 
 export const deleteAccountData = async (companyId: string, uid: string) => {
@@ -672,6 +733,7 @@ export const getProjectTasks = async (projectId: string): Promise<ProjectTask[]>
 export const addProjectTask = async (task: Omit<ProjectTask, 'id' | 'companyId'>) => {
   const companyId = requireCompanyId();
   const docRef = await addDoc(collection(db, 'projectTasks'), { ...task, companyId });
+  logActivity({ action: 'create', area: 'projectTasks', docId: docRef.id, label: task.name, refs: { projectId: task.projectId } });
   return docRef.id;
 };
 
@@ -679,12 +741,15 @@ export const updateProjectTask = async (id: string, updates: Partial<ProjectTask
   requireCompanyId();
   const docRef = doc(db, 'projectTasks', id);
   await updateDoc(docRef, updates);
+  logActivity({ action: 'update', area: 'projectTasks', docId: id, changes: updates as Record<string, unknown>, coalesce: true });
 };
 
 export const deleteProjectTask = async (id: string) => {
   requireCompanyId();
+  const was = await beforeDelete('projectTasks', id);
   const docRef = doc(db, 'projectTasks', id);
   await deleteDoc(docRef);
+  logActivity({ action: 'delete', area: 'projectTasks', docId: id, label: was.label, refs: was.refs });
 };
 
 
@@ -703,17 +768,21 @@ export const getDocumentBlocks = async (companyId: string, projectId?: string): 
 
 export const addDocumentBlock = async (block: Omit<DocumentBlock, 'id'>) => {
   const docRef = await addDoc(collection(db, 'documentBlocks'), block);
+  logActivity({ action: 'create', area: 'documentBlocks', docId: docRef.id, refs: { projectId: block.projectId }, summary: `Added document block "${block.title}"`, coalesce: true });
   return docRef.id;
 };
 
 export const updateDocumentBlock = async (id: string, block: Partial<Omit<DocumentBlock, 'id' | 'companyId'>>) => {
   const docRef = doc(db, 'documentBlocks', id);
   await updateDoc(docRef, block);
+  logActivity({ action: 'update', area: 'documentBlocks', docId: id, changes: block as Record<string, unknown>, fieldsOnly: true, coalesce: true });
 };
 
 export const deleteDocumentBlock = async (id: string) => {
+  const was = await beforeDelete('documentBlocks', id);
   const docRef = doc(db, 'documentBlocks', id);
   await deleteDoc(docRef);
+  logActivity({ action: 'delete', area: 'documentBlocks', docId: id, refs: was.refs, summary: `Deleted document block${was.label ? ` "${was.label}"` : ''}` });
 };
 
 export const initializeDefaultBlocks = async (companyId: string, projectId: string) => {
@@ -743,11 +812,14 @@ export const getSavedBlocks = async (companyId: string): Promise<SavedBlock[]> =
 
 export const addSavedBlock = async (block: Omit<SavedBlock, 'id'>): Promise<string> => {
   const docRef = await addDoc(collection(db, 'saved_blocks'), block);
+  logActivity({ action: 'create', area: 'saved_blocks', docId: docRef.id, summary: `Saved block "${block.title}" to the template "${block.templateName}"` });
   return docRef.id;
 };
 
 export const deleteSavedBlock = async (id: string): Promise<void> => {
+  const was = await beforeDelete('saved_blocks', id);
   await deleteDoc(doc(db, 'saved_blocks', id));
+  logActivity({ action: 'delete', area: 'saved_blocks', docId: id, summary: `Deleted saved block${was.label ? ` "${was.label}"` : ''}` });
 };
 
 // --- Overheads Profile ---
@@ -784,6 +856,7 @@ export const updateOverheadsProfile = async (profile: Partial<OverheadsProfile>,
       updatedAt
     }) as any);
   }
+  logActivity({ action: 'update', area: 'overheadsProfile', docId: snap.docs[0]?.id, summary: 'Edited the overheads calculator', changes: { yearlyIncomeTarget: profile.yearlyIncomeTarget, workingHoursPerYear: profile.workingHoursPerYear }, coalesce: true });
   return updatedAt;
 };
 
@@ -829,6 +902,7 @@ export const updateForecastProfile = async (input: Partial<ForecastProfile>, exp
       updatedAt
     }) as any);
   }
+  logActivity({ action: 'update', area: 'forecastProfile', docId: snap.docs[0]?.id, summary: 'Edited the financial forecast', coalesce: true });
   return updatedAt;
 };
 

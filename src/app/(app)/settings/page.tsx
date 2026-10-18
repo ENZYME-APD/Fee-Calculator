@@ -10,19 +10,21 @@ import { SecurityTab } from '@/components/settings/SecurityTab';
 import { PreferencesTab } from '@/components/settings/PreferencesTab';
 import { CategoriesTab } from '@/components/settings/CategoriesTab';
 import { AIAccessTab } from '@/components/settings/AIAccessTab';
+import { ActivityTab } from '@/components/settings/ActivityTab';
 import { Card, CardBody } from '@/components/ui/Card';
 
 export default function SettingsPage() {
-  const { dbUser } = useAuth();
+  const { dbUser, user } = useAuth();
+  const isAdmin = dbUser?.role === 'admin' || !!user?.email?.toLowerCase().endsWith('@weareenzyme.com');
   const searchParams = useSearchParams();
   const [company, setCompany] = useState<Company | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'categories' | 'team' | 'security' | 'ai'>('preferences');
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'categories' | 'team' | 'security' | 'ai' | 'activity'>('preferences');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['profile', 'preferences', 'categories', 'team', 'security', 'ai'].includes(tabParam)) {
+    if (tabParam && ['profile', 'preferences', 'categories', 'team', 'security', 'ai', 'activity'].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -94,6 +96,16 @@ export default function SettingsPage() {
             >
               AI access
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  activeTab === 'activity' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
+                }`}
+              >
+                Activity
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('security')}
               className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
@@ -113,6 +125,7 @@ export default function SettingsPage() {
             {activeTab === 'team' && company && <TeamTab company={company} />}
             {activeTab === 'security' && <SecurityTab />}
             {activeTab === 'ai' && <AIAccessTab />}
+            {activeTab === 'activity' && isAdmin && <ActivityTab />}
           </CardBody>
         </Card>
       </div>

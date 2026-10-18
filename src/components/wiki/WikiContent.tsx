@@ -439,6 +439,15 @@ export function WikiContent() {
                 </div>
                 <div className="bg-ink-50 dark:bg-ink-800/50 p-4 rounded-xl border border-ink-200 dark:border-ink-700">
                   <h4 className="font-bold text-ink-800 dark:text-ink-200 mb-2 text-sm flex items-center gap-2">
+                    <Users size={14} className="text-ink-500" />
+                    Activity Log
+                  </h4>
+                  <p className="text-xs text-ink-600 dark:text-ink-400">
+                    Admins can see who changed what in <strong className="text-ink-700 dark:text-ink-300">Settings → Activity</strong>: projects, phases, team hours, direct costs, payments, team, overheads, the forecast, users and company settings, plus every change made by an AI assistant. Each entry shows the person, the time and the new values, and can be filtered by person, area or project. Entries are stamped by our server, and nobody can edit or delete them. Pages that save as you type, like the forecast, are combined into one entry every few minutes.
+                  </p>
+                </div>
+                <div className="bg-ink-50 dark:bg-ink-800/50 p-4 rounded-xl border border-ink-200 dark:border-ink-700">
+                  <h4 className="font-bold text-ink-800 dark:text-ink-200 mb-2 text-sm flex items-center gap-2">
                     <Bot size={14} className="text-ink-500" />
                     AI Assistants
                   </h4>
