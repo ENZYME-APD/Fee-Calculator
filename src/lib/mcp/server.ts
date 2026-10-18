@@ -17,7 +17,7 @@ const READ_ONLY = ' This connection is read-only.';
 const CAN_WRITE =
   ' This connection can also make changes. Before changing anything, tell the user exactly what you will change and wait for them to confirm. ' +
   'Each change returns a change_id; undo_change reverts it.';
-const DESTRUCTIVE = new Set(['remove_direct_cost', 'remove_forecast_entry', 'set_payment_schedule', 'undo_change', 'remove_overhead_item', 'remove_outflow_expense', 'sync_overheads_to_team']);
+const DESTRUCTIVE = new Set(['remove_direct_cost', 'remove_forecast_entry', 'set_payment_schedule', 'undo_change', 'remove_overhead_item', 'remove_outflow_expense', 'sync_overheads_to_team', 'remove_forecast_line']);
 
 /** Where OAuth clients learn how to sign in, sent with every 401. */
 export function resourceMetadataUrl(req: Request): string {

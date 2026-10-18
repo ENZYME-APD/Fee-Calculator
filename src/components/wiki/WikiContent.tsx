@@ -754,6 +754,7 @@ export function WikiContent() {
                 <li><strong>Forecast (admins only):</strong> add, edit, move, copy or remove entries. If the forecast or overheads page is open while the assistant changes it, that page won&apos;t save over the change: it asks you to reload.</li>
                 <li><strong>Team (admins only):</strong> add people and change their position, salary, overheads, category or non-billable share. The cost per hour is recalculated as (monthly salary + overheads) ÷ 160. Allocations already made keep the rate agreed at the time.</li>
                 <li><strong>Overheads (admins only):</strong> add, change or remove overhead items, set the income target and working hours, and sync overheads to the team&apos;s rates.</li>
+                <li><strong>Forecast lines (admins only):</strong> delete an income or expense line with all its amounts (never the fixed operational burn).</li>
                 <li><strong>Forecast outflows (admins only):</strong> add expense lines, add or remove expenses in a month, and add + or − corrections, for example on the fixed operational burn.</li>
                 <li>It can&apos;t delete projects, phases or people, or change users or billing. Viewers can only connect read-only.</li>
               </ul>

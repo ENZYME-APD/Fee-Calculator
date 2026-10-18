@@ -268,6 +268,57 @@ export const ADMIN_WRITE_TOOLS: ToolDef[] = [
     },
   },
 
+  // ---------- forecast lines ----------
+  {
+    name: 'remove_forecast_line',
+    title: 'Delete forecast line',
+    description: `Admins only. Deletes a whole line from the Financial forecast, with every amount in it: an income line (Inflows) or an expense line (Outflows). The fixed operational burn can't be deleted. Matches the exact name or line_id first; tell the user the line and its amounts before deleting. ${FORECAST_NOTE}`,
+    writes: true, adminOnly: true,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        line: { type: 'string', description: 'Exact line name or line_id (from get_cash_flow_forecast with include_lines).' },
+        section: { type: 'string', enum: ['inflows', 'outflows'], description: 'Only needed if an income and an expense line share the name.' },
+      },
+      required: ['line'],
+      additionalProperties: false,
+    },
+    run: async (args, ctx, data) => {
+      const profile = await loadForecast(data);
+      const ref = (str(args, 'line') || '').trim();
+      if (!ref) throw new ToolError('Give the line name or line_id.');
+      const section = str(args, 'section');
+      const low = ref.toLowerCase();
+      // Exact matches only: deleting must never pick a line by a partial name
+      const rows = section === 'outflows' ? [] : (profile.rows || []).filter(r => r.id === ref || (r.name || '').trim().toLowerCase() === low);
+      const lines = section === 'inflows' ? [] : (profile.outflows || []).filter(o => o.id === ref || (o.name || '').trim().toLowerCase() === low);
+      if (rows.length + lines.length === 0) {
+        const near = [...(profile.rows || []), ...(profile.outflows || [])].filter(l => (l.name || '').toLowerCase().includes(low)).map(l => `${l.name} (${l.id})`);
+        throw new ToolError(`No forecast line is called exactly "${ref}".${near.length ? ` Similar: ${near.join('; ')}.` : ''}`);
+      }
+      if (rows.length + lines.length > 1) {
+        throw new ToolError(`More than one line matches "${ref}": ${[...rows, ...lines].map(l => `${l.name} (${l.id})`).join('; ')}. Use the line_id.`);
+      }
+      let summary: string;
+      if (rows.length) {
+        const row = rows[0];
+        const entries = Object.values(row.cells || {}).flatMap(c => [...(c.invoicing || []), ...(c.possible || []), ...(c.collections || [])]);
+        const total = entries.reduce((sum, p) => sum + (p.amount || 0), 0);
+        profile.rows = (profile.rows || []).filter(r => r.id !== row.id);
+        summary = `Forecast: deleted income line "${row.name}" (${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}, ${Math.round(total)} in total across stages)`;
+      } else {
+        const line = lines[0];
+        if (line.type === 'burn' || isLinkedLine(line)) throw new ToolError(`"${line.name}" is the fixed operational burn and can't be deleted. Use set_outflow_adjustment to change a month.`);
+        const pills = Object.values(line.monthlyPills || {}).flat();
+        const total = pills.reduce((sum, p) => sum + (p.amount || 0), 0) + Object.values(line.monthlyAmounts || {}).reduce((s2, v) => s2 + (v || 0), 0);
+        profile.outflows = (profile.outflows || []).filter(o => o.id !== line.id);
+        summary = `Forecast: deleted expense line "${line.name}" (${pills.length} expense${pills.length === 1 ? '' : 's'}, ${Math.round(total)} in total${line.defaultMonthlyAmount ? `, plus ${line.defaultMonthlyAmount} every month` : ''})`;
+      }
+      const changeId = await applyChange(ctx, 'remove_forecast_line', summary, [forecastOp(profile)]);
+      return done(summary + '.', changeId, { note: FORECAST_NOTE });
+    },
+  },
+
   // ---------- forecast outflows ----------
   {
     name: 'add_outflow_line',
