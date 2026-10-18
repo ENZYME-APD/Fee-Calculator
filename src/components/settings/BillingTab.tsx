@@ -29,6 +29,21 @@ export function BillingTab({ company }: { company: Company }) {
     setLoading(null);
   };
 
+  const [portalLoading, setPortalLoading] = useState(false);
+  const openPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/stripe/portal', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.url) { window.location.href = data.url; return; }
+      alert(data.error || 'Could not open billing.');
+    } catch {
+      alert('Could not open billing.');
+    }
+    setPortalLoading(false);
+  };
+
   const isTrial = company.subscriptionStatus === 'trialing';
   const isCanceled = company.subscriptionStatus === 'canceled' || company.subscriptionStatus === 'past_due';
   const isActive = company.subscriptionStatus === 'active' || company.subscriptionStatus === 'lifetime';
@@ -138,14 +153,17 @@ export function BillingTab({ company }: { company: Company }) {
         </div>
       )}
       
-      {isActive && company.subscriptionStatus !== 'lifetime' && (
+      {(isActive || company.subscriptionStatus === 'past_due') && company.subscriptionStatus !== 'lifetime' && company.stripeCustomerId && (
         <div className="mt-8">
            <button
-              className="flex items-center gap-2 py-3 px-6 bg-ink-100 dark:bg-ink-800 hover:bg-ink-200 dark:hover:bg-ink-700 text-ink-900 dark:text-ink-50 font-bold rounded-xl transition-all"
+              onClick={openPortal}
+              disabled={portalLoading}
+              className="flex items-center gap-2 py-3 px-6 bg-ink-100 dark:bg-ink-800 hover:bg-ink-200 dark:hover:bg-ink-700 text-ink-900 dark:text-ink-50 font-bold rounded-xl transition-all disabled:opacity-50"
             >
               <CreditCard size={18} />
-              Manage Billing in Stripe
+              {portalLoading ? 'Opening…' : 'Manage billing'}
             </button>
+            <p className="text-xs text-ink-500 dark:text-ink-400 mt-2">Update your card, download invoices, switch between monthly and yearly, or cancel. Add or remove users in Settings → Team management.</p>
         </div>
       )}
     </div>
