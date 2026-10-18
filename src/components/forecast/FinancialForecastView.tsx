@@ -37,6 +37,8 @@ import {
   Phase, 
   Payment,
   TeamMember,
+  TeamCategory,
+  ProjectCost,
   Allocation,
   ForecastGroup,
   ForecastOutflowPill
@@ -54,13 +56,14 @@ import {
   getCategories
 } from '@/lib/firebase/db';
 import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
+import { getAllocationRate } from '@/lib/utils/allocationCost';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
 import { EditPillModal } from './EditPillModal';
 import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
-import { GROUP_COLORS, ManageGroupsModal } from './groups';
+import { GROUP_COLORS, ManageGroupsModal, newGroupId, nextGroupColor } from './groups';
 import { OutflowPillModal } from './OutflowPillModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -142,6 +145,78 @@ function outflowAmount(item: ForecastOutflowItem, monthKey: string, linkedMonthl
   return outflowBase(item, monthKey, linkedMonthly) + (item.monthlyAdjustments?.[monthKey] ?? 0);
 }
 
+const DAY = 24 * 60 * 60 * 1000;
+const PROJECT_COSTS_GROUP = 'Project expenses';
+
+/**
+ * A project's costs that aren't in the fixed operational burn, as outflow expenses by month:
+ * consultants (direct costs of type consultant, and hours of people in external team categories)
+ * at the end of their phase; trips, renderings and other direct costs spread over the months the
+ * phase runs, in proportion to its days in each month. Phases run back to back from the start date.
+ */
+function buildProjectCostPills(
+  proj: Project,
+  phases: Phase[],
+  costs: ProjectCost[],
+  allocations: Allocation[],
+  members: TeamMember[],
+  externalCategoryIds: Set<string>,
+): Record<string, ForecastOutflowPill[]> {
+  const pills: Record<string, ForecastOutflowPill[]> = {};
+  const add = (month: string, amount: number, description: string) => {
+    const a = Math.round(amount);
+    if (a <= 0) return;
+    (pills[month] = pills[month] || []).push({ id: `opill_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`, amount: a, description });
+  };
+  const sorted = [...phases].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  let start = proj.startDate || Date.now();
+  for (const ph of sorted) {
+    const end = start + (ph.durationWeeks || 0) * 7 * DAY;
+    const endMonth = monthKeyFromDate(Math.max(start, end - 1)); // a phase ending on the 1st belongs to the month before
+    // Months the phase touches, with its days in each
+    const spans: { month: string; days: number }[] = [];
+    for (let t = start; t < end; ) {
+      const d = new Date(t);
+      const next = Math.min(end, new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime());
+      spans.push({ month: monthKeyFromDate(t), days: next - t });
+      t = next;
+    }
+    const totalDays = spans.reduce((sum, x) => sum + x.days, 0);
+
+    for (const c of costs.filter(x => x.phaseId === ph.id)) {
+      const total = (c.quantity || 0) * (c.unitCost || 0);
+      const label = `${c.name} · ${ph.name}`;
+      if (c.type === 'consultant' || spans.length <= 1 || totalDays <= 0) { add(endMonth, total, label); continue; }
+      // Spread, keeping the rounded parts adding up to the total
+      let placed = 0;
+      spans.forEach((x, i) => {
+        const part = i === spans.length - 1 ? Math.round(total) - placed : Math.round(total * x.days / totalDays);
+        placed += part;
+        add(x.month, part, `${label} (${i + 1}/${spans.length})`);
+      });
+    }
+
+    for (const a of allocations.filter(x => x.phaseId === ph.id)) {
+      const m = members.find(x => x.id === a.memberId);
+      if (!m?.category || !externalCategoryIds.has(m.category)) continue;
+      add(endMonth, (a.hours || 0) * getAllocationRate(a, m), `${m.name} · ${ph.name}`);
+    }
+    start = end;
+  }
+  return pills;
+}
+
+const pillSignature = (pills: Record<string, ForecastOutflowPill[]> | undefined) => {
+  const counts: Record<string, number> = {};
+  Object.entries(pills || {}).forEach(([m, list]) => (list || []).forEach(p => {
+    const k = `${m}|${Math.round(p.amount)}|${p.description || ''}`;
+    counts[k] = (counts[k] || 0) + 1;
+  }));
+  return counts;
+};
+const signatureDiff = (a: Record<string, number>, b: Record<string, number>) =>
+  [...new Set([...Object.keys(a), ...Object.keys(b)])].reduce((sum, k) => sum + Math.abs((a[k] || 0) - (b[k] || 0)), 0);
+
 function getCurrentMonthKey(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -217,7 +292,7 @@ export function FinancialForecastView() {
   const openAddRow = (groupId?: string) => { setAddRowGroupId(groupId); setAddRowModalOpen(true); };
   const [editingRow, setEditingRow] = useState<ForecastRow | null>(null);
   // Reset row: the rebuilt amounts are worked out first, and a confirmation is shown only when they differ
-  const [resetPlan, setResetPlan] = useState<{ row: ForecastRow; cells: ForecastRow['cells']; changed: number } | null>(null);
+  const [resetPlan, setResetPlan] = useState<{ row: ForecastRow; cells: ForecastRow['cells']; changed: number; costLine?: { line: ForecastOutflowItem | null; pills: Record<string, ForecastOutflowPill[]>; changed: number } } | null>(null);
   const [resetCheckingId, setResetCheckingId] = useState<string | null>(null);
   // Current proposed fee for each project, to compare with what the linked row adds up to
   const [proposalFees, setProposalFees] = useState<Record<string, number>>({});
@@ -472,8 +547,9 @@ export function FinancialForecastView() {
   const handleSyncFromProjects = async () => {
     setLoading(true);
     try {
-      const [allProjects, members, allocations] = await Promise.all([getProjects(), getTeamMembers(), getAllocations()]);
+      const [allProjects, members, allocations, teamCategories] = await Promise.all([getProjects(), getTeamMembers(), getAllocations(), getCategories()]);
       const candidates = allProjects.filter(p => !p.isTemplate && (p.status === 'Active' || p.status === 'Proposed'));
+      const externalIds = new Set(teamCategories.filter(c => c.type === 'external').map(c => c.id!));
 
       const newRows: ForecastRow[] = [...rows];
       let added = 0;
@@ -498,10 +574,24 @@ export function FinancialForecastView() {
         added++;
       }
 
+      // Costs of Active projects that aren't in the fixed burn: one outflow line per project, in the Project costs group
+      const newLines: ForecastOutflowItem[] = [];
+      let group = groups.find(g => g.name.toLowerCase() === PROJECT_COSTS_GROUP.toLowerCase());
+      for (const proj of candidates.filter(p => p.status === 'Active')) {
+        if (outflows.some(o => o.projectId === proj.id)) continue;
+        const [phases, costs] = await Promise.all([getPhases(proj.id!), getProjectCosts(proj.id!)]);
+        const monthlyPills = buildProjectCostPills(proj, phases, costs, allocations, members, externalIds);
+        if (!Object.keys(monthlyPills).length) continue;
+        if (!group) group = { id: newGroupId(), name: PROJECT_COSTS_GROUP, color: nextGroupColor(groups) };
+        newLines.push({ id: `out_proj_${proj.id}`, name: `Project expenses – ${proj.name}`, type: 'project', projectId: proj.id, monthlyAmounts: {}, monthlyPills, groupId: group.id });
+      }
+      if (group && !groups.some(g => g.id === group!.id)) setGroups(prev => [...prev, group!]);
+      if (newLines.length) setOutflows(prev => [...prev, ...newLines]);
+
       setRows(newRows);
       setConfirmSyncOpen(false);
       setSyncMessage(
-        `Added ${added} project${added === 1 ? '' : 's'}.` +
+        `Added ${added} project${added === 1 ? '' : 's'}` + (newLines.length ? ` and ${newLines.length} project expenses line${newLines.length === 1 ? '' : 's'}` : '') + '.' +
         (skippedNoFee.length ? ` Skipped ${skippedNoFee.length} with no fee or payment schedule yet: ${skippedNoFee.join(', ')}.` : '')
       );
     } catch (e) {
@@ -530,22 +620,38 @@ export function FinancialForecastView() {
     setResetCheckingId(targetRow.id);
     try {
       let cells: ForecastRow['cells'] = {};
+      let costLine: { line: ForecastOutflowItem | null; pills: Record<string, ForecastOutflowPill[]>; changed: number } | undefined;
       if (targetRow.projectId) {
-        const [allProjects, members, allocations] = await Promise.all([getProjects(), getTeamMembers(), getAllocations()]);
+        const [allProjects, members, allocations, teamCategories] = await Promise.all([getProjects(), getTeamMembers(), getAllocations(), getCategories()]);
         const proj = allProjects.find(p => p.id === targetRow.projectId);
         cells = (proj && await buildProjectCells(proj, members, allocations)) || {};
+        // The project's costs line is rebuilt with it (created if the project is Active and has costs)
+        const line = outflows.find(o => o.projectId === targetRow.projectId) || null;
+        if (proj && (line || proj.status === 'Active')) {
+          const [phases, costs] = await Promise.all([getPhases(proj.id!), getProjectCosts(proj.id!)]);
+          const externalIds = new Set(teamCategories.filter(c => c.type === 'external').map(c => c.id!));
+          const pills = buildProjectCostPills(proj, phases, costs, allocations, members, externalIds);
+          const diff = signatureDiff(pillSignature(line?.monthlyPills), pillSignature(pills));
+          if (diff > 0) costLine = { line, pills, changed: diff };
+        }
       }
       const cur = cellSignatures(targetRow.cells);
       const next = cellSignatures(cells);
       const changed = [...new Set([...Object.keys(cur), ...Object.keys(next)])]
         .reduce((sum, k) => sum + Math.abs((cur[k] || 0) - (next[k] || 0)), 0);
-      if (changed === 0) {
+      if (changed === 0 && costLine && !costLine.line) {
+        // Nothing hand-edited would be lost: just add the missing costs line
+        applyCostLine(targetRow, costLine.pills, null);
+        setSyncMessage(`Added the project expenses line for "${targetRow.name}".`);
+        return;
+      }
+      if (changed === 0 && !costLine) {
         setSyncMessage(targetRow.projectId
           ? `"${targetRow.name}" already matches its fee proposal. Nothing to reset.`
           : `"${targetRow.name}" has no amounts to clear.`);
         return;
       }
-      setResetPlan({ row: targetRow, cells, changed });
+      setResetPlan({ row: targetRow, cells, changed, costLine });
     } catch (err) {
       console.error("Failed to prepare row reset", err);
       setSyncMessage('Could not load the fee proposal for this row. Check your connection and try again.');
@@ -553,10 +659,22 @@ export function FinancialForecastView() {
       setResetCheckingId(null);
     }
   };
+  const applyCostLine = (row: ForecastRow, pills: Record<string, ForecastOutflowPill[]>, line: ForecastOutflowItem | null) => {
+    if (line) {
+      setOutflows(prev => prev.map(o => (o.id === line.id ? { ...o, monthlyPills: pills } : o)));
+      return;
+    }
+    if (!Object.keys(pills).length) return;
+    let group = groups.find(g => g.name.toLowerCase() === PROJECT_COSTS_GROUP.toLowerCase());
+    if (!group) { group = { id: newGroupId(), name: PROJECT_COSTS_GROUP, color: nextGroupColor(groups) }; const g = group; setGroups(prev => [...prev, g]); }
+    const g = group;
+    setOutflows(prev => [...prev, { id: `out_proj_${row.projectId}`, name: `Project expenses – ${row.name}`, type: 'project', projectId: row.projectId, monthlyAmounts: {}, monthlyPills: pills, groupId: g.id }]);
+  };
   const applyResetPlan = () => {
     if (!resetPlan) return;
-    const { row, cells } = resetPlan;
+    const { row, cells, costLine } = resetPlan;
     setRows(prev => prev.map(r => (r.id === row.id ? { ...r, cells } : r)));
+    if (costLine) applyCostLine(row, costLine.pills, costLine.line);
     setResetPlan(null);
   };
 
@@ -2014,7 +2132,7 @@ export function FinancialForecastView() {
         title="Reset row?"
         message={resetPlan
           ? resetPlan.row.projectId
-            ? `"${resetPlan.row.name}" differs from its fee proposal in ${resetPlan.changed} amount${resetPlan.changed === 1 ? '' : 's'} (manual edits, moves, copies or a changed proposal). Resetting replaces this row's amounts with the proposal's milestones. This can't be undone.`
+            ? `"${resetPlan.row.name}" differs from its fee proposal in ${resetPlan.changed + (resetPlan.costLine?.changed || 0)} amount${resetPlan.changed + (resetPlan.costLine?.changed || 0) === 1 ? '' : 's'} (manual edits, moves, copies or a changed proposal). Resetting replaces this row's amounts with the proposal's milestones${resetPlan.costLine ? ', and its project expenses line with the current direct costs and external team' : ''}. This can't be undone.`
             : `Clear all ${resetPlan.changed} amount${resetPlan.changed === 1 ? '' : 's'} in "${resetPlan.row.name}"? This can't be undone.`
           : ''}
         confirmText="Reset row"
@@ -2026,7 +2144,7 @@ export function FinancialForecastView() {
       <ConfirmModal
         isOpen={confirmSyncOpen}
         title="Sync from projects"
-        message="Adds a row for each Active or Proposed project that isn't in the forecast yet, with one amount per payment milestone (milestone % of the project fee), placed in the month its phase ends. Active projects go to Invoiced, Proposed ones to Possible. Existing rows aren't changed."
+        message="Adds a row for each Active or Proposed project that isn't in the forecast yet, with each payment milestone as an invoice in the month its phase reaches it. Active projects also get a project expenses line in Outflows, grouped under Project expenses: consultants and external team at the end of each phase, other direct costs spread over the phase. Existing rows and lines aren't changed."
         confirmText="Sync now"
         onConfirm={handleSyncFromProjects}
         onCancel={() => setConfirmSyncOpen(false)}

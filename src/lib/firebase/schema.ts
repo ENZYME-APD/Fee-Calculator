@@ -226,7 +226,8 @@ export interface ForecastOutflowPill {
 export interface ForecastOutflowItem {
   id: string;
   name: string;
-  type: 'burn' | 'partner' | 'debt' | 'custom';
+  type: 'burn' | 'partner' | 'debt' | 'custom' | 'project';
+  projectId?: string; // project costs line: direct costs and external team of this project
   monthlyAmounts: Record<string, number>; // YYYY-MM -> amount (legacy; converted to monthlyPills on load)
   monthlyPills?: Record<string, ForecastOutflowPill[]>; // YYYY-MM -> expenses; override defaultMonthlyAmount for that month
   defaultMonthlyAmount?: number; // applies to every month without its own entry in monthlyAmounts
