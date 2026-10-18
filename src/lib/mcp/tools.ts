@@ -7,6 +7,8 @@ import { computePhaseCost, computeProjectFinancials, feeMultiplierFor } from '@/
 import { getAllocationRate } from '@/lib/utils/allocationCost';
 import { paymentAmount, paymentPercent } from '@/lib/utils/payments';
 import { McpContext } from './auth';
+import { readEntries } from '@/lib/activityServer';
+import { listChanges } from './changes';
 
 // Read-only tools for the AI connection. Every query is scoped to the caller's company, and the
 // same visibility rules as the app apply: salaries, hourly rates, overheads and the cash-flow
@@ -455,6 +457,44 @@ export const TOOLS: ToolDef[] = [
     },
   },
 ];
+
+TOOLS.push({
+  name: 'get_activity_log',
+  title: 'Activity log',
+  description: 'Admins only. Who changed what in the company, newest first: changes made in the app (projects, phases, team hours, costs, payments, team, overheads, forecast, users, settings) and through AI assistants. Filter by days back, person, area or project name. Shows new values, not previous ones.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      days: { type: 'integer', description: 'How many days back, 1–365. Default 7.' },
+      person: { type: 'string', description: 'Only changes by this person (part of their name).' },
+      area: { type: 'string', description: 'e.g. projects, phases, allocations, projectCosts, payments, teamMembers, overheadsProfile, forecastProfile, users.' },
+      project: { type: 'string', description: 'Only changes to this project (part of its name).' },
+      limit: { type: 'integer', description: 'Default 50, max 200.' },
+    },
+    additionalProperties: false,
+  },
+  adminOnly: true,
+  run: async (args, ctx) => {
+    const since = Date.now() - int(args, 'days', 7, 1, 365) * 86400000;
+    const limit = int(args, 'limit', 50, 1, 200);
+    const person = str(args, 'person')?.toLowerCase();
+    const area = str(args, 'area');
+    const project = str(args, 'project')?.toLowerCase();
+    const [app, ai] = await Promise.all([readEntries(ctx.companyId, { limit: 300 }), listChanges(ctx.companyId, { limit: 300 })]);
+    const rows = [
+      ...app.map(e => ({ when: e.createdAt, who: e.who, via: e.via, area: e.area, project: e.projectName, summary: e.summary, new_values: e.changes, undone: false })),
+      ...ai.map(c => ({ when: c.createdAt, who: c.who, via: `AI · ${c.client}`, area: c.ops[0]?.collection || null, project: null as string | null, summary: c.summary, new_values: null, undone: !!c.undoneAt })),
+    ]
+      .filter(r => r.when >= since)
+      .filter(r => !person || (r.who || '').toLowerCase().includes(person))
+      .filter(r => !area || r.area === area)
+      .filter(r => !project || (r.project || '').toLowerCase().includes(project) || r.summary.toLowerCase().includes(project))
+      .sort((a, b) => b.when - a.when)
+      .slice(0, limit)
+      .map(r => ({ ...r, when: new Date(r.when).toISOString() }));
+    return { count: rows.length, note: 'Changes made in the app are logged from 18 Oct 2026; AI changes since AI access started.', changes: rows };
+  },
+});
 
 export function toolsFor(ctx: McpContext, extra: ToolDef[] = []): ToolDef[] {
   return [...TOOLS, ...extra].filter(t => (!t.adminOnly || ctx.isAdmin) && (!t.writes || ctx.canWrite));

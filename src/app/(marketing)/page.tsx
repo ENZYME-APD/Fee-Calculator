@@ -89,7 +89,7 @@ export default function LandingPage() {
                 <Share2 size={24} className="text-clay-600 dark:text-clay-400" />
               </div>
               <h3 className="text-xl font-bold text-ink-900 dark:text-ink-50 mb-3">Shared with your partners</h3>
-              <p className="text-ink-500 dark:text-ink-400">Up to 10 colleagues work on the same projects, rates and templates. Salaries and overheads stay visible to admins only.</p>
+              <p className="text-ink-500 dark:text-ink-400">Your team works on the same projects, rates and templates: 5 users included, viewers free. Salaries and overheads stay visible to admins only.</p>
             </div>
             
             <div className="bg-white dark:bg-ink-900 p-8 rounded-3xl border border-ink-200 dark:border-ink-800 shadow-sm hover:shadow-md transition-shadow">
@@ -308,7 +308,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-ink-900 dark:text-ink-50 mb-4">One price for your whole practice</h2>
-            <p className="text-ink-500 dark:text-ink-400 max-w-2xl mx-auto mb-4">One subscription covers your company, up to 10 users. Every feature is in both plans; yearly simply costs less.</p>
+            <p className="text-ink-500 dark:text-ink-400 max-w-2xl mx-auto mb-4">One subscription covers your company with 5 users included, and viewers are always free. Every feature is in both plans; yearly simply costs less.</p>
             
             {/* Launch offer */}
             <div className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-2 rounded-full bg-warning-100 dark:bg-warning-900/30 border border-warning-200 dark:border-warning-800 text-warning-700 dark:text-warning-400 text-sm font-bold shadow-sm">
@@ -340,7 +340,9 @@ export default function LandingPage() {
                   'Payment schedules and cash-flow forecast',
                   'AI access from Claude, ChatGPT and other assistants',
                   'Proposals exported to Word and Excel',
-                  'Up to 10 users, with email support'
+                  '5 users included, viewers free',
+                  'Extra users $1.99 a month each',
+                  'Email support'
                 ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-3 text-ink-600 dark:text-ink-300">
                     <CheckCircle2 size={20} className="text-accent-600 dark:text-accent-500 shrink-0" />
@@ -374,7 +376,8 @@ export default function LandingPage() {
               
               <ul className="space-y-4 mb-8 flex-1">
                 {[
-                  'Everything in monthly',
+                  'Everything in monthly, 5 users included',
+                  'Extra users $7.99 a year each',
                   'A 1-on-1 onboarding call to set up your rates',
                   'Priority support',
                   'Early access to new features'

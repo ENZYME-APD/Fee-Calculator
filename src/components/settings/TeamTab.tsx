@@ -22,6 +22,49 @@ export function TeamTab({ company }: { company: Company }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [confirmDeleteInviteId, setConfirmDeleteInviteId] = useState<string | null>(null);
   const [confirmRemoveUserId, setConfirmRemoveUserId] = useState<string | null>(null);
+  // Users and billing: 5 included, extra admins/members billed after confirmation (viewers free)
+  const [seats, setSeats] = useState<{ included: number; used: number; capacity: number | null; mode: string; interval: 'month' | 'year' | null; extraPrice: number | null; extraPaid: number } | null>(null);
+  const [seatPrompt, setSeatPrompt] = useState<{ what: string; run: () => Promise<void> } | null>(null);
+  const [seatNote, setSeatNote] = useState('');
+
+  const seatsApi = async (method: 'GET' | 'POST', body?: unknown) => {
+    const token = await auth.currentUser?.getIdToken();
+    const res = await fetch('/api/seats', { method, headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'Could not check your plan.');
+    return d;
+  };
+  const loadSeats = async () => { try { setSeats(await seatsApi('GET')); } catch { setSeats(null); } };
+  const paying = (r: string) => r === 'admin' || r === 'member';
+  const fmtPrice = (n: number) => `$${n.toFixed(2)}`;
+  /** Runs an action that adds a paying user; if the plan is full, asks first and adds a paid user. */
+  const withSeat = async (what: string, run: () => Promise<void>) => {
+    const s = seats || await seatsApi('GET').catch(() => null);
+    if (s && s.mode === 'subscription' && s.capacity !== null && s.used + 1 > s.capacity) {
+      setSeatPrompt({ what, run });
+      return;
+    }
+    await run();
+  };
+  const confirmSeat = async () => {
+    if (!seatPrompt) return;
+    const { run } = seatPrompt;
+    setSeatPrompt(null);
+    try {
+      setSeats(await seatsApi('POST', { action: 'add', count: 1 }));
+      await run();
+    } catch (e) { alert((e as Error).message); }
+  };
+  /** After someone leaves or becomes a viewer, stop paying for unused extra users. */
+  const trimSeats = async () => {
+    if (seats?.mode !== 'subscription') return;
+    try {
+      const before = seats.extraPaid;
+      const next = await seatsApi('POST', { action: 'trim' });
+      setSeats(next);
+      if (next.extraPaid < before && seats.extraPrice) setSeatNote(`Your plan now pays for ${next.extraPaid} extra user${next.extraPaid === 1 ? '' : 's'}; ${fmtPrice(seats.extraPrice * (before - next.extraPaid))} per ${seats.interval} less from your next invoice (prorated).`);
+    } catch { /* not critical */ }
+  };
 
   const loadData = async () => {
     const [invitesData, usersData] = await Promise.all([
@@ -34,29 +77,35 @@ export function TeamTab({ company }: { company: Company }) {
 
   useEffect(() => {
     loadData();
-  }, []);
+    loadSeats();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
-    setLoading(true);
-    try {
-      const token = generateInviteToken();
-      await createInvite({
-        email,
-        companyId: company.id!,
-        role,
-        token,
-        createdAt: Date.now()
-      });
-      setEmail('');
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      alert("Failed to create invite");
-    }
-    setLoading(false);
+    const send = async () => {
+      setLoading(true);
+      try {
+        const token = generateInviteToken();
+        await createInvite({
+          email,
+          companyId: company.id!,
+          role,
+          token,
+          createdAt: Date.now()
+        });
+        setEmail('');
+        await loadData();
+        await loadSeats();
+      } catch (error) {
+        console.error(error);
+        alert("Failed to create invite");
+      }
+      setLoading(false);
+    };
+    if (paying(role)) await withSeat(`Inviting ${email} as ${role}`, send);
+    else await send();
   };
 
   const handleCopy = (token: string) => {
@@ -75,6 +124,7 @@ export function TeamTab({ company }: { company: Company }) {
     await deleteInvite(confirmDeleteInviteId);
     await loadData();
     setConfirmDeleteInviteId(null);
+    await trimSeats();
   };
 
   const handleEditName = (user: User) => {
@@ -93,8 +143,15 @@ export function TeamTab({ company }: { company: Company }) {
       alert("You cannot remove your own admin privileges.");
       return;
     }
-    await updateUser(uid, { role: newRole });
-    await loadData();
+    const current = activeUsers.find(u => u.uid === uid)?.role;
+    const apply = async () => {
+      await updateUser(uid, { role: newRole });
+      await loadData();
+      await loadSeats();
+      if (current && paying(current) && !paying(newRole)) await trimSeats();
+    };
+    if (current && !paying(current) && paying(newRole)) await withSeat(`Making this viewer ${newRole === 'admin' ? 'an admin' : 'a member'}`, apply);
+    else await apply();
   };
 
   const handleResetPassword = async (userEmail: string) => {
@@ -119,6 +176,7 @@ export function TeamTab({ company }: { company: Company }) {
     await removeUserFromCompany(confirmRemoveUserId);
     await loadData();
     setConfirmRemoveUserId(null);
+    await trimSeats();
   };
 
   return (
@@ -127,6 +185,20 @@ export function TeamTab({ company }: { company: Company }) {
         <h2 className="text-xl font-bold text-ink-900 dark:text-ink-50">Team management</h2>
         <p className="text-ink-500 dark:text-ink-400 text-sm mt-1">Invite team members to join {company.name}.</p>
       </div>
+
+      {seats && (
+        <div className="rounded-2xl border border-ink-200 dark:border-ink-800 px-4 py-3 text-sm text-ink-700 dark:text-ink-300 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span><span className="font-semibold text-ink-900 dark:text-ink-100">{seats.used}</span> paying user{seats.used === 1 ? '' : 's'} (admins, members and their pending invites)</span>
+          {seats.mode === 'subscription' && (
+            <span className="text-ink-500 dark:text-ink-400">
+              {seats.included} included{seats.extraPaid > 0 ? ` + ${seats.extraPaid} extra at ${fmtPrice(seats.extraPrice || 0)} per ${seats.interval}` : ''}. Viewers are free.
+            </span>
+          )}
+          {seats.mode === 'trial' && <span className="text-ink-500 dark:text-ink-400">Unlimited users during your trial. Plans include {seats.included}; extra users are $1.99 a month or $7.99 a year. Viewers are free.</span>}
+          {seats.mode === 'lifetime' && <span className="text-ink-500 dark:text-ink-400">Unlimited users on your plan.</span>}
+        </div>
+      )}
+      {seatNote && <p className="text-xs text-positive-700 dark:text-positive-300 -mt-4">{seatNote}</p>}
 
       <div className="bg-ink-50 dark:bg-ink-800/50 rounded-2xl p-6 border border-ink-200 dark:border-ink-700">
         <h3 className="text-sm font-bold text-ink-700 dark:text-ink-300 mb-4">Send new invite</h3>
@@ -270,6 +342,14 @@ export function TeamTab({ company }: { company: Company }) {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={!!seatPrompt}
+        title="Add a paid user?"
+        message={seatPrompt && seats ? `${seatPrompt.what}. Your plan includes ${seats.included} users and all ${seats.capacity} paid places are in use, so this adds one extra user at ${fmtPrice(seats.extraPrice || 0)} per ${seats.interval}, charged pro rata for the rest of this billing period on your next invoice. Viewers stay free.` : ''}
+        confirmText={seats?.extraPrice ? `Add user (+${fmtPrice(seats.extraPrice)}/${seats.interval})` : 'Add user'}
+        onConfirm={confirmSeat}
+        onCancel={() => setSeatPrompt(null)}
+      />
       <ConfirmModal
         isOpen={!!confirmDeleteInviteId}
         title="Revoke Invite"

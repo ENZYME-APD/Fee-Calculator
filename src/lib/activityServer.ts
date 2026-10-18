@@ -1,4 +1,9 @@
 import { adminDb } from '@/lib/firebase/admin';
+import { Timestamp } from 'firebase-admin/firestore';
+
+// How long entries are kept once the Firestore TTL policy on expireAt is switched on (collection group
+// 'entries', field 'expireAt'). Without the policy nothing is deleted.
+export const RETENTION_DAYS = 365;
 
 // Server side of the change log. Entries live in activityLog/{companyId}/entries and carry no
 // companyId field, so the general Firestore rule never lets clients read them. A client could still
@@ -143,7 +148,7 @@ export async function recordEntries(
   if (!out.length) return 0;
   const batch = adminDb!.batch();
   const col = adminDb!.collection('activityLog').doc(who.companyId).collection('entries');
-  out.forEach(entry => batch.set(col.doc(), JSON.parse(JSON.stringify(entry))));
+  out.forEach(entry => batch.set(col.doc(), { ...JSON.parse(JSON.stringify(entry)), expireAt: Timestamp.fromMillis(entry.createdAt + RETENTION_DAYS * 86400000) }));
   await batch.commit();
   return out.length;
 }
@@ -153,6 +158,6 @@ export async function readEntries(companyId: string, opts: { before?: number; li
   if (opts.before) q = q.where('createdAt', '<', opts.before);
   const snap = await q.limit(Math.min(opts.limit || 100, 300)).get();
   return snap.docs
-    .map(d => ({ id: d.id, ...(d.data() as Json) }))
+    .map(d => { const { expireAt: _e, ...rest } = d.data() as Json; return { id: d.id, ...rest }; })
     .filter(d => d.server === true && d.companyId === undefined) as (StoredEntry & { id: string })[];
 }

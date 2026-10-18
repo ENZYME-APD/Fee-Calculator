@@ -601,6 +601,13 @@ export function WikiContent() {
                 <li><strong>Currency:</strong> Choose your preferred currency from a wide range of international options (e.g., USD, EUR, GBP, AUD, JPY, CNY). The platform will automatically format all costs using the correct symbols and regional separators.</li>
                 <li><strong>Area Unit:</strong> Select whether your architectural projects are measured in <strong>Square Meters (sqm)</strong> or <strong>Square Feet (sqft)</strong>.</li>
               </ol>
+              <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Users and billing</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Each plan includes <strong>5 users</strong>. Admins and members count; <strong>viewers are always free</strong>. Pending invites for admins or members count too.</li>
+                <li>Extra users cost <strong>$1.99 per user per month</strong> on the monthly plan or <strong>$7.99 per user per year</strong> on the yearly plan. The launch discount applies to them as well.</li>
+                <li>When you invite a 6th admin or member, or make a viewer a member, Settings → Team management asks you to confirm the extra cost first. It is charged pro rata for the rest of the billing period on your next invoice. When someone leaves or becomes a viewer, the unused paid place is removed and credited the same way.</li>
+                <li>During the free trial you can add as many users as you like; at checkout you pay for the admins and members you have.</li>
+              </ul>
             </div>
           </section>
 

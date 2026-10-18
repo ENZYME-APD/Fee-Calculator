@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Company } from '@/lib/firebase/schema';
 import { CheckCircle2, CreditCard, AlertCircle } from 'lucide-react';
+import { auth } from '@/lib/firebase/config';
 
 export function BillingTab({ company }: { company: Company }) {
   const [loading, setLoading] = useState<string | null>(null);
@@ -9,16 +10,17 @@ export function BillingTab({ company }: { company: Company }) {
   const handleSubscribe = async (priceId: string) => {
     setLoading(priceId);
     try {
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, companyId: company.id }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ priceId }),
       });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("Failed to initiate checkout");
+        alert(data.error || "Failed to initiate checkout");
       }
     } catch (e) {
       console.error(e);
@@ -90,7 +92,8 @@ export function BillingTab({ company }: { company: Company }) {
             </div>
             <ul className="space-y-3 mb-8 text-sm text-ink-600 dark:text-ink-300">
               <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> Unlimited projects</li>
-              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> Team collaboration (up to 10)</li>
+              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> 5 users included, viewers free</li>
+              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> Extra users $1.99 per user per month</li>
               <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> Full export/import</li>
             </ul>
             <button
@@ -116,7 +119,8 @@ export function BillingTab({ company }: { company: Company }) {
               <span className="text-ink-500 font-medium">/year</span>
             </div>
             <ul className="space-y-3 mb-8 text-sm text-ink-600 dark:text-ink-300">
-              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> All monthly features</li>
+              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> All monthly features, 5 users included</li>
+              <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> Extra users $7.99 per user per year</li>
               <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> Priority support</li>
               <li className="flex gap-2 items-center"><CheckCircle2 size={16} className="text-positive-500"/> 5 months free compared with monthly</li>
             </ul>
