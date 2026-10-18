@@ -368,7 +368,7 @@ export function WikiContent() {
               
               <div className="space-y-6">
                 <div>
-                                    <img src="/screenshots/wiki-planning.jpg?v=20261016" alt="Project Planning Gantt view showing team members assigned to a weekly timeline with budgeted vs planned cost" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
+                                    <img src="/screenshots/wiki-planning.jpg?v=20261018" alt="Project Planning timeline with each task's cost and hours, phase bars showing cost and fee, and budgeted cost, planned cost and planned fee at the top" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm" />
                   <h3 className="text-lg font-bold text-ink-800 dark:text-ink-200 mb-2">Generating Tasks</h3>
                   <p className="text-ink-600 dark:text-ink-400 mb-3">
                     When you first open a project in the Planner, you can click <strong className="text-accent-600 dark:text-accent-400">Sync Budget</strong> to instantly create tasks for every team member allocated in the Fee Calculator, distributed across the correct phases.
@@ -685,6 +685,7 @@ export function WikiContent() {
               <p>
                 The <strong>Financial Forecast</strong> is a month-by-month cash plan: money coming in from projects and other income, money going out on salaries, overheads and other costs, and the bank balance that results. It is visible to admins only, because it includes internal salaries and overheads. Every change saves automatically and is shared with the other admins in your company.
               </p>
+              <img src="/screenshots/forecast.jpg?v=20261018" alt="Financial forecast from October to March: project and other income by Invoiced, Possible and Collections, running costs and project expenses in Outflows, and closing bank cash per month" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm not-prose" />
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">How the Table Works</h4>
               <ul className="list-disc pl-5 space-y-2">
@@ -748,6 +749,7 @@ export function WikiContent() {
               <p>
                 You can connect Fee Calculator to an AI assistant such as Claude, ChatGPT or Cursor through MCP (Model Context Protocol), and ask it questions about your practice: &ldquo;Which active projects have the lowest margin?&rdquo;, &ldquo;Summarise the Riverside Library fee by phase&rdquo; or &ldquo;When does our bank cash drop below 50,000?&rdquo;. If you allow it, the assistant can also do the work for you: &ldquo;Create a proposal for Harbour Lofts from the residential template&rdquo;, &ldquo;Add 40 hours for Amara to concept design&rdquo; or &ldquo;Move the stage 2 payment to March&rdquo;.
               </p>
+              <img src="/screenshots/ai-access.jpg?v=20261018" alt="Settings, AI access: company rules for who can connect and make changes, the server address to add in your assistant, connected apps and the list of recent AI changes with Undo" className="w-full rounded-xl border border-ink-200 dark:border-ink-800 my-6 shadow-sm not-prose" />
 
               <h4 className="font-bold text-ink-900 dark:text-ink-200 mt-6 mb-2">Connecting by signing in (recommended)</h4>
               <ul className="list-disc pl-5 space-y-2">

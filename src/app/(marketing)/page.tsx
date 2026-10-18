@@ -139,6 +139,12 @@ export default function LandingPage() {
             title: 'Drag, drop, and the fee calculates itself',
             body: 'Drag team members and expenses straight into project phases. Every allocation locks in that rate at the moment you assign it, so a salary change later never retroactively changes a fee you already sent a client.',
           },
+          {
+            img: '/screenshots/wiki-planning.jpg?v=20261018',
+            alt: 'Project planning timeline with the cost and hours of each task, and cost and fee on every phase',
+            title: 'Plan the work and watch what it costs',
+            body: 'Lay out each person’s tasks on a timeline and see the cost of every task, the cost and fee of every phase, and how the plan compares with the budget in the proposal, before the first hour is spent.',
+          },
         ].map((item, i) => (
           <div key={item.title} className={`flex flex-col md:flex-row items-center gap-12 ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
             <div className="md:w-1/2 w-full">
@@ -184,25 +190,11 @@ export default function LandingPage() {
             </ul>
           </div>
 
-          {/* Illustrative forecast (sample figures) */}
-          <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 shadow-xl p-5 sm:p-6" aria-label="Example forecast with sample figures">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-semibold text-ink-900 dark:text-ink-100">Closing bank cash</span>
-              <span className="text-xs text-ink-500 dark:text-ink-400">Sample figures</span>
-            </div>
-            <div className="grid grid-cols-6 gap-2 items-end h-40 mb-3">
-              {[{ m: 'Nov', v: 82 }, { m: 'Dec', v: 64 }, { m: 'Jan', v: 41 }, { m: 'Feb', v: 28 }, { m: 'Mar', v: 55 }, { m: 'Apr', v: 73 }].map(b => (
-                <div key={b.m} className="flex flex-col items-center gap-1.5 h-full justify-end">
-                  <span className="text-[11px] tabular-nums text-ink-500 dark:text-ink-400">{b.v}k</span>
-                  <div className={`w-full rounded-t-md ${b.v < 35 ? 'bg-warning-400 dark:bg-warning-500' : 'bg-accent-500 dark:bg-accent-500'}`} style={{ height: `${b.v}%` }} />
-                  <span className="text-xs text-ink-500 dark:text-ink-400">{b.m}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-xl bg-warning-50 dark:bg-warning-950/40 border border-warning-200 dark:border-warning-900 px-3 py-2 text-sm text-warning-800 dark:text-warning-200">
-              February drops to 28k: move the stage 2 invoice forward or chase the January collection.
-            </div>
-          </div>
+          <img
+            src="/screenshots/forecast.jpg?v=20261018"
+            alt="Financial forecast from October to March with project income by stage, running costs and project expenses, and closing bank cash per month"
+            className="w-full h-auto rounded-2xl border border-ink-200 dark:border-ink-800 shadow-xl"
+          />
         </div>
       </section>
 
