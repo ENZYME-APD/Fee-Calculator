@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { paymentAmount } from '@/lib/utils/payments';
 import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
-import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories } from '@/lib/firebase/db';
-import { Project, Phase, TeamMember, TeamCategory, Allocation, ProjectCost, User } from '@/lib/firebase/schema';
+import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories, getForecastProfile } from '@/lib/firebase/db';
+import { STATUS_CONFIG } from '@/components/ui/StatusBadge';
+import { Project, Phase, TeamMember, TeamCategory, Allocation, ProjectCost, User, ForecastOutflowItem, ForecastProfile } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, Cell, PieChart, Pie, ReferenceLine, LineChart, Line } from 'recharts';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -12,6 +13,37 @@ import { Folder, CircleDollarSign, TrendingUp, Users, PieChart as PieChartIcon, 
 import { getAllocationRate } from '@/lib/utils/allocationCost';
 
 import { tc, tca, CHART_COLORS } from '@/lib/theme';
+
+// Team occupancy can show projects in these states; Proposed and Active are on by default
+const OCC_STATUSES = ['Draft', 'Proposed', 'Active', 'Completed'] as const;
+const DEFAULT_OCC_STATUSES = ['Proposed', 'Active'];
+
+/**
+ * Forecast expenses that the cashflow chart doesn't already count: every outflow line except the
+ * running-costs line (team salaries + overheads are already in the chart) and the project-expense
+ * lines (phase costs are already in it), plus +/- corrections typed on the running-costs line and
+ * referral commissions on collections. By month (YYYY-MM).
+ */
+function otherForecastExpenses(profile: ForecastProfile | null): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!profile) return out;
+  const add = (m: string, v: number) => { if (v) out[m] = (out[m] || 0) + v; };
+  const isLinked = (o: ForecastOutflowItem) => o.linkedToOverheads ?? o.id === 'burn_base';
+  (profile.outflows || []).forEach(o => {
+    Object.entries(o.monthlyAdjustments || {}).forEach(([m, v]) => add(m, v || 0));
+    if (isLinked(o) || o.type === 'burn' || o.type === 'project') return;
+    const months = new Set([...Object.keys(o.monthlyPills || {}), ...Object.keys(o.monthlyAmounts || {})]);
+    months.forEach(m => {
+      const pills = o.monthlyPills?.[m];
+      add(m, pills && pills.length ? pills.reduce((sum, p) => sum + (p.amount || 0), 0) : (o.monthlyAmounts?.[m] ?? 0));
+    });
+    if (o.defaultMonthlyAmount) out[`__default__${o.id}`] = o.defaultMonthlyAmount; // every month without its own entries
+  });
+  (profile.rows || []).forEach(r => Object.entries(r.cells || {}).forEach(([m, c]) =>
+    (c.collections || []).forEach(p => { if (p.referralName && p.referralPercent) add(m, Math.round(p.amount * p.referralPercent / 100)); })));
+  return out;
+}
+
 export function OverviewDashboard() {
   const { dbUser } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -33,7 +65,18 @@ export function OverviewDashboard() {
   
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teamCategories, setTeamCategories] = useState<TeamCategory[]>([]);
-  const [collapsedOccGroups, setCollapsedOccGroups] = useState<Record<string, boolean>>({});  const [projectNames, setProjectNames] = useState<string[]>([]);
+  const [collapsedOccGroups, setCollapsedOccGroups] = useState<Record<string, boolean>>({});
+  // Which project states team occupancy shows (remembered per browser)
+  const [occStatuses, setOccStatuses] = useState<string[]>(DEFAULT_OCC_STATUSES);
+  useEffect(() => {
+    try { const v = JSON.parse(localStorage.getItem('dashboard.occStatuses') || 'null'); if (Array.isArray(v)) setOccStatuses(v); } catch {}
+  }, []);
+  const toggleOccStatus = (st: string) => setOccStatuses(prev => {
+    const next = prev.includes(st) ? prev.filter(x => x !== st) : [...prev, st];
+    try { localStorage.setItem('dashboard.occStatuses', JSON.stringify(next)); } catch {}
+    return next;
+  });
+  const [hasOtherExpenses, setHasOtherExpenses] = useState(false);  const [projectNames, setProjectNames] = useState<string[]>([]);
   const [projectColors, setProjectColors] = useState<Record<string, string>>({});
   
   const [startDate, setStartDate] = useState<string>(() => {
@@ -156,6 +199,12 @@ export function OverviewDashboard() {
     const companyUsers = await getUsersByCompany();
     const payments = await getAllPayments();
     const categories = await getCategories();
+    // The forecast is admins-only; others simply don't get its extra expense lines
+    const forecast = dbUser?.role === 'admin' || dbUser?.email?.toLowerCase().endsWith('@weareenzyme.com')
+      ? await getForecastProfile().catch(() => null)
+      : null;
+    // Team occupancy also covers Draft and Completed projects (filterable); cashflow stays Proposed + Active
+    const occProjs = allProjs.filter(p => OCC_STATUSES.includes((p.status || 'Draft') as typeof OCC_STATUSES[number]));
     
     setUsers(companyUsers);
     setProjects(projs);
@@ -333,7 +382,9 @@ export function OverviewDashboard() {
     }
 
     // Calculate Occupancy
-    projs.forEach(proj => {
+    const cashProjectIds = new Set(projs.map(p => p.id));
+    occProjs.forEach(proj => {
+      const status = proj.status || 'Draft';
       const projPhases = phases.filter(p => p.projectId === proj.id).sort((a,b) => a.order - b.order);
       
       let currentPhaseStart = new Date(proj.startDate || Date.now());
@@ -352,7 +403,7 @@ export function OverviewDashboard() {
         const phaseCosts = costs.filter(c => c.phaseId === phase.id);
         const totalPhaseCost = phaseCosts.reduce((sum, c) => sum + (c.quantity * c.unitCost), 0);
         
-        if (totalPhaseCost > 0 && mMap[endMonthKey]) {
+        if (totalPhaseCost > 0 && mMap[endMonthKey] && cashProjectIds.has(proj.id)) {
           mMap[endMonthKey].projectExpenses += totalPhaseCost;
         }
         
@@ -381,7 +432,7 @@ export function OverviewDashboard() {
             const mid = alloc.memberId;
             
             if (!oMap[bucketKey][mid]) oMap[bucketKey][mid] = { totalPercent: 0 };
-            if (!oMap[bucketKey][mid][proj.name]) oMap[bucketKey][mid][proj.name] = { percent: 0, id: proj.id };
+            if (!oMap[bucketKey][mid][proj.name]) oMap[bucketKey][mid][proj.name] = { percent: 0, id: proj.id, status };
             
             oMap[bucketKey][mid][proj.name].percent += percentPerWeek;
             oMap[bucketKey][mid].totalPercent += percentPerWeek;
@@ -398,12 +449,18 @@ export function OverviewDashboard() {
       return sum + (Number(m.salary) || 0) + (Number(m.overheads) || 0);
     }, 0);
     
+    const other = otherForecastExpenses(forecast);
+    const everyMonth = Object.entries(other).filter(([k]) => k.startsWith('__default__'));
+    const linesWithEntries = new Set<string>();
+    (forecast?.outflows || []).forEach(o => Object.keys(o.monthlyPills || {}).forEach(m => { if (o.monthlyPills?.[m]?.length) linesWithEntries.add(`${o.id}|${m}`); }));
     Object.values(mMap).forEach((m: any) => {
       m.teamExpenses = totalMonthlyTeamCost;
-      m.totalExpenses = m.teamExpenses + m.projectExpenses;
+      m.otherExpenses = (other[m.bucketKey] || 0) + everyMonth.reduce((sum, [k, v]) => sum + (linesWithEntries.has(`${k.replace('__default__', '')}|${m.bucketKey}`) ? 0 : v), 0);
+      m.totalExpenses = m.teamExpenses + m.projectExpenses + m.otherExpenses;
       m.netProfit = m.totalValue - m.totalExpenses;
     });
 
+    setHasOtherExpenses(Object.values(mMap).some((m: any) => m.otherExpenses > 0));
     const mArr = Object.values(mMap).sort((a: any, b: any) => a.dateValue - b.dateValue);
     setMonthlyInvoiceData(mArr);
 
@@ -445,7 +502,7 @@ export function OverviewDashboard() {
       <div className="mb-8">
         <h1 className="text-[22px] font-bold text-ink-900 dark:text-ink-50 mb-1 tracking-tight">Overview dashboard</h1>
         <p className="text-sm text-ink-500 dark:text-ink-400">
-          Showing data for <strong>Proposed</strong> and <strong>Active</strong> projects only. You can change a project's status in the Projects tab.
+          Figures and charts use <strong>Proposed</strong> and <strong>Active</strong> projects; team occupancy can also show Draft and Completed ones. You can change a project's status in the Projects tab.
         </p>
       </div>
       
@@ -689,6 +746,12 @@ export function OverviewDashboard() {
                                   <span className="text-ink-500">Phase costs:</span>
                                   <span className="text-ink-300">{formatCurrency(data.projectExpenses)}</span>
                                 </div>
+                                {hasOtherExpenses && (
+                                  <div className="flex justify-between gap-4">
+                                    <span className="text-ink-500">Other expenses (forecast):</span>
+                                    <span className="text-ink-300">{formatCurrency(data.otherExpenses || 0)}</span>
+                                  </div>
+                                )}
                               </div>
                               <div className="flex justify-between gap-4 pt-2 border-t border-ink-800">
                                 <span className="text-ink-300 font-bold">Net profit:</span>
@@ -702,9 +765,10 @@ export function OverviewDashboard() {
                     }}
                   />
                   <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', color: tc('ink', 500) }} />
-                  <Bar dataKey="totalValue" name="Invoiced Income" fill={tc('positive', 500)} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="teamExpenses" name="Team Salaries" stackId="expenses" fill={tc('negative', 500)} />
-                  <Bar dataKey="projectExpenses" name="Project Expenses" stackId="expenses" fill={tc('warning', 400)} radius={[4, 4, 0, 0]} />
+                   <Bar dataKey="totalValue" name="Invoiced income" fill={tc('positive', 500)} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="teamExpenses" name="Team salaries and overheads" stackId="expenses" fill={tc('negative', 500)} />
+                  <Bar dataKey="projectExpenses" name="Project expenses" stackId="expenses" fill={tc('warning', 400)} radius={hasOtherExpenses ? undefined : [4, 4, 0, 0]} />
+                  {hasOtherExpenses && <Bar dataKey="otherExpenses" name="Other expenses (forecast)" stackId="expenses" fill={tc('clay', 400)} radius={[4, 4, 0, 0]} />}
                 </BarChart>
               </ResponsiveContainer>
             );
@@ -716,6 +780,27 @@ export function OverviewDashboard() {
       <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 p-6 mb-8 flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200">Team occupancy</h2>
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Project states shown">
+            <span className="text-xs text-ink-500 dark:text-ink-400 mr-1">Show projects:</span>
+            {OCC_STATUSES.map(st => {
+              const on = occStatuses.includes(st);
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => toggleOccStatus(st)}
+                  aria-pressed={on}
+                  title={on ? `Hide ${st.toLowerCase()} projects` : `Show ${st.toLowerCase()} projects`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-colors ${on
+                    ? 'border-ink-300 dark:border-ink-600 bg-ink-50 dark:bg-ink-800 text-ink-800 dark:text-ink-100'
+                    : 'border-ink-200 dark:border-ink-800 text-ink-500 dark:text-ink-400 opacity-60 hover:opacity-100'}`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[st].dot} ${on ? '' : 'opacity-40'}`} />
+                  {STATUS_CONFIG[st].label}
+                </button>
+              );
+            })}
+          </div>
         </div>
         
         {(() => {
@@ -726,6 +811,16 @@ export function OverviewDashboard() {
           if (filteredWeeks.length === 0) {
             return <div className="w-full h-40 flex items-center justify-center text-ink-500">No data.</div>;
           }
+
+          // Allocations and weekly totals only count projects in the states switched on above
+          const visibleAllocs = (week: any, mid: string) => {
+            const data = week[mid];
+            if (!data) return [] as { projectName: string; percent: number; projectId: string; status: string }[];
+            return Object.keys(data)
+              .filter(k => k !== 'totalPercent' && data[k].percent > 0 && occStatuses.includes(data[k].status || 'Draft'))
+              .map(k => ({ projectName: k, percent: data[k].percent, projectId: data[k].id, status: data[k].status || 'Draft' }));
+          };
+          const visibleTotal = (week: any, mid: string) => visibleAllocs(week, mid).reduce((sum, a) => sum + a.percent, 0);
 
           const getInitials = (name: string) => {
             if (!name) return '?';
@@ -747,8 +842,8 @@ export function OverviewDashboard() {
                         {filteredWeeks.map((week, idx) => {
                           const overAllocated = Object.keys(week)
                             .filter(k => !['bucketKey', 'label', 'dateValue'].includes(k))
-                            .filter(mid => week[mid].totalPercent > 100)
-                            .map(mid => ({ member: teamMembers.find(m => m.id === mid), percent: week[mid].totalPercent }));
+                            .filter(mid => visibleTotal(week, mid) > 100)
+                            .map(mid => ({ member: teamMembers.find(m => m.id === mid), percent: visibleTotal(week, mid) }));
                             
                           const parts = week.label.split(' ');
                           const monthStr = parts[0];
@@ -829,7 +924,7 @@ export function OverviewDashboard() {
                                 </td>
                                 {filteredWeeks.map((week, idx) => {
                                   // When collapsed, still flag weeks where someone in the group is over 100%.
-                                  const over = collapsed && groupMembers.some(m => week[m.id!]?.totalPercent > 100);
+                                  const over = collapsed && groupMembers.some(m => visibleTotal(week, m.id!) > 100);
                                   return (
                                     <td key={`group-${row.id}-${week.bucketKey}`} className={`py-2 px-2 text-center ${isLast && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}>
                                       {over && <span className="inline-block w-2 h-2 rounded-full bg-negative-500" aria-label="Over-allocated" />}
@@ -848,21 +943,14 @@ export function OverviewDashboard() {
                               </Tooltip>
                             </td>
                             {filteredWeeks.map((week, idx) => {
-                              const allocs: { projectName: string, percent: number, projectId: string }[] = [];
-                              const memberData = week[member.id!];
-                              if (memberData) {
-                                Object.keys(memberData).forEach(k => {
-                                  if (k !== 'totalPercent' && memberData[k].percent > 0) {
-                                    allocs.push({ projectName: k, percent: memberData[k].percent, projectId: memberData[k].id });
-                                  }
-                                });
-                              }
+                              const allocs = visibleAllocs(week, member.id!);
+                              const weekTotal = allocs.reduce((sum, a) => sum + a.percent, 0);
                               
                               if (allocs.length === 0) {
                                 return <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 border-r border-ink-100 dark:border-ink-900/30 ${isLast && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}></td>;
                               }
                               
-                              const isOver = memberData?.totalPercent > 100;
+                              const isOver = weekTotal > 100;
                               
                               return (
                                 <td key={`${member.id}-${week.bucketKey}`} className={`py-2 px-2 align-middle border-r border-ink-100 dark:border-ink-900/30 ${isLast && idx === filteredWeeks.length - 1 ? 'rounded-br-xl' : ''}`}>
@@ -870,7 +958,8 @@ export function OverviewDashboard() {
                                     {allocs.map((alloc, i) => {
                                       return (
                                         <Link key={i} href={`/dashboard?project=${alloc.projectId}`}>
-                                          <Tooltip content={`${alloc.projectName}\nResource: ${member.name}\nProject: ${alloc.percent.toFixed(0)}%\nTotal Weekly: ${memberData?.totalPercent.toFixed(0)}%`} wrapper="div" className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold border transition-colors cursor-pointer ${isOver ? 'bg-negative-100 text-negative-700 border-negative-200 dark:bg-negative-900/30 dark:text-negative-400 dark:border-negative-800/50 hover:bg-negative-300 dark:hover:bg-negative-900/70' : 'bg-ink-100 text-ink-700 border-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:border-ink-700 hover:bg-ink-200 dark:hover:bg-ink-600'}`}>
+                                          <Tooltip content={`${alloc.projectName} (${STATUS_CONFIG[alloc.status]?.label || alloc.status})\nResource: ${member.name}\nProject: ${alloc.percent.toFixed(0)}%\nTotal weekly: ${weekTotal.toFixed(0)}%`} wrapper="div" className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-bold border transition-colors cursor-pointer ${isOver ? 'bg-negative-100 text-negative-700 border-negative-200 dark:bg-negative-900/30 dark:text-negative-400 dark:border-negative-800/50 hover:bg-negative-300 dark:hover:bg-negative-900/70' : 'bg-ink-100 text-ink-700 border-ink-200 dark:bg-ink-800 dark:text-ink-300 dark:border-ink-700 hover:bg-ink-200 dark:hover:bg-ink-600'}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_CONFIG[alloc.status]?.dot || STATUS_CONFIG.Draft.dot}`} aria-label={alloc.status} />
                                             <span className="max-w-[80px] truncate">{alloc.projectName}</span>
                                             <span className={`text-[10px] ${isOver ? 'opacity-80' : 'opacity-50'}`}>{alloc.percent.toFixed(0)}%</span>
                                           </Tooltip>

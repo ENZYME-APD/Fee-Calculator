@@ -1266,7 +1266,9 @@ export function FinancialForecastView() {
                       {isLinked ? (
                         <span className="font-semibold text-ink-700 dark:text-ink-300" title="From Team resources + Overheads">-{fmt(runningCosts.total)}</span>
                       ) : (
-                        <div className="flex flex-1 min-w-0 flex-wrap items-center justify-end gap-1">
+                        <div className="flex flex-1 min-w-0 items-center justify-end gap-1">
+                          {/* Expenses stack in one column of equal-width chips, amounts lined up on the right */}
+                          <div className="flex flex-col items-end gap-1 min-w-0">
                           {repeating > 0 && (
                             <span className="text-xs font-semibold text-ink-500 dark:text-ink-400 italic" title="Repeats every month. Add an expense to replace it in this month.">-{fmt(repeating)}</span>
                           )}
@@ -1281,12 +1283,13 @@ export function FinancialForecastView() {
                               }}
                               onClick={() => setOutflowPillEdit({ itemId: item.id, month: m, pill: p })}
                               title={`${p.description ? p.description + '\n' : ''}-${fmt(p.amount)}\nClick to edit · Drag to move · Alt+drag to copy`}
-                              className="max-w-[200px] px-2 py-1 rounded text-xs font-bold border shadow-2xs cursor-grab active:cursor-grabbing flex items-center gap-1.5 select-none transition-all hover:scale-[1.02] bg-negative-50 text-negative-800 border-negative-200 dark:bg-negative-950/40 dark:text-negative-300 dark:border-negative-800/60"
+                              className={`${p.description ? 'w-[250px] justify-between' : 'justify-end'} max-w-full px-2 py-1 rounded text-xs font-bold border shadow-2xs cursor-grab active:cursor-grabbing flex items-center gap-1.5 select-none transition-colors hover:border-negative-300 dark:hover:border-negative-700 bg-negative-50 text-negative-800 border-negative-200 dark:bg-negative-950/40 dark:text-negative-300 dark:border-negative-800/60`}
                             >
-                              {p.description && <span className="truncate font-medium text-negative-700/90 dark:text-negative-300/90">{p.description}</span>}
+                              {p.description && <span className="truncate min-w-0 text-left font-medium text-negative-700/90 dark:text-negative-300/90">{p.description}</span>}
                               <span className="shrink-0 tabular-nums">-{fmt(p.amount)}</span>
                             </button>
                           ))}
+                          </div>
                           <button
                             type="button"
                             onClick={() => setOutflowPillEdit({ itemId: item.id, month: m, pill: null })}
