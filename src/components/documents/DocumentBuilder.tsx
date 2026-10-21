@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 
 import { Project, Phase, DocumentBlock, Allocation, ProjectCost, TeamMember, TeamCategory, Payment, SavedBlock } from '@/lib/firebase/schema';
-import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts, getPayments, getSavedBlocks, addSavedBlock, deleteSavedBlock } from '@/lib/firebase/db';
+import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts, getPayments, getSavedBlocks, addSavedBlock, deleteSavedBlock, updateSavedBlock } from '@/lib/firebase/db';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDraggable, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableBlock } from './SortableBlock';
-import { FileText, Download, Printer, Plus, LayoutTemplate, Eye, EyeOff, Bookmark, Trash2 } from 'lucide-react';
+import { FileText, Download, Printer, Plus, LayoutTemplate, Eye, EyeOff, Bookmark, Trash2, Pencil } from 'lucide-react';
+import { TemplateEditModal } from './TemplateEditModal';
 import { exportToDocx } from '@/lib/utils/docxExport';
 import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import { PromptModal } from '@/components/modals/PromptModal';
@@ -15,7 +16,7 @@ import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 
-function SidebarTemplateItem({ template, onInsert, onDelete }: { template: SavedBlock, onInsert: () => void, onDelete: (e: React.MouseEvent) => void }) {
+function SidebarTemplateItem({ template, onInsert, onEdit, onDelete }: { template: SavedBlock, onInsert: () => void, onEdit: () => void, onDelete: (e: React.MouseEvent) => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `template-${template.id}`,
     data: { type: 'template', template }
@@ -34,10 +35,13 @@ function SidebarTemplateItem({ template, onInsert, onDelete }: { template: Saved
         <span className="text-xs text-ink-500 mt-1">{template.type.replace('_', ' ').replace(/^./, (c) => c.toUpperCase())}</span>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="p-1.5 text-positive-500 hover:bg-positive-50 dark:hover:bg-positive-900/30 rounded-md transition-colors" title="Drag or Click to Insert">
+        <div className="p-1.5 text-positive-500 hover:bg-positive-50 dark:hover:bg-positive-900/30 rounded-md transition-colors" title="Drag or click to insert">
           <Plus size={14} />
         </div>
-        <div onPointerDown={(e) => e.stopPropagation()} onClick={onDelete} className="p-1.5 text-negative-400 hover:text-negative-600 hover:bg-negative-50 dark:hover:bg-negative-900/30 rounded-md transition-colors" title="Delete Template">
+        <div onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onEdit(); }} className="p-1.5 text-ink-500 hover:text-accent-600 hover:bg-accent-50 dark:text-ink-400 dark:hover:bg-accent-900/30 rounded-md transition-colors" title="Edit template">
+          <Pencil size={14} />
+        </div>
+        <div onPointerDown={(e) => e.stopPropagation()} onClick={onDelete} className="p-1.5 text-negative-400 hover:text-negative-600 hover:bg-negative-50 dark:hover:bg-negative-900/30 rounded-md transition-colors" title="Delete template">
           <Trash2 size={14} />
         </div>
       </div>
@@ -78,6 +82,7 @@ export function DocumentBuilder() {
   const [confirmDeleteTemplateId, setConfirmDeleteTemplateId] = useState<string | null>(null);
 
   const [savedBlocks, setSavedBlocks] = useState<SavedBlock[]>([]);
+  const [editingTemplate, setEditingTemplate] = useState<SavedBlock | null>(null);
   const [costs, setCosts] = useState<ProjectCost[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [categories, setCategories] = useState<TeamCategory[]>([]);
@@ -280,6 +285,19 @@ export function DocumentBuilder() {
     }
   };
 
+  const executeEditTemplate = async (changes: { templateName: string; title: string; content: string }) => {
+    if (!editingTemplate?.id) return;
+    try {
+      await updateSavedBlock(editingTemplate.id, changes);
+      setSavedBlocks(savedBlocks.map(b => b.id === editingTemplate.id ? { ...b, ...changes } : b));
+      setEditingTemplate(null);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Template updated' } }));
+    } catch (error) {
+      console.error(error);
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Failed to update template' } }));
+    }
+  };
+
   const handleDeleteTemplate = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setConfirmDeleteTemplateId(id);
@@ -371,7 +389,7 @@ export function DocumentBuilder() {
           <div className="p-4 border-b border-ink-200 dark:border-ink-800 shrink-0">
             <h3 className="font-bold text-ink-800 dark:text-ink-200 flex items-center gap-2">
               <Bookmark size={18} className="text-positive-500" />
-              Saved Templates
+              Saved templates
             </h3>
             <p className="text-xs text-ink-500 mt-1">Click to append to document</p>
           </div>
@@ -386,6 +404,7 @@ export function DocumentBuilder() {
                   key={template.id}
                   template={template}
                   onInsert={() => handleInsertTemplate(template)}
+                  onEdit={() => setEditingTemplate(template)}
                   onDelete={(e) => handleDeleteTemplate(template.id!, e)}
                 />
               ))
@@ -516,17 +535,18 @@ export function DocumentBuilder() {
 
       <PromptModal
         isOpen={promptConfig.isOpen}
-        title="Save Template"
+        title="Save template"
         message="Enter a name for this template so you can easily identify it in your library."
         defaultValue={promptConfig.defaultValue}
-        placeholder="e.g. Standard Section"
+        placeholder="e.g. Standard section"
         confirmText="Save"
         onConfirm={executeSaveTemplate}
         onCancel={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
       />
+      <TemplateEditModal template={editingTemplate} onSave={executeEditTemplate} onClose={() => setEditingTemplate(null)} />
       <ConfirmModal
         isOpen={!!confirmDeleteTemplateId}
-        title="Delete Template"
+        title="Delete template"
         message="Are you sure you want to delete this template? This cannot be undone."
         confirmText="Delete"
         onConfirm={executeDeleteTemplate}

@@ -816,6 +816,11 @@ export const addSavedBlock = async (block: Omit<SavedBlock, 'id'>): Promise<stri
   return docRef.id;
 };
 
+export const updateSavedBlock = async (id: string, updates: Partial<Omit<SavedBlock, 'id' | 'companyId'>>): Promise<void> => {
+  await updateDoc(doc(db, 'saved_blocks', id), sanitize(updates) as any);
+  logActivity({ action: 'update', area: 'saved_blocks', docId: id, fieldsOnly: true, changes: updates as Record<string, unknown>, summary: `Edited saved template${updates.templateName ? ` "${updates.templateName}"` : ''}` });
+};
+
 export const deleteSavedBlock = async (id: string): Promise<void> => {
   const was = await beforeDelete('saved_blocks', id);
   await deleteDoc(doc(db, 'saved_blocks', id));
