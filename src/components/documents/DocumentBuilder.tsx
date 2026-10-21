@@ -446,9 +446,9 @@ export function DocumentBuilder() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-ink-700 dark:text-ink-300 font-bold shrink-0">
               <FileText size={18} className="text-accent-600 dark:text-accent-400" />
-              <span className="text-sm">Document builder</span>
+              <span className="text-sm hidden xl:inline whitespace-nowrap">Document builder</span>
             </div>
-            <div className="w-[300px] flex items-center">
+            <div className="w-[240px] min-w-0 flex items-center">
               <select
                 className="w-full bg-ink-50 dark:bg-ink-800 border border-ink-200 dark:border-ink-700 text-ink-800 dark:text-ink-200 font-bold rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-accent-500/20 outline-none transition-colors cursor-pointer"
                 value={activeProjectId || ''}
@@ -479,10 +479,11 @@ export function DocumentBuilder() {
             <button
               type="button"
               onClick={() => setShowLost(!showLost)}
+              title={showLost ? 'Hide lost/archived projects' : 'Show lost/archived projects'}
               className="text-xs text-ink-500 hover:text-ink-600 dark:hover:text-ink-300 flex items-center gap-1.5 px-2.5 py-1 rounded-md hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
             >
               {showLost ? <EyeOff size={14} /> : <Eye size={14} />}
-              <span>{showLost ? 'Hide Lost/archived' : 'Show Lost/archived'}</span>
+              <span className="hidden 2xl:inline whitespace-nowrap">{showLost ? 'Hide lost/archived' : 'Show lost/archived'}</span>
             </button>
           </div>
 
@@ -490,27 +491,29 @@ export function DocumentBuilder() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setDetailsOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 text-ink-600 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 rounded-lg font-medium text-sm transition-colors"
+                className="flex items-center gap-2 px-3 py-2 whitespace-nowrap text-ink-600 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 rounded-lg font-medium text-sm transition-colors"
                 title="Client, reference, dates and signatory for this proposal"
               >
                 <ClipboardList size={16} /> Proposal details
               </button>
-              <div className="flex rounded-lg border border-ink-200 dark:border-ink-700 overflow-hidden text-sm font-medium">
+              <div className="flex shrink-0 whitespace-nowrap rounded-lg border border-ink-200 dark:border-ink-700 overflow-hidden text-sm font-medium">
                 <button onClick={() => setPreview(false)} className={`flex items-center gap-1.5 px-3 py-1.5 ${!preview ? 'bg-ink-100 dark:bg-ink-800 text-ink-900 dark:text-ink-50' : 'text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800/60'}`}><PenLine size={14} /> Edit</button>
                 <button onClick={() => setPreview(true)} className={`flex items-center gap-1.5 px-3 py-1.5 border-l border-ink-200 dark:border-ink-700 ${preview ? 'bg-ink-100 dark:bg-ink-800 text-ink-900 dark:text-ink-50' : 'text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800/60'}`}><Eye size={14} /> Preview</button>
               </div>
               <button
                 onClick={handleExportWord}
+                title="Export to Word (.docx)"
                 disabled={isExporting}
-                className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg font-bold text-sm transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 whitespace-nowrap bg-accent-600 hover:bg-accent-700 text-white rounded-lg font-bold text-sm transition-colors shadow-sm"
               >
-                <Download size={16} /> Export to Word
+                <Download size={16} /> Word
               </button>
               <button
                 onClick={handleExportPdf}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 hover:bg-ink-50 dark:hover:bg-ink-700 text-ink-700 dark:text-ink-300 rounded-lg font-bold text-sm transition-colors shadow-sm"
+                title="Print or save as PDF"
+                className="flex items-center gap-2 px-4 py-2 whitespace-nowrap bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 hover:bg-ink-50 dark:hover:bg-ink-700 text-ink-700 dark:text-ink-300 rounded-lg font-bold text-sm transition-colors shadow-sm"
               >
-                <Printer size={16} /> Print PDF
+                <Printer size={16} /> PDF
               </button>
             </div>
           )}
