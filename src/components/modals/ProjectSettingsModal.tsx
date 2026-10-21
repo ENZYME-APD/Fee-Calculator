@@ -136,15 +136,15 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className={label}>Client</label>
-                  <input value={prop.client || ''} onChange={e => set('client', e.target.value)} placeholder="e.g. Emaar India" className={input} />
+                  <input value={prop.client || ''} onChange={e => set('client', e.target.value)} placeholder="e.g. Northbank Developments" className={input} />
                 </div>
                 <div>
                   <label className={label}>Attention: name</label>
-                  <input value={prop.attnName || ''} onChange={e => set('attnName', e.target.value)} placeholder="e.g. Mr. Das" className={input} />
+                  <input value={prop.attnName || ''} onChange={e => set('attnName', e.target.value)} placeholder="e.g. Ms. Lee" className={input} />
                 </div>
                 <div>
                   <label className={label}>Attention: title</label>
-                  <input value={prop.attnTitle || ''} onChange={e => set('attnTitle', e.target.value)} placeholder="e.g. Head of Business Development" className={input} />
+                  <input value={prop.attnTitle || ''} onChange={e => set('attnTitle', e.target.value)} placeholder="e.g. Development Director" className={input} />
                 </div>
                 <div className="col-span-2">
                   <label className={label}>Client address</label>
@@ -152,7 +152,7 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
                 </div>
                 <div>
                   <label className={label}>Country</label>
-                  <input value={prop.country || ''} onChange={e => set('country', e.target.value)} placeholder="e.g. India" className={input} />
+                  <input value={prop.country || ''} onChange={e => set('country', e.target.value)} placeholder="e.g. Singapore" className={input} />
                 </div>
                 <div>
                   <label className={label}>Issue date</label>
