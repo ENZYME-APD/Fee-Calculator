@@ -11,6 +11,7 @@ import { PreferencesTab } from '@/components/settings/PreferencesTab';
 import { CategoriesTab } from '@/components/settings/CategoriesTab';
 import { AIAccessTab } from '@/components/settings/AIAccessTab';
 import { ActivityTab } from '@/components/settings/ActivityTab';
+import { ProposalsTab } from '@/components/settings/ProposalsTab';
 import { Card, CardBody } from '@/components/ui/Card';
 
 export default function SettingsPage() {
@@ -19,12 +20,12 @@ export default function SettingsPage() {
   const searchParams = useSearchParams();
   const [company, setCompany] = useState<Company | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'categories' | 'team' | 'security' | 'ai' | 'activity'>('preferences');
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'categories' | 'team' | 'security' | 'ai' | 'activity' | 'proposals'>('preferences');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['profile', 'preferences', 'categories', 'team', 'security', 'ai', 'activity'].includes(tabParam)) {
+    if (tabParam && ['profile', 'preferences', 'categories', 'team', 'security', 'ai', 'activity', 'proposals'].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -62,7 +63,7 @@ export default function SettingsPage() {
                 activeTab === 'preferences' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
-              General Preferences
+              General preferences
             </button>
             <button
               onClick={() => setActiveTab('categories')}
@@ -70,7 +71,7 @@ export default function SettingsPage() {
                 activeTab === 'categories' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
-              Team Categories
+              Team categories
             </button>
             <button
               onClick={() => setActiveTab('team')}
@@ -78,15 +79,25 @@ export default function SettingsPage() {
                 activeTab === 'team' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
-              Team Management
+              Team management
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => setActiveTab('proposals')}
+                className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  activeTab === 'proposals' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
+                }`}
+              >
+                Proposals
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('profile')}
               className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 activeTab === 'profile' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
-              My Profile
+              My profile
             </button>
             <button
               onClick={() => setActiveTab('ai')}
@@ -112,7 +123,7 @@ export default function SettingsPage() {
                 activeTab === 'security' ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400' : 'text-ink-600 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800'
               }`}
             >
-              Password Management
+              Password management
             </button>
           </nav>
         </div>
@@ -126,6 +137,7 @@ export default function SettingsPage() {
             {activeTab === 'security' && <SecurityTab />}
             {activeTab === 'ai' && <AIAccessTab />}
             {activeTab === 'activity' && isAdmin && <ActivityTab />}
+            {activeTab === 'proposals' && isAdmin && company && <ProposalsTab company={company} />}
           </CardBody>
         </Card>
       </div>

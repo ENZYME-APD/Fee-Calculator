@@ -27,3 +27,15 @@
     overflow: visible !important;
   }
 }
+
+/* Proposal fill-in fields: {{field}} in the editors, values in the document preview */
+.pf-field, .pf-unknown, .pf-filled, .pf-missing { border-radius: 4px; padding: 0 2px; }
+.pf-field { background: var(--info-100); color: var(--info-800); font-family: ui-monospace, monospace; font-size: 0.85em; }
+.pf-field.pf-empty, .pf-missing { background: var(--warning-100); color: var(--warning-800); }
+.pf-unknown { background: var(--negative-100); color: var(--negative-800); font-family: ui-monospace, monospace; font-size: 0.85em; }
+.pf-filled { background: var(--info-50); }
+.dark .pf-field { background: color-mix(in srgb, var(--info-500) 25%, transparent); color: var(--info-200); }
+.dark .pf-field.pf-empty, .dark .pf-missing { background: color-mix(in srgb, var(--warning-500) 25%, transparent); color: var(--warning-200); }
+.dark .pf-unknown { background: color-mix(in srgb, var(--negative-500) 25%, transparent); color: var(--negative-200); }
+.dark .pf-filled { background: color-mix(in srgb, var(--info-500) 15%, transparent); }
+@media print { .pf-filled { background: none; padding: 0; } }

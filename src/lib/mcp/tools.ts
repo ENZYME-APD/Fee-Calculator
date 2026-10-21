@@ -275,6 +275,12 @@ export const TOOLS: ToolDef[] = [
         start_date: isoDate(project.startDate),
         area: project.area ?? null,
         currency: ctx.company.currency || 'USD',
+        proposal_details: project.proposal ? {
+          client: project.proposal.client || null, attn_name: project.proposal.attnName || null, attn_title: project.proposal.attnTitle || null,
+          client_address: project.proposal.clientAddress || null, country: project.proposal.country || null,
+          ref: project.proposal.ref || null, revision: project.proposal.revision || null, issue_date: isoDate(project.proposal.issueDate),
+          validity_days: project.proposal.validityDays ?? null, signatory_name: project.proposal.signatoryName || null, signatory_title: project.proposal.signatoryTitle || null,
+        } : null,
         totals: {
           total_cost: round(b.fin.totalCost),
           total_fee: round(b.fin.totalFee),

@@ -182,7 +182,7 @@ export const WRITE_TOOLS: ToolDef[] = [
   {
     name: 'update_project',
     title: 'Update project',
-    description: 'Changes a project\'s name, description, status, start date, area, profit margin or fixed fee. Setting fixed_fee fixes the total fee and the margin is then calculated from it; set fixed_fee to 0 to go back to cost + margin.',
+    description: 'Changes a project\'s name, description, status, start date, area, profit margin, fixed fee or proposal details (client, reference, dates, signatory). Setting fixed_fee fixes the total fee and the margin is then calculated from it; set fixed_fee to 0 to go back to cost + margin.',
     writes: true,
     inputSchema: {
       type: 'object',
@@ -195,6 +195,17 @@ export const WRITE_TOOLS: ToolDef[] = [
         area: { type: 'number' },
         profit_margin: { type: 'number', description: 'Margin % on top of cost. Ignored while a fixed fee is set.' },
         fixed_fee: { type: 'number', description: 'Agreed total fee. 0 switches the fixed fee off.' },
+        proposal_details: {
+          type: 'object',
+          description: 'Proposal details used by the Document builder fields. Only the keys given change; an empty string clears one.',
+          properties: {
+            client: { type: 'string' }, attn_name: { type: 'string' }, attn_title: { type: 'string' }, client_address: { type: 'string' },
+            country: { type: 'string' }, ref: { type: 'string', description: 'e.g. QU-26014' }, revision: { type: 'string', description: 'e.g. 01' },
+            issue_date: { type: 'string', description: 'YYYY-MM-DD' }, validity_days: { type: 'number' },
+            signatory_name: { type: 'string' }, signatory_title: { type: 'string' },
+          },
+          additionalProperties: false,
+        },
       },
       required: ['project'],
       additionalProperties: false,
@@ -219,6 +230,25 @@ export const WRITE_TOOLS: ToolDef[] = [
         if (fixed < 0) throw new ToolError('fixed_fee can\'t be negative.');
         next.fixedFee = fixed > 0 ? Math.round(fixed) : null;
         changed.push(fixed > 0 ? `fixed fee → ${Math.round(fixed)}` : 'fixed fee off');
+      }
+      const pd = args.proposal_details && typeof args.proposal_details === 'object' ? args.proposal_details as Json : null;
+      if (pd) {
+        const map: Record<string, string> = { client: 'client', attn_name: 'attnName', attn_title: 'attnTitle', client_address: 'clientAddress', country: 'country', ref: 'ref', revision: 'revision', signatory_name: 'signatoryName', signatory_title: 'signatoryTitle' };
+        const prop: Json = { ...((project.proposal || {}) as Json) };
+        for (const [k, field] of Object.entries(map)) {
+          if (typeof pd[k] !== 'string') continue;
+          const v = (pd[k] as string).trim();
+          if (v) prop[field] = v; else delete prop[field];
+          changed.push(`${k.replace(/_/g, ' ')} → ${v || 'cleared'}`);
+        }
+        if (typeof pd.issue_date === 'string') {
+          const t = pd.issue_date ? parseDate(pd.issue_date) : undefined;
+          if (t) prop.issueDate = t; else delete prop.issueDate;
+          changed.push(`issue date → ${pd.issue_date || 'cleared'}`);
+        }
+        const vd = num(pd, 'validity_days');
+        if (vd !== undefined) { prop.validityDays = Math.round(vd); changed.push(`validity → ${Math.round(vd)} days`); }
+        next.proposal = prop;
       }
       if (!changed.length) throw new ToolError('Say what to change.');
       const changeId = await applyChange(ctx, 'update_project', `Updated "${project.name}": ${changed.join(', ')}`, [{ collection: 'projects', id: project.id!, data: next }]);

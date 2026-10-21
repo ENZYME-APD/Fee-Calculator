@@ -10,6 +10,35 @@ export interface Company {
   areaUnit?: 'sqm' | 'sqft';
   tier?: 'basic' | 'pro';
   createdAt: number;
+  proposal?: ProposalDefaults;
+}
+
+/** Company-wide defaults used to fill proposal documents. */
+export interface ProposalDefaults {
+  legalName?: string; // e.g. Enzyme APD Pte Ltd
+  refPrefix?: string; // e.g. QU → QU-25020
+  validityDays?: number;
+  signatoryName?: string;
+  signatoryTitle?: string;
+  signatoryEmail?: string;
+  signatoryPhone?: string;
+  bank?: { accountName?: string; accountNo?: string; bankName?: string; bankCode?: string; branch?: string; swift?: string };
+  rates?: { position: string; rate: number }[]; // charge-out rate per hour, company currency
+}
+
+/** Per-project proposal details (client, reference, dates). */
+export interface ProposalDetails {
+  client?: string;
+  attnName?: string;
+  attnTitle?: string;
+  clientAddress?: string;
+  country?: string;
+  ref?: string; // e.g. QU-25020
+  revision?: string; // e.g. 03
+  issueDate?: number; // timestamp
+  validityDays?: number; // overrides the company default
+  signatoryName?: string; // overrides the company default
+  signatoryTitle?: string;
 }
 
 export interface User {
@@ -70,6 +99,7 @@ export interface Project {
   startDate?: number;
   status?: string; // 'Draft' | 'Active' | 'Completed' | 'Lost'
   ownerId?: string;
+  proposal?: ProposalDetails;
 }
 
 export interface Phase {

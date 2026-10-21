@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { paymentAmount, paymentPercent, formatPercent } from '@/lib/utils/payments';
 import { computeProjectFinancials, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { useSortable } from '@dnd-kit/sortable';
@@ -11,6 +11,8 @@ import { GripVertical, Trash2, FileText, Calculator, Users, CreditCard, Bookmark
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Bold, Italic, List, ListOrdered } from 'lucide-react';
 import StarterKit from '@tiptap/starter-kit';
+import { FieldHighlight, InsertFieldMenu } from './fieldEditor';
+import { FieldValues, fillHtml, fillText } from '@/lib/proposal/fields';
 
 interface SortableBlockProps {
   block: DocumentBlock;
@@ -22,16 +24,21 @@ interface SortableBlockProps {
   payments: Payment[];
   project: Project;
   onUpdate: (content: string, title: string) => void;
+  fieldValues?: FieldValues | null;
+  preview?: boolean;
   onDelete: () => void;
   onInsert: (type: DocumentBlock['type']) => void;
   onSaveTemplate: (block: DocumentBlock, currentContent: string, currentTitle: string) => void;
 }
 
-export function SortableBlock({ block, phases, allocations, costs, members, categories, payments, project, onUpdate, onDelete, onInsert, onSaveTemplate }: SortableBlockProps) {
+export function SortableBlock({ block, phases, allocations, costs, members, categories, payments, project, onUpdate, onDelete, onInsert, onSaveTemplate, fieldValues = null, preview = false }: SortableBlockProps) {
   const [title, setTitle] = useState(block.title);
+  const valuesRef = useRef<FieldValues | null>(fieldValues);
+  valuesRef.current = fieldValues;
   
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, FieldHighlight.configure({ getValues: () => valuesRef.current })],
+    immediatelyRender: false,
     content: block.content,
     onUpdate: ({ editor }) => {
       onUpdate(editor.getHTML(), title);
@@ -42,6 +49,11 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
       },
     },
   });
+
+  // Redraw the field colours when the project's values change
+  useEffect(() => {
+    try { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr); } catch { /* not mounted yet */ }
+  }, [editor, fieldValues]);
 
   const {
     attributes,
@@ -65,6 +77,9 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
   };
 
   const renderContent = () => {
+    if (block.type === 'rich_text' && preview) {
+      return <div className="prose prose-ink dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: fillHtml(editor ? editor.getHTML() : block.content, fieldValues || {}, true) }} />;
+    }
     if (block.type === 'rich_text') {
       return (
         <div className="prose-wrapper relative group/editor">
@@ -87,6 +102,8 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
                 onClick={() => editor.chain().focus().toggleOrderedList().run()}
                 className={`p-1.5 rounded hover:bg-ink-100 dark:hover:bg-ink-700 ${editor.isActive('orderedList') ? 'bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400' : ''}`}
               ><ListOrdered size={14} /></button>
+              <div className="w-px h-4 bg-ink-200 dark:bg-ink-700 mx-1"></div>
+              <InsertFieldMenu editor={editor} />
             </div>
           )}
           <EditorContent editor={editor} />
@@ -260,43 +277,45 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
       style={style}
       className="group relative bg-white dark:bg-ink-900 border border-transparent hover:border-ink-100 dark:hover:border-ink-800 hover:shadow-sm rounded-xl transition-all p-6 -mx-6"
     >
-      <div 
+      {!preview && <div 
         {...attributes} 
         {...listeners}
         className="absolute left-[-24px] top-6 p-1 text-ink-300 hover:text-ink-500 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
       >
         <GripVertical size={20} />
-      </div>
+      </div>}
       
-      <div className="absolute right-0 top-4 opacity-0 group-hover:opacity-100 transition-opacity print:hidden flex gap-1">
-        <button onClick={() => onSaveTemplate(block, editor ? editor.getHTML() : block.content, title)} className="p-1.5 text-accent-400 hover:text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-900/30 rounded-md transition-colors" title="Save as Template">
+      {!preview && <div className="absolute right-0 top-4 opacity-0 group-hover:opacity-100 transition-opacity print:hidden flex gap-1">
+        <button onClick={() => onSaveTemplate(block, editor ? editor.getHTML() : block.content, title)} className="p-1.5 text-accent-400 hover:text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-900/30 rounded-md transition-colors" title="Save as template">
           <BookmarkPlus size={16} />
         </button>
-        <button onClick={onDelete} className="p-1.5 text-negative-400 hover:text-negative-600 hover:bg-negative-50 dark:hover:bg-negative-900/30 rounded-md transition-colors" title="Delete Block">
+        <button onClick={onDelete} className="p-1.5 text-negative-400 hover:text-negative-600 hover:bg-negative-50 dark:hover:bg-negative-900/30 rounded-md transition-colors" title="Delete block">
           <Trash2 size={16} />
         </button>
-      </div>
+      </div>}
 
-      <input 
+      {preview ? (
+        title ? <h2 className="text-2xl font-bold text-ink-800 dark:text-ink-200 mb-2 py-1">{fillText(title, fieldValues || {})}</h2> : null
+      ) : <input 
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onBlur={handleTitleBlur}
         className="text-2xl font-bold text-ink-800 dark:text-ink-200 bg-transparent border-none outline-none mb-2 w-full focus:ring-2 focus:ring-accent-500/20 rounded hover:bg-ink-50 dark:hover:bg-ink-800 transition-colors py-1 -ml-1 px-1"
-        placeholder="Section Title"
-      />
+        placeholder="Section title"
+      />}
       
       {renderContent()}
 
-      <div className="absolute -bottom-6 left-0 right-0 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 focus-within:opacity-100 transition-opacity z-50 print:hidden cursor-default">
+      {!preview && <div className="absolute -bottom-6 left-0 right-0 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 focus-within:opacity-100 transition-opacity z-50 print:hidden cursor-default">
         <div className="flex items-center gap-1 bg-white dark:bg-ink-800 border border-ink-200 dark:border-ink-700 shadow-md rounded-full px-2 py-1">
           <span className="text-xs font-medium text-ink-500 mr-1">Add</span>
-          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('rich_text'); }} className="p-1 hover:bg-ink-100 dark:hover:bg-ink-700 rounded text-ink-600 dark:text-ink-300 transition-colors" title="Add Text"><FileText size={14} /></button>
-          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('financial_summary'); }} className="p-1 hover:bg-ink-100 dark:hover:bg-ink-700 rounded text-ink-600 dark:text-ink-300 transition-colors" title="Add Financials"><Calculator size={14} /></button>
-          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('team_breakdown'); }} className="p-1 hover:bg-ink-100 dark:hover:bg-ink-700 rounded text-ink-600 dark:text-ink-300 transition-colors" title="Add Team"><Users size={14} /></button>
-          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('payment_schedule'); }} className="p-1 hover:bg-ink-100 dark:hover:bg-ink-700 rounded text-ink-600 dark:text-ink-300 transition-colors" title="Add Payments"><CreditCard size={14} /></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('rich_text'); }} className="p-1 hover:bg-ink-100 dark:hover:bg-ink-700 rounded text-ink-600 dark:text-ink-300 transition-colors" title="Add text"><FileText size={14} /></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('financial_summary'); }} className="p-1 hover:bg-ink-100 dark:hover:bg-ink-700 rounded text-ink-600 dark:text-ink-300 transition-colors" title="Add financials"><Calculator size={14} /></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('team_breakdown'); }} className="p-1 hover:bg-ink-100 dark:hover:bg-ink-700 rounded text-ink-600 dark:text-ink-300 transition-colors" title="Add team"><Users size={14} /></button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onInsert('payment_schedule'); }} className="p-1 hover:bg-ink-100 dark:hover:bg-ink-700 rounded text-ink-600 dark:text-ink-300 transition-colors" title="Add payments"><CreditCard size={14} /></button>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

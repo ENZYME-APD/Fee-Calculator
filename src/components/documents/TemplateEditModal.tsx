@@ -4,6 +4,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { X, Pencil, Bold, Italic, List, ListOrdered, Heading3 } from 'lucide-react';
 import { SavedBlock } from '@/lib/firebase/schema';
+import { FieldHighlight, InsertFieldMenu } from './fieldEditor';
 
 interface Props {
   template: SavedBlock | null;
@@ -19,7 +20,7 @@ export function TemplateEditModal({ template, onSave, onClose }: Props) {
   const isText = template?.type === 'rich_text';
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, FieldHighlight],
     content: '',
     immediatelyRender: false,
     editorProps: {
@@ -85,6 +86,8 @@ export function TemplateEditModal({ template, onSave, onClose }: Props) {
                   <div className="w-px h-4 bg-ink-200 dark:bg-ink-700 mx-1" />
                   <button type="button" title="Bullet list" onClick={() => editor.chain().focus().toggleBulletList().run()} className={tool(editor.isActive('bulletList'))}><List size={14} /></button>
                   <button type="button" title="Numbered list" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={tool(editor.isActive('orderedList'))}><ListOrdered size={14} /></button>
+                  <div className="w-px h-4 bg-ink-200 dark:bg-ink-700 mx-1" />
+                  <InsertFieldMenu editor={editor} />
                 </div>
               )}
               <div className="p-4"><EditorContent editor={editor} /></div>
@@ -92,7 +95,7 @@ export function TemplateEditModal({ template, onSave, onClose }: Props) {
           ) : (
             <p className="text-sm text-ink-500 dark:text-ink-400">This block fills itself from the project&apos;s data, so only its name and heading can be edited.</p>
           )}
-          <p className="text-xs text-ink-500 dark:text-ink-400">Changes apply to new insertions. Blocks already in documents keep their text.</p>
+          <p className="text-xs text-ink-500 dark:text-ink-400">Fields like {'{{client}}'} are filled with each project&apos;s details in the preview, the PDF and the Word export. Changes apply to new insertions. Blocks already in documents keep their text.</p>
         </div>
 
         <div className="p-6 border-t border-ink-100 dark:border-ink-800 flex justify-end gap-3 shrink-0">

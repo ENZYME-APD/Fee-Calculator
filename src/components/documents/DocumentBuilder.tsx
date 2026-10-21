@@ -1,14 +1,17 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { Project, Phase, DocumentBlock, Allocation, ProjectCost, TeamMember, TeamCategory, Payment, SavedBlock } from '@/lib/firebase/schema';
-import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts, getPayments, getSavedBlocks, addSavedBlock, deleteSavedBlock, updateSavedBlock } from '@/lib/firebase/db';
+import { getProjects, getPhases, getDocumentBlocks, initializeDefaultBlocks, updateDocumentBlock, addDocumentBlock, deleteDocumentBlock, getTeamMembers, getCategories, getAllocations, getProjectCosts, getPayments, getSavedBlocks, addSavedBlock, deleteSavedBlock, updateSavedBlock, updateProject } from '@/lib/firebase/db';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDraggable, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableBlock } from './SortableBlock';
-import { FileText, Download, Printer, Plus, LayoutTemplate, Eye, EyeOff, Bookmark, Trash2, Pencil } from 'lucide-react';
+import { FileText, Download, Printer, Plus, LayoutTemplate, Eye, EyeOff, Bookmark, Trash2, Pencil, PenLine, AlertTriangle, ClipboardList } from 'lucide-react';
 import { TemplateEditModal } from './TemplateEditModal';
+import { ProjectSettingsModal } from '@/components/modals/ProjectSettingsModal';
+import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
+import { buildFieldValues, missingFields } from '@/lib/proposal/fields';
 import { exportToDocx } from '@/lib/utils/docxExport';
 import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import { PromptModal } from '@/components/modals/PromptModal';
@@ -83,6 +86,8 @@ export function DocumentBuilder() {
 
   const [savedBlocks, setSavedBlocks] = useState<SavedBlock[]>([]);
   const [editingTemplate, setEditingTemplate] = useState<SavedBlock | null>(null);
+  const [preview, setPreview] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [costs, setCosts] = useState<ProjectCost[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [categories, setCategories] = useState<TeamCategory[]>([]);
@@ -353,12 +358,30 @@ export function DocumentBuilder() {
     await updateDocumentBlock(id, { content, title });
   };
 
+  const activeProject = projects.find(p => p.id === activeProjectId) || null;
+  const fieldValues = useMemo(() => {
+    if (!activeProject) return null;
+    const totalFee = computeProjectFinancials(activeProject, phases, allocations, costs, members).totalFee;
+    const totalWeeks = phases.reduce((sum, ph) => sum + (ph.durationWeeks || 0), 0);
+    return buildFieldValues({ company: dbCompany, project: activeProject, totalFee, totalWeeks });
+  }, [activeProject, phases, allocations, costs, members, dbCompany]);
+  const gaps = useMemo(
+    () => (fieldValues ? missingFields(blocks.flatMap(b => [b.title, b.type === 'rich_text' ? b.content : '']), fieldValues) : []),
+    [blocks, fieldValues]
+  );
+
+  const saveProjectDetails = async (updates: Partial<Project>) => {
+    if (!activeProject?.id) return;
+    await updateProject(activeProject.id, updates);
+    setProjects(prev => prev.map(p => (p.id === activeProject.id ? { ...p, ...updates } : p)));
+  };
+
   const handleExportWord = async () => {
     const project = projects.find(p => p.id === activeProjectId);
     if (!project) return;
     setIsExporting(true);
     try {
-      await exportToDocx(project, blocks, phases, allocations, costs, members, categories, payments);
+      await exportToDocx(project, blocks, phases, allocations, costs, members, categories, payments, fieldValues || {});
     } catch (e) {
       console.error(e);
       alert('Error exporting document.');
@@ -366,8 +389,14 @@ export function DocumentBuilder() {
     setIsExporting(false);
   };
 
+  // Print the filled-in version: switch to preview, print, then go back
   const handleExportPdf = () => {
-    window.print();
+    const was = preview;
+    setPreview(true);
+    setTimeout(() => {
+      window.print();
+      if (!was) setPreview(false);
+    }, 150);
   };
 
   if (loading) return <div className="p-8 text-ink-500">Loading document builder...</div>;
@@ -460,6 +489,17 @@ export function DocumentBuilder() {
           {activeProjectId && blocks.length > 0 && (
             <div className="flex items-center gap-3">
               <button
+                onClick={() => setDetailsOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 text-ink-600 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 rounded-lg font-medium text-sm transition-colors"
+                title="Client, reference, dates and signatory for this proposal"
+              >
+                <ClipboardList size={16} /> Proposal details
+              </button>
+              <div className="flex rounded-lg border border-ink-200 dark:border-ink-700 overflow-hidden text-sm font-medium">
+                <button onClick={() => setPreview(false)} className={`flex items-center gap-1.5 px-3 py-1.5 ${!preview ? 'bg-ink-100 dark:bg-ink-800 text-ink-900 dark:text-ink-50' : 'text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800/60'}`}><PenLine size={14} /> Edit</button>
+                <button onClick={() => setPreview(true)} className={`flex items-center gap-1.5 px-3 py-1.5 border-l border-ink-200 dark:border-ink-700 ${preview ? 'bg-ink-100 dark:bg-ink-800 text-ink-900 dark:text-ink-50' : 'text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-ink-800/60'}`}><Eye size={14} /> Preview</button>
+              </div>
+              <button
                 onClick={handleExportWord}
                 disabled={isExporting}
                 className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg font-bold text-sm transition-colors shadow-sm"
@@ -495,6 +535,16 @@ export function DocumentBuilder() {
               </button>
             </div>
           ) : (
+            <>
+            {gaps.length > 0 && (
+              <div className="w-full max-w-[850px] mx-auto mb-4 flex items-start gap-3 px-4 py-3 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 text-sm text-warning-800 dark:text-warning-200 print:hidden">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <span className="font-medium">{gaps.length} field{gaps.length === 1 ? '' : 's'} not filled in yet:</span> {gaps.join(', ')}.
+                </div>
+                <button onClick={() => setDetailsOpen(true)} className="shrink-0 font-bold hover:underline">Fill in</button>
+              </div>
+            )}
             <div className="w-full max-w-[850px] mx-auto bg-white dark:bg-ink-900 print:shadow-none shadow-xl border border-ink-200 dark:border-ink-800 print:border-none min-h-[1100px] p-16 print:p-0 relative">
               
               
@@ -523,12 +573,15 @@ export function DocumentBuilder() {
                         onUpdate={(content, title) => handleUpdateBlockContent(block.id!, content, title)}
                         onDelete={() => handleDeleteBlock(block.id!)}
                       onInsert={(type) => handleInsertBlock(type, index + 1)}
+                        fieldValues={fieldValues}
+                        preview={preview}
                       />
                     ))}
                   </div>
                 </SortableContext>
               
             </div>
+            </>
           )}
         </div>
       </div>
@@ -543,6 +596,9 @@ export function DocumentBuilder() {
         onConfirm={executeSaveTemplate}
         onCancel={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
       />
+      {activeProject && (
+        <ProjectSettingsModal isOpen={detailsOpen} project={activeProject} focusProposal onClose={() => setDetailsOpen(false)} onSave={saveProjectDetails} />
+      )}
       <TemplateEditModal template={editingTemplate} onSave={executeEditTemplate} onClose={() => setEditingTemplate(null)} />
       <ConfirmModal
         isOpen={!!confirmDeleteTemplateId}

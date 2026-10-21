@@ -5,6 +5,7 @@ import { computeProjectFinancials, feeMultiplierFor } from '@/lib/utils/projectF
 import { saveAs } from 'file-saver';
 import { DocumentBlock, Project, Phase, Allocation, ProjectCost, TeamMember, TeamCategory, Payment } from '@/lib/firebase/schema';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
+import { FieldValues, fillHtml, fillText } from '@/lib/proposal/fields';
 
 // Helper to strip HTML tags for simple rich text fallback
 const stripHtml = (html: string) => {
@@ -77,7 +78,8 @@ export const exportToDocx = async (
   costs: ProjectCost[],
   members: TeamMember[],
   categories: TeamCategory[],
-  payments: Payment[]
+  payments: Payment[],
+  fieldValues: FieldValues = {}
 ) => {
   
   const docElements: any[] = [];
@@ -94,14 +96,14 @@ export const exportToDocx = async (
     if (block.title) {
       docElements.push(
         new Paragraph({
-          children: [new TextRun({ text: block.title, bold: true, size: 32 })],
+          children: [new TextRun({ text: fillText(block.title, fieldValues), bold: true, size: 32 })],
           spacing: { before: 400, after: 200 }
         })
       );
     }
 
     if (block.type === 'rich_text') {
-      docElements.push(...htmlToParagraphs(block.content || ''));
+      docElements.push(...htmlToParagraphs(fillHtml(block.content || '', fieldValues)));
     }
     else if (block.type === 'phase_scope') {
       for (const phase of phases) {
