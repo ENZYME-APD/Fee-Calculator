@@ -13,6 +13,62 @@ const stripHtml = (html: string) => {
   return tmp.textContent || tmp.innerText || '';
 };
 
+
+// Rich text (the editor's HTML) to Word paragraphs, keeping headings, lists, bold and italics
+type Marks = { bold?: boolean; italics?: boolean; underline?: boolean };
+const runsOf = (node: Node, marks: Marks = {}): TextRun[] => {
+  const out: TextRun[] = [];
+  node.childNodes.forEach(child => {
+    if (child.nodeType === 3) {
+      const t = (child.textContent || '').replace(/\s+/g, ' ');
+      if (t) out.push(new TextRun({ text: t, bold: marks.bold, italics: marks.italics, underline: marks.underline ? {} : undefined }));
+    } else if (child.nodeType === 1) {
+      const el = child as HTMLElement;
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'br') { out.push(new TextRun({ text: '', break: 1 })); return; }
+      if (tag === 'ul' || tag === 'ol') return; // nested lists are handled as their own paragraphs
+      out.push(...runsOf(el, {
+        bold: marks.bold || tag === 'strong' || tag === 'b',
+        italics: marks.italics || tag === 'em' || tag === 'i',
+        underline: marks.underline || tag === 'u',
+      }));
+    }
+  });
+  return out;
+};
+
+const htmlToParagraphs = (html: string): Paragraph[] => {
+  const root = document.createElement('div');
+  root.innerHTML = html;
+  const out: Paragraph[] = [];
+  const walk = (el: Element, level: number) => {
+    Array.from(el.children).forEach(child => {
+      const tag = child.tagName.toLowerCase();
+      if (tag === 'ul' || tag === 'ol') {
+        Array.from(child.children).forEach((li, i) => {
+          const prefix = tag === 'ol' ? [new TextRun(`${i + 1}. `)] : [];
+          out.push(new Paragraph({
+            children: [...prefix, ...runsOf(li)],
+            ...(tag === 'ul' ? { bullet: { level: Math.min(level, 8) } } : { indent: { left: 360 * (level + 1) } }),
+            spacing: { after: 80 },
+          }));
+          walk(li, level + 1);
+        });
+      } else if (/^h[1-6]$/.test(tag)) {
+        out.push(new Paragraph({ children: [new TextRun({ text: child.textContent || '', bold: true, size: tag === 'h2' ? 28 : 24 })], spacing: { before: 240, after: 120 } }));
+      } else if (tag === 'p' || tag === 'blockquote') {
+        const runs = runsOf(child);
+        if (runs.length) out.push(new Paragraph({ children: runs, spacing: { after: 160 }, ...(tag === 'blockquote' ? { indent: { left: 720 } } : {}) }));
+      } else if (tag !== 'li') {
+        walk(child, level);
+      }
+    });
+  };
+  walk(root, 0);
+  if (!out.length && root.textContent?.trim()) out.push(new Paragraph({ children: [new TextRun(stripHtml(html))] }));
+  return out;
+};
+
 export const exportToDocx = async (
   project: Project,
   blocks: DocumentBlock[],
@@ -45,18 +101,7 @@ export const exportToDocx = async (
     }
 
     if (block.type === 'rich_text') {
-      const paragraphs = block.content.split('</p>');
-      for (const p of paragraphs) {
-        const text = stripHtml(p).trim();
-        if (text) {
-          docElements.push(
-            new Paragraph({
-              children: [new TextRun(text)],
-              spacing: { after: 200 }
-            })
-          );
-        }
-      }
+      docElements.push(...htmlToParagraphs(block.content || ''));
     }
     else if (block.type === 'phase_scope') {
       for (const phase of phases) {
