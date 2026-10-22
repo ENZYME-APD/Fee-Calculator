@@ -169,6 +169,22 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     await loadPayments();
   };
 
+  // Adds the unallocated part of the fee as a final payment, so the schedule reaches 100%
+  const handleAddRemainder = async () => {
+    const lastPhase = phases.length ? phases[phases.length - 1] : null;
+    const order = payments.length > 0 ? Math.max(...payments.map(p => p.order)) + 1 : 1;
+    if (amountMode) {
+      const rest = round2(totalFee - payments.reduce((sum, p) => sum + paymentAmount(p, totalFee), 0));
+      if (rest <= 0) return;
+      await addPayment({ projectId, phaseId: lastPhase?.id || undefined, name: 'Final payment', amount: rest, percentage: totalFee > 0 ? round2((rest / totalFee) * 100) : 0, order });
+    } else {
+      const rest = round2(100 - totalPercentage);
+      if (rest <= 0) return;
+      await addPayment({ projectId, phaseId: lastPhase?.id || undefined, name: 'Final payment', percentage: rest, order });
+    }
+    await loadPayments();
+  };
+
   const handleEditStart = (p: Payment) => {
     setEditingId(p.id!);
     setEditName(p.name);
@@ -519,6 +535,28 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
             );
           })()}
         </div>
+        {payments.length > 0 && (() => {
+          const rest = amountMode ? round2(totalFee - totalAmount) : round2(100 - totalPercentage);
+          const showRest = Math.abs(rest) >= 0.01;
+          if (!showRest) return null;
+          const label = amountMode ? money(Math.abs(rest)) : `${Math.abs(rest).toFixed(2)}%`;
+          return rest > 0 ? (
+            <button
+              type="button"
+              onClick={handleAddRemainder}
+              title="Add the missing amount as a final payment"
+              className="w-full flex justify-between items-center px-4 py-2 border-b border-ink-100 dark:border-ink-800 bg-warning-50/60 dark:bg-warning-900/10 hover:bg-warning-100/70 dark:hover:bg-warning-900/20 text-left transition-colors"
+            >
+              <span className="text-xs font-medium text-warning-700 dark:text-warning-400">Missing {label}</span>
+              <span className="text-xs font-bold text-accent-600 dark:text-accent-400 flex items-center gap-1"><Plus size={12} /> Add as final payment</span>
+            </button>
+          ) : (
+            <div className="flex justify-between items-center px-4 py-2 border-b border-ink-100 dark:border-ink-800 bg-negative-50/60 dark:bg-negative-900/10">
+              <span className="text-xs font-medium text-negative-600 dark:text-negative-400">Over by {label}</span>
+              <span className="text-xs text-ink-500 dark:text-ink-400">Reduce a payment</span>
+            </div>
+          );
+        })()}
 
         {payments.length === 0 ? (
           <div className="text-center text-ink-500 dark:text-ink-600 py-8 flex flex-col items-center gap-2">
