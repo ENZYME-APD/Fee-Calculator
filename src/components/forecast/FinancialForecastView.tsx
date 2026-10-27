@@ -145,6 +145,48 @@ function outflowAmount(item: ForecastOutflowItem, monthKey: string, linkedMonthl
   return outflowBase(item, monthKey, linkedMonthly) + (item.monthlyAdjustments?.[monthKey] ?? 0);
 }
 
+
+/**
+ * ± correction for one month. Keeps what you type while you type it, so "-" can be typed first:
+ * -1500 lowers the month's cost, 2000 or +2000 adds to it. Empty or 0 removes it.
+ */
+function AdjustInput({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
+  const show = (v: number) => (v ? (v > 0 ? `+${v}` : String(v)) : '');
+  const [draft, setDraft] = useState(show(value));
+  const [focused, setFocused] = useState(false);
+  useEffect(() => { if (!focused) setDraft(show(value)); }, [value, focused]);
+  const parse = (txt: string) => {
+    const t = txt.replace(/[^0-9.+-]/g, '');
+    const sign = t.trim().startsWith('-') ? -1 : 1;
+    const n = parseFloat(t.replace(/[^0-9.]/g, ''));
+    return Number.isFinite(n) ? sign * Math.round(n) : 0;
+  };
+  const shown = focused ? draft : show(value);
+  return (
+    <input
+      type="text"
+      inputMode="text"
+      value={shown}
+      onFocus={() => { setFocused(true); setDraft(show(value)); }}
+      onBlur={() => { setFocused(false); onChange(parse(draft)); }}
+      onChange={e => {
+        const t = e.target.value.replace(/[^0-9.+-]/g, '');
+        setDraft(t);
+        onChange(parse(t));
+      }}
+      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+      placeholder="± adjust"
+      title="Correction for this month only: -1500 lowers the cost (e.g. salaries left unpaid), 2000 adds to it."
+      aria-label={label}
+      className={`w-20 px-2 py-1 text-right text-xs font-semibold border rounded outline-none focus:border-accent-500 bg-white dark:bg-ink-900 placeholder:text-ink-500 dark:placeholder:text-ink-400 placeholder:font-normal ${
+        value > 0 ? 'border-negative-300 dark:border-negative-800 text-negative-700 dark:text-negative-400'
+        : value < 0 ? 'border-positive-300 dark:border-positive-800 text-positive-700 dark:text-positive-400'
+        : 'border-ink-200 dark:border-ink-700 text-ink-700 dark:text-ink-300'
+      }`}
+    />
+  );
+}
+
 const DAY = 24 * 60 * 60 * 1000;
 const PROJECT_COSTS_GROUP = 'Project expenses';
 
@@ -1304,24 +1346,10 @@ export function FinancialForecastView() {
                         </div>
                       )}
                       {showAdjust && (
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={adj ? (adj > 0 ? `+${adj}` : String(adj)) : ''}
-                          onChange={e => {
-                            const raw = e.target.value.replace(/[^0-9+-]/g, '');
-                            const sign = raw.trim().startsWith('-') ? -1 : 1;
-                            const digits = raw.replace(/[^0-9]/g, '');
-                            handleUpdateAdjustment(item.id, m, digits ? sign * parseInt(digits) : 0);
-                          }}
-                          placeholder="± adjust"
-                          title="Correction for this month only: +2000 for extra costs, -1500 for lower costs."
-                          aria-label={`${item.name}: adjustment for ${formatMonthLabel(m)}`}
-                          className={`w-20 px-2 py-1 text-right text-xs font-semibold border rounded outline-none focus:border-accent-500 bg-white dark:bg-ink-900 placeholder:text-ink-500 dark:placeholder:text-ink-400 placeholder:font-normal ${
-                            adj > 0 ? 'border-negative-300 dark:border-negative-800 text-negative-700 dark:text-negative-400'
-                            : adj < 0 ? 'border-positive-300 dark:border-positive-800 text-positive-700 dark:text-positive-400'
-                            : 'border-ink-200 dark:border-ink-700 text-ink-700 dark:text-ink-300'
-                          }`}
+                        <AdjustInput
+                          value={adj}
+                          onChange={v => handleUpdateAdjustment(item.id, m, v)}
+                          label={`${item.name}: adjustment for ${formatMonthLabel(m)}`}
                         />
                       )}
                       {showAdjust && adj !== 0 && (
