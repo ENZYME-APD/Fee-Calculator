@@ -25,7 +25,8 @@ import {
   EyeOff,
   Tags,
   ChevronsDownUp,
-  ChevronsUpDown
+  ChevronsUpDown,
+  HandCoins
 } from 'lucide-react';
 import { 
   ForecastProfile, 
@@ -41,7 +42,8 @@ import {
   ProjectCost,
   Allocation,
   ForecastGroup,
-  ForecastOutflowPill
+  ForecastOutflowPill,
+  SalaryDebt
 } from '@/lib/firebase/schema';
 import { 
   getForecastProfile, 
@@ -65,6 +67,8 @@ import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
 import { GROUP_COLORS, ManageGroupsModal, newGroupId, nextGroupColor } from './groups';
 import { OutflowPillModal } from './OutflowPillModal';
+import { SalaryPartnersModal, UnpaidSalaryModal } from './SalaryDebtModals';
+import { deferredIn, owedAt, repaidIn, UNASSIGNED } from '@/lib/forecast/salaryDebt';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -141,8 +145,9 @@ function migrateOutflow(item: ForecastOutflowItem): ForecastOutflowItem {
 }
 
 /** Base plus the month's +/- adjustment. */
-function outflowAmount(item: ForecastOutflowItem, monthKey: string, linkedMonthly: number): number {
-  return outflowBase(item, monthKey, linkedMonthly) + (item.monthlyAdjustments?.[monthKey] ?? 0);
+function outflowAmount(item: ForecastOutflowItem, monthKey: string, linkedMonthly: number, deferred = 0): number {
+  // Partner salary left unpaid this month comes off the burn line (it is owed, see SalaryDebt)
+  return outflowBase(item, monthKey, linkedMonthly) + (item.monthlyAdjustments?.[monthKey] ?? 0) - (item.type === 'burn' ? deferred : 0);
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -260,6 +265,11 @@ export function FinancialForecastView() {
   // Rows and Outflows
   const [rows, setRows] = useState<ForecastRow[]>([]);
   const [outflows, setOutflows] = useState<ForecastOutflowItem[]>([]);
+  // Partner salaries owed: unpaid months lower the burn; repayment lines pay it back
+  const [salaryDebt, setSalaryDebt] = useState<SalaryDebt | undefined>(undefined);
+  const [partnerSuggestions, setPartnerSuggestions] = useState<string[]>([]);
+  const [salaryPartnersOpen, setSalaryPartnersOpen] = useState(false);
+  const [unpaidMonth, setUnpaidMonth] = useState<string | null>(null);
   // Custom groups (shared, saved with the forecast) and groups switched off for a what-if
   // (this page only, never saved, so it can't change what partners see)
   const [groups, setGroups] = useState<ForecastGroup[]>([]);
@@ -347,6 +357,10 @@ export function FinancialForecastView() {
           .filter(i => i.isActive !== false)
           .reduce((sum, i) => sum + (i.yearlyCost || 0), 0) / 12);
         setRunningCosts({ salaries, overheads: overheadItems, total: salaries + overheadItems });
+        setPartnerSuggestions([
+          ...internalMembers.filter(m => /partner|director/i.test(m.position || '')).map(m => m.name),
+          ...internalMembers.filter(m => !/partner|director/i.test(m.position || '')).map(m => m.name),
+        ].filter(Boolean));
         if (existingProfile) {
           savedVersion.current = existingProfile.updatedAt ?? null;
           setProfile(existingProfile);
@@ -359,6 +373,7 @@ export function FinancialForecastView() {
           setRows(existingProfile.rows || []);
           setOutflows((existingProfile.outflows || []).map(migrateOutflow));
           setGroups(existingProfile.groups || []);
+          setSalaryDebt(existingProfile.salaryDebt);
         } else {
           // New forecast: start with a running-costs line linked to Team resources + Overheads.
           setOutflows([{
@@ -408,7 +423,8 @@ export function FinancialForecastView() {
           invoicingConversionPercent: Math.round(invoicingConversion),
           rows,
           outflows,
-          groups
+          groups,
+          ...(salaryDebt ? { salaryDebt } : {}),
         }, savedVersion.current);
         savePending.current = false;
         setSaveError(false);
@@ -424,7 +440,7 @@ export function FinancialForecastView() {
     return () => {
       if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
     };
-  }, [loading, conflict, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows, groups]);
+  }, [loading, conflict, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows, groups, salaryDebt]);
 
   // Warn before reloading or closing the tab while a change hasn't been saved yet
   useEffect(() => {
@@ -848,6 +864,7 @@ export function FinancialForecastView() {
     }));
   };
   const OUTFLOW_PILL_MIME = 'application/x-forecast-outflow-pill';
+  const outAmt = (item: ForecastOutflowItem, m: string) => outflowAmount(item, m, runningCosts.total, deferredIn(salaryDebt, m));
 
   // Monthly totals. Closing cash runs from the opening balance at openingMonthKey through every
   // month up to the end of the visible window (including months scrolled out of view), so it
@@ -881,7 +898,7 @@ export function FinancialForecastView() {
 
       // Fixed and debt outflows, plus referral commissions on this month's collections
       let mOutflows = 0;
-      activeOutflows.forEach(item => { mOutflows += outflowAmount(item, m, runningCosts.total); });
+      activeOutflows.forEach(item => { mOutflows += outAmt(item, m); });
       Object.values(dynamicReferrals).forEach(refData => { mOutflows += (refData.monthly[m] || 0); });
 
       return {
@@ -914,7 +931,7 @@ export function FinancialForecastView() {
     }
 
     return stats;
-  }, [monthKeys, startMonthKey, openingMonthKey, activeRows, activeOutflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion, runningCosts.total]);
+  }, [monthKeys, startMonthKey, openingMonthKey, activeRows, activeOutflows, dynamicReferrals, startingBankBalance, possibleConversion, invoicingConversion, runningCosts.total, salaryDebt]);
 
   // Left column: frozen while scrolling sideways. The notes column can be hidden (remembered per browser).
   const [showNotes, setShowNotes] = useState(true);
@@ -1097,7 +1114,7 @@ export function FinancialForecastView() {
   };
   const renderOutflowGroupBar = (key: string, group: ForecastGroup | null, items: ForecastOutflowItem[]) => {
     const off = !!group && disabledGroups.has(group.id);
-    const monthTotal = (m: string) => items.reduce((sum, it) => sum + outflowAmount(it, m, runningCosts.total), 0);
+    const monthTotal = (m: string) => items.reduce((sum, it) => sum + outAmt(it, m), 0);
     return (
       <div className={`flex bg-ink-50 dark:bg-ink-950 text-xs font-semibold tabular-nums ${off ? OFF_DIM : ''}`}>
         {groupBarLabel(key, group, items.length, () => addOutflowLine(group?.id), 'Add outflow')}
@@ -1196,6 +1213,9 @@ export function FinancialForecastView() {
                         {item.name}
                       </button>
                     )}
+                    {item.type === 'salary_repayment' && (
+                      <div className="text-[11px] text-warning-700 dark:text-warning-400 mt-0.5">Pays back partner salaries owed</div>
+                    )}
                     {isLinked && (
                       <div
                         className="text-[11px] text-ink-500 dark:text-ink-400 mt-0.5"
@@ -1230,6 +1250,17 @@ export function FinancialForecastView() {
                       </select>
                     )}
                   </div>
+                  {item.type !== 'burn' && item.type !== 'project' && (
+                    <button
+                      type="button"
+                      onClick={() => setOutflows(prev => prev.map(o => (o.id === item.id ? { ...o, type: o.type === 'salary_repayment' ? 'custom' : 'salary_repayment' } : o)))}
+                      title={item.type === 'salary_repayment' ? 'This line pays back partner salaries owed. Click to make it a normal expense line.' : 'Mark as a repayment of partner salaries owed'}
+                      className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-md transition-opacity ${item.type === 'salary_repayment' ? 'text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-950/30' : 'text-ink-500 dark:text-ink-400 hover:text-accent-700 dark:hover:text-accent-400 hover:bg-ink-100 dark:hover:bg-ink-800 opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
+                      aria-label="Salary repayment line"
+                    >
+                      <HandCoins size={13} />
+                    </button>
+                  )}
                   {item.id !== 'burn_base' && (
                     <IconButton
                       onClick={() => setOutflows(prev => prev.filter(o => o.id !== item.id))}
@@ -1245,7 +1276,7 @@ export function FinancialForecastView() {
                   const pills = item.monthlyPills?.[m] || [];
                   const repeating = !pills.length && item.defaultMonthlyAmount ? item.defaultMonthlyAmount : 0;
                   const adj = item.monthlyAdjustments?.[m] ?? 0;
-                  const total = outflowAmount(item, m, runningCosts.total);
+                  const total = outAmt(item, m);
                   return (
                     <div
                       key={m}
@@ -1303,6 +1334,22 @@ export function FinancialForecastView() {
                           </button>
                         </div>
                       )}
+                      {showAdjust && (() => {
+                        const unpaid = deferredIn(salaryDebt, m);
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => setUnpaidMonth(m)}
+                            title={unpaid ? `Partner salary left unpaid this month: ${fmtExact(unpaid)}. It is owed, see Partner salaries owed.` : 'Partners leave salary unpaid this month'}
+                            aria-label={`Unpaid partner salaries in ${formatMonthLabel(m)}`}
+                            className={unpaid
+                              ? 'px-2 py-1 rounded text-xs font-semibold border border-positive-300 dark:border-positive-800 text-positive-700 dark:text-positive-400 bg-positive-50 dark:bg-positive-950/30 flex items-center gap-1 tabular-nums'
+                              : 'w-7 h-7 flex items-center justify-center rounded-md text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-accent-700 dark:hover:text-accent-400 opacity-0 group-hover/ocell:opacity-100 focus-visible:opacity-100'}
+                          >
+                            <HandCoins size={13} />{unpaid ? `+${fmt(unpaid)} unpaid` : null}
+                          </button>
+                        );
+                      })()}
                       {showAdjust && (
                         <input
                           type="text"
@@ -1324,14 +1371,14 @@ export function FinancialForecastView() {
                           }`}
                         />
                       )}
-                      {showAdjust && adj !== 0 && (
+                      {showAdjust && (adj !== 0 || deferredIn(salaryDebt, m) > 0) && (
                         <span className="font-bold text-negative-600 dark:text-negative-400 tabular-nums" title="This month's total">= -{fmt(total)}</span>
                       )}
                     </div>
                   );
                 })}
                 <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums p-2 flex items-center justify-end font-bold text-negative-600 dark:text-negative-400">
-                  {(() => { const t = sumVisible(m => outflowAmount(item, m, runningCosts.total)); return t ? `-${fmt(t)}` : <span className="text-ink-500 dark:text-ink-400 font-medium">0</span>; })()}
+                  {(() => { const t = sumVisible(m => outAmt(item, m)); return t ? `-${fmt(t)}` : <span className="text-ink-500 dark:text-ink-400 font-medium">0</span>; })()}
                 </div>
               </div>
               );
@@ -1944,6 +1991,49 @@ export function FinancialForecastView() {
           <div className={`divide-y divide-ink-100 dark:divide-ink-800 bg-white dark:bg-ink-900 text-xs ${collapsed.outflows ? 'hidden' : ''}`}>
             {/* Running costs (burn) first and never grouped, then commissions, then the other lines */}
             {renderOutflowSections([{ key: 'out:burn', group: null, items: outflows.filter(o => o.type === 'burn'), showBar: false }])}
+            {/* Partner salaries owed: a running balance, not an outflow (it doesn't change cash) */}
+            {(() => {
+              const sd = salaryDebt;
+              const partners = sd?.partners || [];
+              const hasAny = partners.length > 0 || outflows.some(o => o.type === 'salary_repayment');
+              const nameOf = (pid: string) => pid === UNASSIGNED ? 'Repayments not tied to a partner' : partners.find(p => p.id === pid)?.name || 'Removed partner';
+              const lastM = monthKeys[monthKeys.length - 1];
+              return (
+                <div className="flex bg-warning-50/40 dark:bg-warning-950/10">
+                  <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-white dark:bg-ink-900 ${FROZEN_EDGE} p-3 border-r-2 border-ink-200 dark:border-ink-700`}>
+                    <div className="flex items-center gap-1.5">
+                      <HandCoins size={14} className="text-warning-600 dark:text-warning-400" />
+                      <span className="font-semibold text-ink-800 dark:text-ink-200">Partner salaries owed</span>
+                    </div>
+                    <div className="text-[11px] text-ink-500 dark:text-ink-400 mt-0.5">
+                      {hasAny ? 'Unpaid salary (in the burn line) minus repayments. Not cash.' : 'Track salary partners leave unpaid and pay back later.'}
+                      <button onClick={() => setSalaryPartnersOpen(true)} className="ml-1.5 font-semibold text-accent-700 dark:text-accent-400 hover:underline">{partners.length ? 'Partners' : 'Set up'}</button>
+                    </div>
+                  </div>
+                  {monthKeys.map(m => {
+                    const owed = owedAt(sd, outflows, m);
+                    const unpaid = deferredIn(sd, m);
+                    const repaid = repaidIn(outflows, m);
+                    const breakdown = Object.entries(owed.perPartner).filter(([, v]) => Math.abs(v) >= 0.01).map(([pid, v]) => `${nameOf(pid)}: ${fmtExact(v)}`).join('\n');
+                    return (
+                      <div key={m} className="w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 px-3 py-2 flex items-center justify-end gap-3 tabular-nums" title={breakdown || undefined}>
+                        {(unpaid > 0 || repaid > 0) && (
+                          <span className="text-[11px] text-ink-500 dark:text-ink-400">
+                            {unpaid > 0 && <span className="text-warning-700 dark:text-warning-400">+{fmt(unpaid)}</span>}
+                            {unpaid > 0 && repaid > 0 && ' · '}
+                            {repaid > 0 && <span className="text-positive-700 dark:text-positive-400">−{fmt(repaid)} repaid</span>}
+                          </span>
+                        )}
+                        {hasAny && <span className={`font-bold ${owed.total > 0.5 ? 'text-warning-700 dark:text-warning-400' : 'text-ink-500 dark:text-ink-400'}`}>{fmt(owed.total)}</span>}
+                      </div>
+                    );
+                  })}
+                  <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums px-3 py-2 flex items-center justify-end font-bold text-warning-700 dark:text-warning-400" title="Owed at the end of the last month shown">
+                    {hasAny && lastM ? fmt(owedAt(sd, outflows, lastM).total) : ''}
+                  </div>
+                </div>
+              );
+            })()}
             {/* Dynamic Referral Commission Rows */}
             {referralNames.map(personName => {
               const personData = dynamicReferrals[personName];
@@ -2104,6 +2194,24 @@ export function FinancialForecastView() {
         onSave={p => { if (outflowPillEdit) saveOutflowPill(outflowPillEdit.itemId, outflowPillEdit.month, p); }}
         onDelete={id => { if (outflowPillEdit) deleteOutflowPill(outflowPillEdit.itemId, outflowPillEdit.month, id); }}
         onClose={() => setOutflowPillEdit(null)}
+        partners={outflows.find(o => o.id === outflowPillEdit?.itemId)?.type === 'salary_repayment' ? (salaryDebt?.partners || []) : undefined}
+      />
+
+      <SalaryPartnersModal
+        isOpen={salaryPartnersOpen}
+        value={salaryDebt}
+        suggestions={partnerSuggestions}
+        onSave={setSalaryDebt}
+        onClose={() => setSalaryPartnersOpen(false)}
+      />
+      <UnpaidSalaryModal
+        isOpen={!!unpaidMonth}
+        month={unpaidMonth || ''}
+        monthLabel={unpaidMonth ? formatMonthLabel(unpaidMonth) : ''}
+        value={salaryDebt}
+        onSave={setSalaryDebt}
+        onManagePartners={() => { setUnpaidMonth(null); setSalaryPartnersOpen(true); }}
+        onClose={() => setUnpaidMonth(null)}
       />
 
       <ManageGroupsModal

@@ -12,17 +12,21 @@ interface OutflowPillModalProps {
   onSave: (pill: ForecastOutflowPill) => void;
   onDelete: (pillId: string) => void;
   onClose: () => void;
+  /** Salary repayment lines: the partners whose owed salary an expense can pay back. */
+  partners?: { id: string; name: string }[];
 }
 
 /** Add or edit one expense in an outflow line: amount plus an optional description. */
-export function OutflowPillModal({ isOpen, lineName, monthLabel, pill, onSave, onDelete, onClose }: OutflowPillModalProps) {
+export function OutflowPillModal({ isOpen, lineName, monthLabel, pill, onSave, onDelete, onClose, partners }: OutflowPillModalProps) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [partnerId, setPartnerId] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
     setAmount(pill ? String(Math.round(pill.amount * 100) / 100) : '');
     setDescription(pill?.description || '');
+    setPartnerId(pill?.partnerId || '');
   }, [isOpen, pill]);
 
   if (!isOpen) return null;
@@ -45,6 +49,7 @@ export function OutflowPillModal({ isOpen, lineName, monthLabel, pill, onSave, o
       id: pill?.id || `opill_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       amount: value,
       description: description.trim() || undefined,
+      ...(partners && partnerId ? { partnerId } : {}),
     });
     onClose();
   };
@@ -75,6 +80,15 @@ export function OutflowPillModal({ isOpen, lineName, monthLabel, pill, onSave, o
               className={`${fieldClass} w-full text-sm font-semibold text-right tabular-nums`}
             />
           </div>
+          {partners && (
+            <div>
+              <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">Pays back salary owed to</label>
+              <select value={partnerId} onChange={e => setPartnerId(e.target.value)} className={`${fieldClass} w-full`}>
+                <option value="">Not tied to one partner</option>
+                {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">Description</label>
             <textarea

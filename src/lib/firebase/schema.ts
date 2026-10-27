@@ -251,12 +251,13 @@ export interface ForecastOutflowPill {
   id: string;
   amount: number;
   description?: string;
+  partnerId?: string; // salary repayment lines: whose owed salary this pays back
 }
 
 export interface ForecastOutflowItem {
   id: string;
   name: string;
-  type: 'burn' | 'partner' | 'debt' | 'custom' | 'project';
+  type: 'burn' | 'partner' | 'debt' | 'custom' | 'project' | 'salary_repayment'; // salary_repayment: pays back partner salaries owed
   projectId?: string; // project costs line: direct costs and external team of this project
   monthlyAmounts: Record<string, number>; // YYYY-MM -> amount (legacy; converted to monthlyPills on load)
   monthlyPills?: Record<string, ForecastOutflowPill[]>; // YYYY-MM -> expenses; override defaultMonthlyAmount for that month
@@ -265,6 +266,16 @@ export interface ForecastOutflowItem {
   linkedToOverheads?: boolean; // base amount = monthly salaries (Team resources) + active overhead items / 12 (Overheads)
   monthlyAdjustments?: Record<string, number>; // YYYY-MM -> +/- correction on top of the month's amount
   groupId?: string;
+}
+
+/**
+ * Partner salaries left unpaid. Deferrals lower that month's burn and add to what is owed;
+ * expenses in salary repayment lines pay it back. Opening amounts are what was owed before the
+ * first month of the forecast.
+ */
+export interface SalaryDebt {
+  partners: { id: string; name: string; opening: number; note?: string }[];
+  deferrals?: Record<string, Record<string, number>>; // YYYY-MM -> partnerId -> unpaid amount
 }
 
 export interface ForecastProfile {
@@ -279,6 +290,7 @@ export interface ForecastProfile {
   rows: ForecastRow[];
   outflows: ForecastOutflowItem[];
   groups?: ForecastGroup[]; // shared by inflow and outflow lines
+  salaryDebt?: SalaryDebt;
   updatedAt: number;
 }
 

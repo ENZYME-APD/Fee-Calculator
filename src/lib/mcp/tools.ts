@@ -1,4 +1,5 @@
 import { adminDb } from '@/lib/firebase/admin';
+import { deferredIn, owedAt, repaidIn } from '@/lib/forecast/salaryDebt';
 import {
   Allocation, ForecastOutflowItem, ForecastProfile, OverheadsProfile, Payment, Phase, Project,
   ProjectCost, TeamCategory, TeamMember,
@@ -116,7 +117,7 @@ export const currentMonth = () => { const d = new Date(); return `${d.getUTCFull
 // Mirrors the forecast page: a linked line (the fixed operational burn by default) uses the live
 // Team resources + Overheads figure; other lines use the month's expenses, else the every-month amount.
 export function isLinkedLine(item: ForecastOutflowItem) { return item.linkedToOverheads ?? item.id === 'burn_base'; }
-function outflowAmount(item: ForecastOutflowItem, m: string, linkedMonthly: number): number {
+function outflowAmount(item: ForecastOutflowItem, m: string, linkedMonthly: number, deferred = 0): number {
   let base: number;
   if (isLinkedLine(item)) base = linkedMonthly;
   else {
@@ -125,7 +126,7 @@ function outflowAmount(item: ForecastOutflowItem, m: string, linkedMonthly: numb
       ? pills.reduce((s, p) => s + (p.amount || 0), 0)
       : item.monthlyAmounts?.[m] ?? item.defaultMonthlyAmount ?? 0;
   }
-  return base + (item.monthlyAdjustments?.[m] ?? 0);
+  return base + (item.monthlyAdjustments?.[m] ?? 0) - (item.type === 'burn' ? deferred : 0);
 }
 
 export async function runningCosts(data: CompanyData) {
@@ -360,7 +361,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'get_cash_flow_forecast',
     title: 'Cash-flow forecast',
-    description: 'Admins only. Month-by-month cash flow from the Financial forecast page. Inflows: invoiced (the invoicing schedule, not cash), possible (likely work, weighted by the conversion %), collections (cash expected in). Outflows: the fixed operational burn, other expense lines and referral commissions. Returns expected and optimistic inflow, net cash movement and closing bank cash per month. Optionally includes the amount of every line, with the entry ids the forecast-editing tools use.',
+    description: 'Admins only. Month-by-month cash flow from the Financial forecast page. Inflows: invoiced (the invoicing schedule, not cash), possible (likely work, weighted by the conversion %), collections (cash expected in). Outflows: the fixed operational burn (less any partner salary left unpaid that month), other expense lines and referral commissions. Partner salaries owed: unpaid salary minus repayment lines, as a running balance (not cash). Returns expected and optimistic inflow, net cash movement and closing bank cash per month. Optionally includes the amount of every line, with the entry ids the forecast-editing tools use.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -397,7 +398,7 @@ export const TOOLS: ToolDef[] = [
       const totals = (m: string) => {
         const collections = sumStage(m, 'collections');
         const possible = sumStage(m, 'possible');
-        const lines = outflows.reduce((s, o) => s + outflowAmount(o, m, rc.total), 0);
+        const lines = outflows.reduce((s, o) => s + outflowAmount(o, m, rc.total, deferredIn(profile.salaryDebt, m)), 0);
         const ref = Object.values(referrals(m)).reduce((s, v) => s + v, 0);
         return { invoiced: sumStage(m, 'invoicing'), possible, collections, outflows: lines + ref, net: collections - lines - ref };
       };
@@ -427,6 +428,16 @@ export const TOOLS: ToolDef[] = [
           outflows: round(t.outflows),
           net_cash: round(t.net),
           closing_bank_cash: closing[m] ?? null,
+          ...(profile.salaryDebt?.partners?.length || outflows.some(o => o.type === 'salary_repayment') ? (() => {
+            const owed = owedAt(profile.salaryDebt, outflows, m);
+            const names = new Map((profile.salaryDebt?.partners || []).map(p => [p.id, p.name]));
+            return {
+              partner_salaries_unpaid: round(deferredIn(profile.salaryDebt, m)),
+              partner_salaries_repaid: round(repaidIn(outflows, m)),
+              partner_salaries_owed_end_of_month: round(owed.total),
+              partner_salaries_owed_by_partner: Object.fromEntries(Object.entries(owed.perPartner).filter(([, v]) => Math.abs(v) >= 0.01).map(([pid, v]) => [names.get(pid) || 'Not tied to a partner', round(v)])),
+            };
+          })() : {}),
         };
         if (includeLines) {
           row.inflow_lines = rows
@@ -440,7 +451,9 @@ export const TOOLS: ToolDef[] = [
             .filter(l => l.invoiced || l.possible || l.collections);
           row.outflow_lines = [
             ...outflows.map(o => ({
-              line: o.name, line_id: o.id, group: o.groupId ? groupName.get(o.groupId) || null : null, amount: round(outflowAmount(o, m, rc.total)),
+              line: o.name, line_id: o.id, group: o.groupId ? groupName.get(o.groupId) || null : null, amount: round(outflowAmount(o, m, rc.total, deferredIn(profile.salaryDebt, m))),
+              ...(o.type === 'burn' && deferredIn(profile.salaryDebt, m) ? { unpaid_partner_salary: round(deferredIn(profile.salaryDebt, m)) } : {}),
+              ...(o.type === 'salary_repayment' ? { repays_partner_salaries: true } : {}),
               ...(isLinkedLine(o) ? { linked_to_team_and_overheads: true } : {}),
               ...(o.monthlyAdjustments?.[m] ? { adjustment: o.monthlyAdjustments[m] } : {}),
               ...(o.monthlyPills?.[m]?.length ? { expenses: o.monthlyPills[m].map(p => ({ expense_id: p.id, amount: p.amount, description: p.description || null })) } : {}),
