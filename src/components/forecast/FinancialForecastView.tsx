@@ -229,6 +229,8 @@ export function FinancialForecastView() {
   // Bank balance, debts and commissions are company finances: admins only (same as Overheads).
   const isAdmin = dbUser?.role === 'admin' || !!user?.email?.toLowerCase().endsWith('@weareenzyme.com');
   const fmt = (val: number) => formatCurrency(Math.round(val), 0, 0);
+  // Expense chips show cents when the amount has them
+  const fmtExact = (val: number) => (Math.round(val * 100) % 100 === 0 ? fmt(val) : formatCurrency(Math.round(val * 100) / 100, 2, 2));
 
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -1282,11 +1284,11 @@ export function FinancialForecastView() {
                                 e.dataTransfer.effectAllowed = 'copyMove';
                               }}
                               onClick={() => setOutflowPillEdit({ itemId: item.id, month: m, pill: p })}
-                              title={`${p.description ? p.description + '\n' : ''}-${fmt(p.amount)}\nClick to edit · Drag to move · Alt+drag to copy`}
+                              title={`${p.description ? p.description + '\n' : ''}-${fmtExact(p.amount)}\nClick to edit · Drag to move · Alt+drag to copy`}
                               className={`${p.description ? 'w-[250px] justify-between' : 'justify-end'} max-w-full px-2 py-1 rounded text-xs font-bold border shadow-2xs cursor-grab active:cursor-grabbing flex items-center gap-1.5 select-none transition-colors hover:border-negative-300 dark:hover:border-negative-700 bg-negative-50 text-negative-800 border-negative-200 dark:bg-negative-950/40 dark:text-negative-300 dark:border-negative-800/60`}
                             >
                               {p.description && <span className="truncate min-w-0 text-left font-medium text-negative-700/90 dark:text-negative-300/90">{p.description}</span>}
-                              <span className="shrink-0 tabular-nums">-{fmt(p.amount)}</span>
+                              <span className="shrink-0 tabular-nums">-{fmtExact(p.amount)}</span>
                             </button>
                           ))}
                           </div>

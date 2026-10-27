@@ -383,7 +383,7 @@ export const ADMIN_WRITE_TOOLS: ToolDef[] = [
         delete line.monthlyAmounts[month];
       }
       const replacesDefault = !line.monthlyPills[month]?.length && !!line.defaultMonthlyAmount;
-      const pill = { id: opillId(), amount: Math.round(amount), ...(str(args, 'description') ? { description: str(args, 'description') } : {}) };
+      const pill = { id: opillId(), amount: Math.round(amount * 100) / 100, ...(str(args, 'description') ? { description: str(args, 'description') } : {}) };
       line.monthlyPills[month] = [...(line.monthlyPills[month] || []), pill];
       const summary = `Forecast: added ${pill.amount} to "${line.name}" in ${month}`;
       const changeId = await applyChange(ctx, 'add_outflow_expense', summary, [forecastOp(profile)]);

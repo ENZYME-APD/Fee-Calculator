@@ -21,13 +21,24 @@ export function OutflowPillModal({ isOpen, lineName, monthLabel, pill, onSave, o
 
   useEffect(() => {
     if (!isOpen) return;
-    setAmount(pill ? String(Math.round(pill.amount)) : '');
+    setAmount(pill ? String(Math.round(pill.amount * 100) / 100) : '');
     setDescription(pill?.description || '');
   }, [isOpen, pill]);
 
   if (!isOpen) return null;
 
-  const value = parseInt(amount.replace(/[^0-9]/g, ''), 10) || 0;
+  // Whole numbers or up to 2 decimals; thousands separators are added for display only
+  const raw = (() => {
+    const cleaned = amount.replace(/[^0-9.]/g, '');
+    const [int, ...rest] = cleaned.split('.');
+    return rest.length ? `${int}.${rest.join('').slice(0, 2)}` : int;
+  })();
+  const value = Math.round((parseFloat(raw) || 0) * 100) / 100;
+  const shown = raw === '' ? '' : (() => {
+    const [int, dec] = raw.split('.');
+    const intShown = int ? Number(int).toLocaleString('en-US') : '0';
+    return dec !== undefined ? `${intShown}.${dec}` : intShown;
+  })();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
@@ -57,8 +68,8 @@ export function OutflowPillModal({ isOpen, lineName, monthLabel, pill, onSave, o
             <input
               autoFocus
               type="text"
-              inputMode="numeric"
-              value={value ? value.toLocaleString('en-US') : amount === '' ? '' : '0'}
+              inputMode="decimal"
+              value={shown}
               onChange={e => setAmount(e.target.value)}
               placeholder="0"
               className={`${fieldClass} w-full text-sm font-semibold text-right tabular-nums`}
