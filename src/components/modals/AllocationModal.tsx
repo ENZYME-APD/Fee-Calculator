@@ -25,6 +25,24 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
     }
   }, [initialData, isOpen]);
 
+  // Switching unit converts what is typed, so 1 week becomes 40 hours or 50% of a 2-week phase
+  const HOURS_PER_WEEK = 40;
+  const tidy = (n: number, decimals: number) => String(Math.round(n * 10 ** decimals) / 10 ** decimals);
+  const switchType = (next: 'hours' | 'weeks' | 'percentage') => {
+    if (next === allocationType) return;
+    const v = parseFloat(allocationValue);
+    if (phase && Number.isFinite(v) && v > 0) {
+      const weeksInPhase = phase.durationWeeks || 0;
+      const hours = allocationType === 'hours' ? v
+        : allocationType === 'weeks' ? v * HOURS_PER_WEEK
+        : (v / 100) * weeksInPhase * HOURS_PER_WEEK;
+      if (next === 'hours') setAllocationValue(tidy(hours, 1));
+      else if (next === 'weeks') setAllocationValue(tidy(hours / HOURS_PER_WEEK, 2));
+      else if (weeksInPhase > 0) setAllocationValue(tidy((hours / (weeksInPhase * HOURS_PER_WEEK)) * 100, 1));
+    }
+    setAllocationType(next);
+  };
+
   const handleClose = () => {
     onClose();
   };
@@ -60,7 +78,7 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-ink-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-ink-100 dark:border-ink-800">
         <div className="flex justify-between items-center p-6 border-b border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900">
-          <h2 className="text-xl font-bold text-ink-800 dark:text-ink-200">{initialData ? 'Edit Allocation' : 'Allocate Resource'}</h2>
+          <h2 className="text-xl font-bold text-ink-800 dark:text-ink-200">{initialData ? 'Edit allocation' : 'Allocate team member'}</h2>
           <button onClick={handleClose} className="text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-300 p-1.5 rounded-full hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors">
             <X size={20} />
           </button>
@@ -82,28 +100,28 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
             <div className="w-full h-px bg-ink-100 dark:bg-ink-800 my-1"></div>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-ink-500 dark:text-ink-400">Cost rate</span>
-              <span className="font-semibold text-ink-700 dark:text-ink-300">${member.costPerHour}/hr</span>
+              <span className="font-semibold text-ink-700 dark:text-ink-300">${(Math.round(member.costPerHour * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr</span>
             </div>
           </div>
 
           <div className="space-y-4">
             <label className="block text-sm font-bold text-ink-700 dark:text-ink-300">Allocation input</label>
             <div className="flex bg-ink-100 dark:bg-ink-800 p-1 rounded-xl">
-              <button onClick={() => setAllocationType('hours')} className={`flex-1 py-2 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${allocationType === 'hours' ? 'bg-white text-accent-600 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}>
+              <button onClick={() => switchType('hours')} className={`flex-1 py-2 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${allocationType === 'hours' ? 'bg-white text-accent-600 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}>
                 <Clock size={16} /> Hours
               </button>
-              <button onClick={() => setAllocationType('weeks')} className={`flex-1 py-2 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${allocationType === 'weeks' ? 'bg-white text-accent-600 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}>
+              <button onClick={() => switchType('weeks')} className={`flex-1 py-2 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${allocationType === 'weeks' ? 'bg-white text-accent-600 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}>
                 <CalendarDays size={16} /> Weeks
               </button>
-              <button onClick={() => setAllocationType('percentage')} className={`flex-1 py-2 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${allocationType === 'percentage' ? 'bg-white text-accent-600 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}>
-                <Percent size={16} /> % Load
+              <button onClick={() => switchType('percentage')} className={`flex-1 py-2 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${allocationType === 'percentage' ? 'bg-white text-accent-600 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}>
+                <Percent size={16} /> Load
               </button>
             </div>
             
             <input
               type="number"
               min="0"
-              step="0.5"
+              step="any"
               value={allocationValue}
               onChange={(e) => setAllocationValue(e.target.value)}
               className="w-full px-4 py-3.5 rounded-xl border border-ink-200 dark:border-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all bg-white dark:bg-ink-900 text-ink-800 dark:text-ink-200 font-bold text-lg shadow-sm"
@@ -118,9 +136,15 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
                 <span className="text-accent-700 dark:text-accent-400 font-medium">Calculated hours</span>
                 <span className="font-bold text-accent-900 dark:text-accent-300">{finalHours.toFixed(1)} hrs</span>
               </div>
+              {phase.durationWeeks > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-accent-700 dark:text-accent-400 font-medium">Load over the phase</span>
+                  <span className="font-bold text-accent-900 dark:text-accent-300">{((finalHours / (phase.durationWeeks * 40)) * 100).toFixed(0)}% · {(finalHours / 40).toFixed(1)} wk</span>
+                </div>
+              )}
               <div className="flex justify-between items-center text-sm">
                 <span className="text-accent-700 dark:text-accent-400 font-medium">Estimated cost</span>
-                <span className="font-bold text-negative-600 dark:text-negative-400">${finalCost.toLocaleString()}</span>
+                <span className="font-bold text-negative-600 dark:text-negative-400">${finalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
 
             </div>
@@ -139,7 +163,7 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
             disabled={val <= 0}
             className="px-6 py-2.5 text-sm font-bold text-white bg-accent-600 hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-accent-600/20 active:scale-95"
           >
-            {initialData ? 'Save Changes' : 'Confirm'}
+            {initialData ? 'Save changes' : 'Confirm'}
           </button>
         </div>
       </div>
