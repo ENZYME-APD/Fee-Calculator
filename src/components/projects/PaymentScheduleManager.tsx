@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Allocation, Phase, Payment, ProjectCost, TeamMember } from '@/lib/firebase/schema';
 import { getPayments, addPayment, updatePayment, deletePayment, batchAddPayments, clearPayments, batchUpdatePayments } from '@/lib/firebase/db';
-import { FileSpreadsheet, Plus, Trash2, Pencil, Check, X, CalendarDays, Layers } from 'lucide-react';
+import { FileSpreadsheet, Plus, Trash2, Pencil, Check, X, CalendarDays, Layers, ChevronUp, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { RowMenu } from '@/components/ui/RowMenu';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { Card, CardHeader, CardBody, Row } from '@/components/ui/Card';
@@ -228,6 +228,17 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
         setConfirmConfig(prev => ({ ...prev, isOpen: false }));
       }
     });
+  };
+
+  // Move a payment one place up or down; the list updates at once, then the new order is saved
+  const handleMove = async (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= payments.length) return;
+    const next = [...payments];
+    [next[index], next[target]] = [next[target], next[index]];
+    const renumbered = next.map((p, i) => ({ ...p, order: i + 1 }));
+    setPayments(renumbered);
+    await batchUpdatePayments(renumbered.map(p => ({ id: p.id!, data: { order: p.order } })));
   };
 
   const handleAddBeforeAfter = async (targetPayment: Payment, position: 'before' | 'after') => {
@@ -638,12 +649,24 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
                   />
                   )}
 
+                  <div className="flex flex-col -my-1">
+                    <button type="button" onClick={() => handleMove(index, -1)} disabled={index === 0} title="Move up" aria-label={`Move ${payment.name} up`}
+                      className="p-0.5 rounded text-ink-500 dark:text-ink-400 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-ink-100 dark:hover:bg-ink-800 disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default">
+                      <ChevronUp size={14} />
+                    </button>
+                    <button type="button" onClick={() => handleMove(index, 1)} disabled={index === payments.length - 1} title="Move down" aria-label={`Move ${payment.name} down`}
+                      className="p-0.5 rounded text-ink-500 dark:text-ink-400 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-ink-100 dark:hover:bg-ink-800 disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default">
+                      <ChevronDown size={14} />
+                    </button>
+                  </div>
                   <RowMenu
                     items={[
-                      { label: 'Edit Payment', icon: <Pencil size={14} />, onClick: () => handleEditStart(payment) },
-                      { label: 'Add Payment Before', icon: <Plus size={14} />, onClick: () => handleAddBeforeAfter(payment, 'before') },
-                      { label: 'Add Payment After', icon: <Plus size={14} />, onClick: () => handleAddBeforeAfter(payment, 'after') },
-                      { label: 'Delete Payment', icon: <Trash2 size={14} />, danger: true, onClick: () => handleDelete(payment.id!) },
+                      { label: 'Edit payment', icon: <Pencil size={14} />, onClick: () => handleEditStart(payment) },
+                      ...(index > 0 ? [{ label: 'Move up', icon: <ArrowUp size={14} />, onClick: () => handleMove(index, -1) }] : []),
+                      ...(index < payments.length - 1 ? [{ label: 'Move down', icon: <ArrowDown size={14} />, onClick: () => handleMove(index, 1) }] : []),
+                      { label: 'Add payment before', icon: <Plus size={14} />, onClick: () => handleAddBeforeAfter(payment, 'before') },
+                      { label: 'Add payment after', icon: <Plus size={14} />, onClick: () => handleAddBeforeAfter(payment, 'after') },
+                      { label: 'Delete payment', icon: <Trash2 size={14} />, danger: true, onClick: () => handleDelete(payment.id!) },
                     ]}
                   />
                 </div>
