@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { paymentAmount } from '@/lib/utils/payments';
 import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories, getForecastProfile, getOverheadsProfile } from '@/lib/firebase/db';
@@ -77,6 +77,19 @@ export function OverviewDashboard() {
     try { localStorage.setItem('dashboard.occStatuses', JSON.stringify(next)); } catch {}
     return next;
   });
+  // Which project states the income charts (weekly, monthly invoices, cashflow) count (remembered per browser)
+  const [cashStatuses, setCashStatuses] = useState<string[]>(DEFAULT_OCC_STATUSES);
+  const [cashStatusesReady, setCashStatusesReady] = useState(false);
+  useEffect(() => {
+    try { const v = JSON.parse(localStorage.getItem('dashboard.cashStatuses') || 'null'); if (Array.isArray(v)) setCashStatuses(v); } catch {}
+    setCashStatusesReady(true);
+  }, []);
+  const toggleCashStatus = (st: string) => setCashStatuses(prev => {
+    const next = prev.includes(st) ? prev.filter(x => x !== st) : [...prev, st];
+    try { localStorage.setItem('dashboard.cashStatuses', JSON.stringify(next)); } catch {}
+    return next;
+  });
+  const hasLoaded = useRef(false);
   const [hasOtherExpenses, setHasOtherExpenses] = useState(false);  const [projectNames, setProjectNames] = useState<string[]>([]);
   const [projectColors, setProjectColors] = useState<Record<string, string>>({});
   
@@ -182,17 +195,19 @@ export function OverviewDashboard() {
   };
 
   useEffect(() => {
-    if (!dbUser) return;
+    if (!dbUser || !cashStatusesReady) return;
     loadData();
-  }, [dbUser]);
+  }, [dbUser, cashStatuses, cashStatusesReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = async () => {
-    setLoading(true);
+    if (!hasLoaded.current) setLoading(true); // later reloads (filter changes) keep the page on screen
     const ownerId = dbUser?.role !== 'admin' ? dbUser?.uid : undefined;
     
     // Fetch all required data
     const allProjs = await getProjects(false, ownerId);
     const projs = allProjs.filter(p => p.status === 'Proposed' || p.status === 'Active');
+    // Income charts: projects in the states switched on (Proposed + Active by default)
+    const cashProjs = allProjs.filter(p => cashStatuses.includes(p.status || 'Draft'));
     const phases = await getPhases();
     const members = await getTeamMembers();
     const allocations = await getAllocations();
@@ -218,7 +233,8 @@ export function OverviewDashboard() {
     let pipeline = 0;
     let active = 0;
     
-    const projectStats = projs.map(proj => {
+    const statsProjs = [...projs, ...cashProjs.filter(c => !projs.some(p => p.id === c.id))];
+    const projectStats = statsProjs.map(proj => {
       const projPhases = phases.filter(p => p.projectId === proj.id);
       const phaseIds = projPhases.map(p => p.id);
       const projAllocs = allocations.filter(a => phaseIds.includes(a.phaseId));
@@ -237,7 +253,9 @@ export function OverviewDashboard() {
       const multiplier = feeMultiplierFor(proj, totalCost);
       const totalFee = hasFixedFee(proj) ? proj.fixedFee! : totalCost * multiplier;
 
-      if (proj.status === 'Draft' || proj.status === 'Proposed') {
+      if (!projs.some(p => p.id === proj.id)) {
+        // only in the income charts
+      } else if (proj.status === 'Draft' || proj.status === 'Proposed') {
         pipeline += totalFee;
       } else if (proj.status === 'Active') {
         active += totalFee;
@@ -253,19 +271,20 @@ export function OverviewDashboard() {
       };
     });
 
-    const avgMargin = projectStats.length > 0 
-      ? projectStats.reduce((sum, p) => sum + p.margin, 0) / projectStats.length 
+    const kpiStats = projectStats.filter(st => projs.some(p => p.id === st.id));
+    const avgMargin = kpiStats.length > 0 
+      ? kpiStats.reduce((sum, p) => sum + p.margin, 0) / kpiStats.length 
       : 0;
 
     setKpis({ pipelineValue: pipeline, activeValue: active, avgMargin });
-    setScatterData(projectStats.filter(p => p.totalFee > 0));
+    setScatterData(kpiStats.filter(p => p.totalFee > 0));
 
     // Calculate Timeline
     const colors = CHART_COLORS;
     const pColors: Record<string, string> = {};
     const pNames: string[] = [];
     
-    projs.forEach((p, idx) => {
+    cashProjs.forEach((p, idx) => {
       pColors[p.name] = colors[idx % colors.length];
       pNames.push(p.name);
     });
@@ -276,7 +295,7 @@ export function OverviewDashboard() {
     const mMap: Record<string, any> = {};
     
     payments.forEach(payment => {
-      const proj = projs.find(p => p.id === payment.projectId);
+      const proj = cashProjs.find(p => p.id === payment.projectId);
       if (!proj) return;
       const stats = projectStats.find(p => p.id === proj.id);
       if (!stats) return;
@@ -385,7 +404,7 @@ export function OverviewDashboard() {
     }
 
     // Calculate Occupancy
-    const cashProjectIds = new Set(projs.map(p => p.id));
+    const cashProjectIds = new Set(cashProjs.map(p => p.id));
     occProjs.forEach(proj => {
       const status = proj.status || 'Draft';
       const projPhases = phases.filter(p => p.projectId === proj.id).sort((a,b) => a.order - b.order);
@@ -491,8 +510,34 @@ export function OverviewDashboard() {
     const oArr = Object.values(oMap).sort((a: any, b: any) => a.dateValue - b.dateValue);
     setOccupancyData(oArr);
 
+    hasLoaded.current = true;
     setLoading(false);
   };
+
+  // Project-state filter for the income charts
+  const cashStatusChips = (
+    <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Project states counted">
+      <span className="text-xs text-ink-500 dark:text-ink-400 mr-1">Count projects:</span>
+      {OCC_STATUSES.map(st => {
+        const on = cashStatuses.includes(st);
+        return (
+          <button
+            key={st}
+            type="button"
+            onClick={() => toggleCashStatus(st)}
+            aria-pressed={on}
+            title={on ? `Leave out ${st.toLowerCase()} projects` : `Count ${st.toLowerCase()} projects`}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-colors ${on
+              ? 'border-ink-300 dark:border-ink-600 bg-ink-50 dark:bg-ink-800 text-ink-800 dark:text-ink-100'
+              : 'border-ink-200 dark:border-ink-800 text-ink-500 dark:text-ink-400 opacity-60 hover:opacity-100'}`}
+          >
+            <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[st].dot} ${on ? '' : 'opacity-40'}`} />
+            {STATUS_CONFIG[st].label}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   if (loading) {
     return (
@@ -604,7 +649,11 @@ export function OverviewDashboard() {
       {/* Projected Fee Income Timeline */}
       <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 p-6 mb-8 flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200">Projected fee income</h2>
+          <div>
+            <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200">Projected fee income</h2>
+            <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">Payment schedule of each project, dated at the end of its phase</p>
+          </div>
+          {cashStatusChips}
         </div>
         
         <div className="h-[400px] w-full">
@@ -677,19 +726,22 @@ export function OverviewDashboard() {
       <div className="bg-white dark:bg-ink-900 rounded-2xl border border-ink-200 dark:border-ink-800 p-6 mb-8 flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h2 className="text-lg font-bold text-ink-800 dark:text-ink-200">Monthly cashflow</h2>
+          <div className="flex flex-wrap items-center gap-3">
+          {cashStatusChips}
           <div className="flex items-center bg-ink-100 dark:bg-ink-800 p-1 rounded-lg">
             <button
               onClick={() => setCashflowView('bar')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${cashflowView === 'bar' ? 'bg-white dark:bg-ink-700 text-ink-800 dark:text-ink-50 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-300'}`}
             >
-              Income vs Expenses
+              Income vs expenses
             </button>
             <button
               onClick={() => setCashflowView('line')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${cashflowView === 'line' ? 'bg-white dark:bg-ink-700 text-ink-800 dark:text-ink-50 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-300'}`}
             >
-              Net Profit
+              Net profit
             </button>
+          </div>
           </div>
         </div>
         
