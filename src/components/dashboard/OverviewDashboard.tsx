@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { paymentAmount } from '@/lib/utils/payments';
 import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
-import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories, getForecastProfile } from '@/lib/firebase/db';
+import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories, getForecastProfile, getOverheadsProfile } from '@/lib/firebase/db';
 import { STATUS_CONFIG } from '@/components/ui/StatusBadge';
 import { Project, Phase, TeamMember, TeamCategory, Allocation, ProjectCost, User, ForecastOutflowItem, ForecastProfile } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -30,8 +30,9 @@ function otherForecastExpenses(profile: ForecastProfile | null): Record<string, 
   const add = (m: string, v: number) => { if (v) out[m] = (out[m] || 0) + v; };
   const isLinked = (o: ForecastOutflowItem) => o.linkedToOverheads ?? o.id === 'burn_base';
   (profile.outflows || []).forEach(o => {
-    Object.entries(o.monthlyAdjustments || {}).forEach(([m, v]) => add(m, v || 0));
+    // The running-costs line (and its ± corrections) counts as team salaries and overheads
     if (isLinked(o) || o.type === 'burn' || o.type === 'project') return;
+    Object.entries(o.monthlyAdjustments || {}).forEach(([m, v]) => add(m, v || 0));
     const months = new Set([...Object.keys(o.monthlyPills || {}), ...Object.keys(o.monthlyAmounts || {})]);
     months.forEach(m => {
       const pills = o.monthlyPills?.[m];
@@ -203,6 +204,8 @@ export function OverviewDashboard() {
     const forecast = dbUser?.role === 'admin' || dbUser?.email?.toLowerCase().endsWith('@weareenzyme.com')
       ? await getForecastProfile().catch(() => null)
       : null;
+    // Admins: the same running cost as the Financial forecast (internal salaries + active overhead items / 12)
+    const overheadsProfile = forecast ? await getOverheadsProfile().catch(() => null) : null;
     // Team occupancy also covers Draft and Completed projects (filterable); cashflow stays Proposed + Active
     const occProjs = allProjs.filter(p => OCC_STATUSES.includes((p.status || 'Draft') as typeof OCC_STATUSES[number]));
     
@@ -442,19 +445,37 @@ export function OverviewDashboard() {
       });
     });
 
-    const totalMonthlyTeamCost = members.reduce((sum, m) => {
+    const internalMembers = members.filter(m => {
       const cat = categories.find(c => c.id === m.category);
-      // Include if it's internal (default is internal, so we only exclude if explicitly 'external')
-      if (cat && cat.type === 'external') return sum;
-      return sum + (Number(m.salary) || 0) + (Number(m.overheads) || 0);
-    }, 0);
+      // Internal unless the category is explicitly external
+      return !(cat && cat.type === 'external');
+    });
+    // Each member's stored overheads share also includes non-billable salary, which the salary
+    // already covers, so with the overheads model available use salaries + overhead items instead.
+    const overheadItemsMonthly = overheadsProfile
+      ? (overheadsProfile.categories || []).flatMap(c => c.items || []).filter(i => i.isActive !== false).reduce((sum, i) => sum + (i.yearlyCost || 0), 0) / 12
+      : null;
+    const totalMonthlyTeamCost = overheadItemsMonthly !== null
+      ? Math.round(internalMembers.reduce((sum, m) => sum + (Number(m.salary) || 0), 0) + overheadItemsMonthly)
+      : internalMembers.reduce((sum, m) => sum + (Number(m.salary) || 0) + (Number(m.overheads) || 0), 0);
+    // Running costs per month as the forecast shows them: its linked or typed amount plus ± corrections
+    const burnLine = (forecast?.outflows || []).find(o => o.type === 'burn' || (o.linkedToOverheads ?? o.id === 'burn_base'));
+    const teamCostIn = (month: string) => {
+      if (!burnLine) return totalMonthlyTeamCost;
+      const linked = burnLine.linkedToOverheads ?? burnLine.id === 'burn_base';
+      const pills = burnLine.monthlyPills?.[month];
+      const base = linked ? totalMonthlyTeamCost
+        : pills && pills.length ? pills.reduce((sum, p) => sum + (p.amount || 0), 0)
+        : burnLine.monthlyAmounts?.[month] ?? burnLine.defaultMonthlyAmount ?? 0;
+      return base + (burnLine.monthlyAdjustments?.[month] ?? 0);
+    };
     
     const other = otherForecastExpenses(forecast);
     const everyMonth = Object.entries(other).filter(([k]) => k.startsWith('__default__'));
     const linesWithEntries = new Set<string>();
     (forecast?.outflows || []).forEach(o => Object.keys(o.monthlyPills || {}).forEach(m => { if (o.monthlyPills?.[m]?.length) linesWithEntries.add(`${o.id}|${m}`); }));
     Object.values(mMap).forEach((m: any) => {
-      m.teamExpenses = totalMonthlyTeamCost;
+      m.teamExpenses = teamCostIn(m.bucketKey);
       m.otherExpenses = (other[m.bucketKey] || 0) + everyMonth.reduce((sum, [k, v]) => sum + (linesWithEntries.has(`${k.replace('__default__', '')}|${m.bucketKey}`) ? 0 : v), 0);
       m.totalExpenses = m.teamExpenses + m.projectExpenses + m.otherExpenses;
       m.netProfit = m.totalValue - m.totalExpenses;
