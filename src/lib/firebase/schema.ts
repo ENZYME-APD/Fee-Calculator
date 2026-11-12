@@ -222,6 +222,10 @@ export interface ForecastPill {
   notes?: string;
   referralName?: string;
   referralPercent?: number;
+  // Possible / Collections entries copied from an invoice keep its id (one per invoice)
+  invoiceId?: string;
+  // Collections only: payment received
+  paid?: boolean;
 }
 
 // Custom group (e.g. "India", "Spain") that collapses rows together in the forecast

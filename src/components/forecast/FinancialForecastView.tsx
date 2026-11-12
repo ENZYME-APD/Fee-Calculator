@@ -25,7 +25,10 @@ import {
   EyeOff,
   Tags,
   ChevronsDownUp,
-  ChevronsUpDown
+  ChevronsUpDown,
+  CheckCircle2,
+  Clock,
+  Circle
 } from 'lucide-react';
 import { 
   ForecastProfile, 
@@ -59,12 +62,14 @@ import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
 import { getAllocationRate } from '@/lib/utils/allocationCost';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Card } from '@/components/ui/Card';
-import { SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
+import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
+import { LinkReviewModal } from './LinkReviewModal';
 import { EditPillModal } from './EditPillModal';
 import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
 import { GROUP_COLORS, ManageGroupsModal, newGroupId, nextGroupColor } from './groups';
 import { OutflowPillModal } from './OutflowPillModal';
+import { collectionsSplit, entryFromInvoice, invoiceOf, linkedEntry, suggestLinks, LINKABLE } from '@/lib/forecast/collections';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -330,6 +335,12 @@ export function FinancialForecastView() {
   const [pillModalOpen, setPillModalOpen] = useState(false);
   const [activeCellLocation, setActiveCellLocation] = useState<{ rowId: string; monthKey: string; stage: ForecastStage } | null>(null);
   const [editingPill, setEditingPill] = useState<ForecastPill | null>(null);
+  // Deleting an invoice that has a Possible / Collections copy asks what to do with the copy
+  const [deleteInvoicePlan, setDeleteInvoicePlan] = useState<{ rowId: string; month: string; pillId: string; linked: { month: string; stage: ForecastStage } } | null>(null);
+  const [linkReviewOpen, setLinkReviewOpen] = useState(false);
+  const [linkBannerHidden, setLinkBannerHidden] = useState(false);
+  // What is being dragged, so drop targets can refuse moves that aren't allowed
+  const dragRef = useRef<{ fromRowId: string; fromStage: ForecastStage } | null>(null);
 
   const [addRowModalOpen, setAddRowModalOpen] = useState(false);
   const [addRowGroupId, setAddRowGroupId] = useState<string | undefined>(undefined);
@@ -648,10 +659,10 @@ export function FinancialForecastView() {
 
   // Reset one row: a project row is rebuilt from its fee proposal; any other row has its amounts cleared.
   // Amounts are compared by month, stage, amount and label (ids ignored), counting differences both ways.
-  const cellSignatures = (cells: ForecastRow['cells']) => {
+  const cellSignatures = (cells: ForecastRow['cells'], stages: ForecastStage[] = ['possible', 'invoicing', 'collections']) => {
     const counts: Record<string, number> = {};
     Object.entries(cells || {}).forEach(([m, cell]) => {
-      (['possible', 'invoicing', 'collections'] as ForecastStage[]).forEach(st => {
+      stages.forEach(st => {
         (cell?.[st] || []).forEach(p => {
           const key = `${m}|${st}|${Math.round(p.amount)}|${p.label || ''}|${p.referralName || ''}|${p.referralPercent || 0}|${p.invoiceNumber || ''}|${p.notes || ''}`;
           counts[key] = (counts[key] || 0) + 1;
@@ -679,8 +690,10 @@ export function FinancialForecastView() {
           if (diff > 0) costLine = { line, pills, changed: diff };
         }
       }
-      const cur = cellSignatures(targetRow.cells);
-      const next = cellSignatures(cells);
+      // Project rows: only invoices are rebuilt; Possible / Collections (and paid marks) stay
+      const stagesCompared: ForecastStage[] = targetRow.projectId ? ['invoicing'] : ['possible', 'invoicing', 'collections'];
+      const cur = cellSignatures(targetRow.cells, stagesCompared);
+      const next = cellSignatures(cells, stagesCompared);
       const changed = [...new Set([...Object.keys(cur), ...Object.keys(next)])]
         .reduce((sum, k) => sum + Math.abs((cur[k] || 0) - (next[k] || 0)), 0);
       if (changed === 0 && costLine && !costLine.line) {
@@ -703,6 +716,31 @@ export function FinancialForecastView() {
       setResetCheckingId(null);
     }
   };
+  // A rebuilt project row keeps its Possible / Collections entries. New invoices take the id of the old
+  // invoice with the same label (and amount, if possible), so links survive; others lose their link.
+  const keepCollections = (row: ForecastRow, rebuilt: ForecastRow['cells']): ForecastRow['cells'] => {
+    const oldInvoices: { id: string; label: string; amount: number }[] = [];
+    Object.values(row.cells || {}).forEach(c => (c?.invoicing || []).forEach(p => oldInvoices.push({ id: p.id, label: (p.label || '').trim().toLowerCase(), amount: p.amount })));
+    const taken = new Set<string>();
+    const out: ForecastRow['cells'] = {};
+    Object.entries(rebuilt).forEach(([m, cell]) => {
+      out[m] = { ...cell, invoicing: (cell.invoicing || []).map(p => {
+        const label = (p.label || '').trim().toLowerCase();
+        const match = oldInvoices.find(o => !taken.has(o.id) && o.label === label && Math.abs(o.amount - p.amount) < 1)
+          || oldInvoices.find(o => !taken.has(o.id) && o.label === label);
+        if (!match) return p;
+        taken.add(match.id);
+        return { ...p, id: match.id };
+      }) };
+    });
+    Object.entries(row.cells || {}).forEach(([m, cell]) => {
+      LINKABLE.forEach(st => {
+        const list = (cell?.[st] || []).map(p => (p.invoiceId && !taken.has(p.invoiceId) ? { ...p, invoiceId: undefined } : p));
+        if (list.length) out[m] = { ...(out[m] || {}), [st]: list };
+      });
+    });
+    return out;
+  };
   const applyCostLine = (row: ForecastRow, pills: Record<string, ForecastOutflowPill[]>, line: ForecastOutflowItem | null) => {
     if (line) {
       setOutflows(prev => prev.map(o => (o.id === line.id ? { ...o, monthlyPills: pills } : o)));
@@ -717,7 +755,7 @@ export function FinancialForecastView() {
   const applyResetPlan = () => {
     if (!resetPlan) return;
     const { row, cells, costLine } = resetPlan;
-    setRows(prev => prev.map(r => (r.id === row.id ? { ...r, cells } : r)));
+    setRows(prev => prev.map(r => (r.id === row.id ? { ...r, cells: row.projectId ? keepCollections(r, cells) : cells } : r)));
     if (costLine) applyCostLine(row, costLine.pills, costLine.line);
     setResetPlan(null);
   };
@@ -726,6 +764,7 @@ export function FinancialForecastView() {
   const handleSavePill = (savedPill: ForecastPill, targetStage: ForecastStage) => {
     if (!activeCellLocation) return;
     const { rowId, monthKey, stage: originStage } = activeCellLocation;
+    if (targetStage !== 'collections' && savedPill.paid) savedPill = { ...savedPill, paid: undefined };
 
     setRows(prevRows => prevRows.map(row => {
       if (row.id !== rowId) return row;
@@ -755,6 +794,14 @@ export function FinancialForecastView() {
   const handleDeletePill = (pillId: string) => {
     if (!activeCellLocation) return;
     const { rowId, monthKey, stage } = activeCellLocation;
+    if (stage === 'invoicing') {
+      const row = rows.find(r => r.id === rowId);
+      const linked = row && linkedEntry(row, pillId);
+      if (linked) {
+        setDeleteInvoicePlan({ rowId, month: monthKey, pillId, linked: { month: linked.month, stage: linked.stage } });
+        return;
+      }
+    }
 
     setRows(prevRows => prevRows.map(row => {
       if (row.id !== rowId) return row;
@@ -766,7 +813,32 @@ export function FinancialForecastView() {
     }));
   };
 
-  // Drag & drop move between stages/months
+  // Delete an invoice, and either delete its Possible / Collections copy or keep it unlinked
+  const applyDeleteInvoice = (alsoCopy: boolean) => {
+    if (!deleteInvoicePlan) return;
+    const { rowId, month, pillId, linked } = deleteInvoicePlan;
+    setRows(prev => prev.map(row => {
+      if (row.id !== rowId) return row;
+      const cells = { ...row.cells };
+      cells[month] = { ...cells[month], invoicing: (cells[month]?.invoicing || []).filter(p => p.id !== pillId) };
+      const list = cells[linked.month]?.[linked.stage] || [];
+      cells[linked.month] = {
+        ...cells[linked.month],
+        [linked.stage]: alsoCopy ? list.filter(p => p.invoiceId !== pillId) : list.map(p => (p.invoiceId === pillId ? { ...p, invoiceId: undefined } : p)),
+      };
+      return { ...row, cells };
+    }));
+    setDeleteInvoicePlan(null);
+  };
+
+  // Which drops are allowed: invoices move between invoice months, or are copied (linked) onto
+  // Possible / Collections of the same line; Possible / Collections never become invoices.
+  const dropAllowed = (fromRowId: string, fromStage: ForecastStage, toRowId: string, toStage: ForecastStage) => {
+    if (fromStage === 'invoicing') return toStage === 'invoicing' || toRowId === fromRowId;
+    return toStage !== 'invoicing';
+  };
+
+  // Drag & drop between stages/months
   const handleMovePill = (
     fromRowId: string, 
     toRowId: string,
@@ -777,30 +849,89 @@ export function FinancialForecastView() {
     pill: ForecastPill,
     copy = false
   ) => {
-    if (!copy && fromRowId === toRowId && fromMonth === toMonth && fromStage === toStage) return;
-    // Alt+drag leaves the original in place and drops a duplicate with its own id
-    const placed = copy
-      ? { ...pill, id: `pill_${Date.now()}_${Math.random().toString(36).substring(2, 8)}` }
+    if (!dropAllowed(fromRowId, fromStage, toRowId, toStage)) {
+      setSyncMessage(fromStage === 'invoicing'
+        ? 'An invoice can only be copied to Possible or Collections in its own line.'
+        : 'Possible and Collections entries can\'t be moved to Invoices. Add the invoice in the Invoices column.');
+      return;
+    }
+    const sameSpot = fromRowId === toRowId && fromMonth === toMonth && fromStage === toStage;
+    const remove = (cells: ForecastRow['cells'], m: string, st: ForecastStage, id: string) => {
+      if (cells[m]?.[st]) cells[m] = { ...cells[m], [st]: cells[m][st]!.filter(p => p.id !== id) };
+    };
+    const add = (cells: ForecastRow['cells'], m: string, st: ForecastStage, p: ForecastPill) => {
+      cells[m] = { ...(cells[m] || {}), [st]: [...(cells[m]?.[st] || []), p] };
+    };
+
+    // Invoice onto Possible / Collections: a linked copy. If the invoice already has one, that one moves here.
+    if (fromStage === 'invoicing' && toStage !== 'invoicing') {
+      setRows(prev => prev.map(row => {
+        if (row.id !== fromRowId) return row;
+        const cells = { ...row.cells };
+        const existing = linkedEntry(row, pill.id);
+        if (existing) {
+          remove(cells, existing.month, existing.stage, existing.pill.id);
+          add(cells, toMonth, toStage, { ...existing.pill, paid: toStage === 'collections' ? existing.pill.paid : undefined });
+        } else {
+          add(cells, toMonth, toStage, entryFromInvoice(pill));
+        }
+        return { ...row, cells };
+      }));
+      return;
+    }
+
+    if (!copy && sameSpot) return;
+    // Alt+drag leaves the original in place and drops a duplicate with its own id (a copy is never linked)
+    let placed: ForecastPill = copy
+      ? { ...pill, id: `pill_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`, invoiceId: undefined, paid: undefined }
       : pill;
+    if (toStage !== 'collections' && placed.paid) placed = { ...placed, paid: undefined };
+    // A linked copy moved to another line loses its link (the invoice stays in its own line)
+    if (!copy && placed.invoiceId && toRowId !== fromRowId) placed = { ...placed, invoiceId: undefined };
 
     setRows(prevRows => prevRows.map(row => {
       if (row.id !== fromRowId && row.id !== toRowId) return row;
       const cells = { ...row.cells };
-
-      // Remove from origin (not when copying)
-      if (!copy && row.id === fromRowId && cells[fromMonth]?.[fromStage]) {
-        cells[fromMonth] = { ...cells[fromMonth], [fromStage]: cells[fromMonth][fromStage]!.filter(p => p.id !== pill.id) };
+      // Invoices copied with Alt keep no links; their originals keep theirs
+      if (!copy && row.id === fromRowId) remove(cells, fromMonth, fromStage, pill.id);
+      if (row.id === toRowId) add(cells, toMonth, toStage, placed);
+      // Moving an invoice to another line takes its linked copy along
+      if (!copy && fromStage === 'invoicing' && toRowId !== fromRowId) {
+        const src = prevRows.find(r => r.id === fromRowId)!;
+        const linked = linkedEntry(src, pill.id);
+        if (linked) {
+          if (row.id === fromRowId) remove(cells, linked.month, linked.stage, linked.pill.id);
+          if (row.id === toRowId) add(cells, linked.month, linked.stage, linked.pill);
+        }
       }
-
-      // Add to destination (may be a different row)
-      if (row.id === toRowId) {
-        const destList = [...(cells[toMonth]?.[toStage] || [])];
-        destList.push(placed);
-        cells[toMonth] = { ...(cells[toMonth] || {}), [toStage]: destList };
-      }
-
       return { ...row, cells };
     }));
+  };
+
+  // Mark a collection paid / waiting straight from the table
+  const togglePaid = (rowId: string, month: string, pillId: string) => {
+    setRows(prev => prev.map(row => {
+      if (row.id !== rowId) return row;
+      const list = row.cells[month]?.collections || [];
+      return { ...row, cells: { ...row.cells, [month]: { ...row.cells[month], collections: list.map(p => (p.id === pillId ? { ...p, paid: p.paid ? undefined : true } : p)) } } };
+    }));
+  };
+
+  // Link entries that look like copies of their invoices (reviewed in a dialog first)
+  const linkSuggestions = useMemo(() => suggestLinks(rows), [rows]);
+  const applyLinks = (picked: typeof linkSuggestions) => {
+    const byEntry = new Map(picked.map(l => [l.entry.pill.id, l.invoice.pill.id]));
+    setRows(prev => prev.map(row => {
+      if (!picked.some(l => l.rowId === row.id)) return row;
+      const cells: ForecastRow['cells'] = {};
+      Object.entries(row.cells).forEach(([m, cell]) => {
+        const next = { ...cell };
+        LINKABLE.forEach(st => { if (next[st]) next[st] = next[st]!.map(p => (byEntry.has(p.id) ? { ...p, invoiceId: byEntry.get(p.id) } : p)); });
+        cells[m] = next;
+      });
+      return { ...row, cells };
+    }));
+    setLinkReviewOpen(false);
   };
 
   // Outflow amount change
@@ -904,6 +1035,8 @@ export function FinancialForecastView() {
       optimistic: number;
       totalOutflows: number;
       netDelta: number;
+      received: number; // collections marked paid
+      waiting: number; // collections not paid yet
       closingCash: number | null;
     };
     const stats: Record<string, MonthStats> = {};
@@ -926,7 +1059,12 @@ export function FinancialForecastView() {
       activeOutflows.forEach(item => { mOutflows += outflowAmount(item, m, runningCosts.total); });
       Object.values(dynamicReferrals).forEach(refData => { mOutflows += (refData.monthly[m] || 0); });
 
+      const split = collectionsSplit(activeRows, m);
+      // The opening bank balance already holds what was collected this month: only waiting collections add to it
+      const cashIn = m === openingMonthKey ? split.waiting : mCollections;
       return {
+        received: split.received,
+        waiting: split.waiting,
         possible: mPossible,
         invoicing: mInvoicing,
         collections: mCollections,
@@ -936,7 +1074,7 @@ export function FinancialForecastView() {
         optimistic: mCollections + mPossible,
         totalOutflows: mOutflows,
         // Bank cash only moves with real collections minus all outflows
-        netDelta: mCollections - mOutflows,
+        netDelta: cashIn - mOutflows,
       };
     };
 
@@ -1517,6 +1655,16 @@ export function FinancialForecastView() {
         </div>
       )}
 
+      {linkSuggestions.length > 0 && !linkBannerHidden && (
+        <div className="mx-6 mt-4 px-4 py-2.5 rounded-lg border border-info-200 dark:border-info-800/60 bg-info-50 dark:bg-info-950/40 text-sm text-info-800 dark:text-info-200 flex items-center justify-between gap-4">
+          <span>{linkSuggestions.length} Possible or Collections {linkSuggestions.length === 1 ? 'entry looks' : 'entries look'} like a copy of an invoice but {linkSuggestions.length === 1 ? 'isn’t' : 'aren’t'} linked to it.</span>
+          <span className="flex gap-3 shrink-0">
+            <button onClick={() => setLinkReviewOpen(true)} className="text-xs font-semibold hover:underline">Review links</button>
+            <button onClick={() => setLinkBannerHidden(true)} className="text-xs hover:underline">Dismiss</button>
+          </span>
+        </div>
+      )}
+
       {/* Main Forecast Matrix Table */}
       {/* No padding on the scroller: sticky header/column stop at the padding edge, which let cells show through. The card margins keep the spacing. */}
       <div className="flex-1 overflow-auto pb-6">
@@ -1787,11 +1935,14 @@ export function FinancialForecastView() {
                             <div 
                               key={stage}
                               onDragOver={e => {
+                                const d = dragRef.current;
+                                if (d && !dropAllowed(d.fromRowId, d.fromStage, row.id, stage)) { e.dataTransfer.dropEffect = 'none'; return; }
                                 e.preventDefault();
-                                e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
+                                e.dataTransfer.dropEffect = e.altKey || (d?.fromStage === 'invoicing' && stage !== 'invoicing') ? 'copy' : 'move';
                               }}
                               onDrop={e => {
                                 e.preventDefault();
+                                dragRef.current = null;
                                 try {
                                   const raw = e.dataTransfer.getData('text/plain');
                                   if (!raw) return; // e.g. a row being reordered, handled by the row
@@ -1806,11 +1957,22 @@ export function FinancialForecastView() {
                               className={`p-1.5 flex flex-col gap-1.5 relative group/cell min-h-[56px] hover:bg-ink-50 dark:hover:bg-ink-800/40 transition-colors ${borderClasses}`}
                             >
                               {/* Pill items */}
-                              {pills.map(pill => (
+                              {pills.map(pill => {
+                                // Invoice ↔ its Possible / Collections copy
+                                const linked = stage === 'invoicing' ? linkedEntry(row, pill.id) : null;
+                                const inv = stage !== 'invoicing' ? invoiceOf(row, pill.invoiceId) : null;
+                                const invoicePaid = !!linked && linked.stage === 'collections' && !!linked.pill.paid;
+                                const isPaid = stage === 'collections' && !!pill.paid;
+                                const mismatch = inv && Math.abs(inv.pill.amount - pill.amount) >= 1;
+                                const linkLine = stage === 'invoicing'
+                                  ? linked ? `${linked.stage === 'collections' ? 'Collection' : 'Possible'}: ${formatMonthLabel(linked.month)}${linked.stage === 'collections' ? (linked.pill.paid ? ' · paid' : ' · waiting') : ''}` : 'Not in Possible or Collections yet'
+                                  : inv ? `Invoice: ${inv.pill.label} · ${formatMonthLabel(inv.month)}${mismatch ? ` · invoice amount ${fmt(inv.pill.amount)}` : ''}` : 'No invoice';
+                                return (
                                 <div
                                   key={pill.id}
                                   draggable
                                   onDragStart={e => {
+                                    dragRef.current = { fromRowId: row.id, fromStage: stage };
                                     e.dataTransfer.setData('text/plain', JSON.stringify({
                                       fromRowId: row.id,
                                       fromMonth: m,
@@ -1819,20 +1981,39 @@ export function FinancialForecastView() {
                                     }));
                                     e.dataTransfer.effectAllowed = 'copyMove';
                                   }}
+                                  onDragEnd={() => { dragRef.current = null; }}
                                   onClick={() => {
                                     setActiveCellLocation({ rowId: row.id, monthKey: m, stage });
                                     setEditingPill(pill);
                                     setPillModalOpen(true);
                                   }}
-                                  className={`px-2 py-1 rounded text-xs font-bold cursor-grab active:cursor-grabbing border shadow-2xs transition-all hover:scale-[1.02] flex items-center justify-between gap-1 select-none ${
+                                  className={`group/pill px-2 py-1 rounded text-xs font-bold cursor-grab active:cursor-grabbing border shadow-2xs transition-all hover:scale-[1.02] flex items-center justify-between gap-1 select-none ${
                                     stage === 'possible' ? 'bg-warning-50 text-warning-800 border-warning-200 dark:bg-warning-950/40 dark:text-warning-300 dark:border-warning-800/60' :
-                                    stage === 'invoicing' ? 'bg-accent-50 text-accent-800 border-accent-200 dark:bg-accent-950/40 dark:text-accent-300 dark:border-accent-800/60' :
-                                    'bg-positive-50 text-positive-800 border-positive-200 dark:bg-positive-950/40 dark:text-positive-300 dark:border-positive-800/60'
+                                    stage === 'invoicing' ? invoicePaid
+                                      ? 'bg-accent-50 text-accent-800 border-positive-500 dark:bg-accent-950/40 dark:text-accent-300 dark:border-positive-600'
+                                      : 'bg-accent-50 text-accent-800 border-accent-200 dark:bg-accent-950/40 dark:text-accent-300 dark:border-accent-800/60' :
+                                    isPaid ? 'bg-positive-700 text-white border-positive-800 dark:bg-positive-800 dark:text-positive-50 dark:border-positive-600'
+                                      : 'bg-positive-50 text-positive-800 border-positive-200 dark:bg-positive-950/40 dark:text-positive-300 dark:border-positive-800/60'
                                   }`}
-                                  title={`${pill.label}${pill.referralName ? ` • Referral: ${pill.referralName} (${pill.referralPercent || 0}%)` : ''}${pill.invoiceNumber ? ` • Inv #${pill.invoiceNumber}` : ''}${pill.notes ? ` • ${pill.notes}` : ''}\nDrag to move · Alt+drag to copy`}
+                                  title={`${pill.label}${pill.referralName ? ` • Referral: ${pill.referralName} (${pill.referralPercent || 0}%)` : ''}${pill.invoiceNumber ? ` • Inv #${pill.invoiceNumber}` : ''}${pill.notes ? ` • ${pill.notes}` : ''}${stage === 'collections' ? (isPaid ? '\nPaid' : '\nWaiting for payment') : ''}\n${linkLine}\n${stage === 'invoicing' ? 'Drag to another month · Drag onto Possible or Collections to copy' : 'Drag to move · Alt+drag to copy'}`}
                                 >
                                   <div className="flex items-center gap-1 min-w-0">
+                                    {stage === 'collections' && (
+                                      <button
+                                        type="button"
+                                        onClick={e => { e.stopPropagation(); togglePaid(row.id, m, pill.id); }}
+                                        onMouseDown={e => e.stopPropagation()}
+                                        draggable={false}
+                                        aria-label={isPaid ? `Mark ${pill.label} as waiting` : `Mark ${pill.label} as paid`}
+                                        title={isPaid ? 'Paid · click to mark as waiting' : 'Waiting · click to mark as paid'}
+                                        className={`shrink-0 -ml-0.5 rounded-full ${isPaid ? 'text-white' : 'text-positive-600 dark:text-positive-400 opacity-60 hover:opacity-100'}`}
+                                      >
+                                        {isPaid ? <CheckCircle2 size={12} /> : <Circle size={12} />}
+                                      </button>
+                                    )}
+                                    {stage === 'invoicing' && invoicePaid && <CheckCircle2 size={12} className="shrink-0 text-positive-600 dark:text-positive-400" aria-label="Paid" />}
                                     <span className="truncate">{pill.label}</span>
+                                    {stage !== 'invoicing' && inv && <Link2 size={10} className={`shrink-0 ${mismatch ? 'text-warning-600 dark:text-warning-400' : 'opacity-50'}`} aria-label={mismatch ? 'Linked to an invoice with a different amount' : 'Linked to an invoice'} />}
                                     {pill.referralName && (
                                       <span className="shrink-0 text-[9px] px-1 py-px rounded bg-ink-200/80 dark:bg-ink-700 text-ink-700 dark:text-ink-200 font-semibold" title={`Referral: ${pill.referralName} (${pill.referralPercent || 0}%)`}>
                                         {pill.referralName.substring(0, 1).toUpperCase()}
@@ -1841,7 +2022,8 @@ export function FinancialForecastView() {
                                   </div>
                                   <span className="shrink-0">{fmt(pill.amount)}</span>
                                 </div>
-                              ))}
+                                );
+                              })}
 
                               {/* Quick + Button */}
                               <button
@@ -1903,6 +2085,25 @@ export function FinancialForecastView() {
 
           {/* Scenarios Breakdown (Conservative / Expected / Optimistic) */}
           <div className="bg-ink-100/40 dark:bg-ink-950/40 border-t border-ink-200 dark:border-ink-800 divide-y divide-ink-100 dark:divide-ink-800 text-xs">
+            {/* Collections split: paid / still expected */}
+            {([['received', 'Payments received', 'Collections marked paid'], ['waiting', 'Payments expected', 'Collections not paid yet']] as const).map(([key, label, hint]) => (
+              <div key={key} className="flex items-center text-ink-600 dark:text-ink-400">
+                <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} px-3.5 py-1.5 font-medium border-r-2 border-ink-200 dark:border-ink-700 flex items-center gap-1.5`} title={hint}>
+                  {key === 'received' ? <CheckCircle2 size={12} className="text-positive-700 dark:text-positive-400" /> : <Clock size={12} className="text-positive-600 dark:text-positive-400" />}
+                  {label}
+                </div>
+                {monthKeys.map(m => {
+                  const v = monthlyStats[m]?.[key] || 0;
+                  return (
+                    <div key={m} className={`w-[360px] shrink-0 border-r-2 border-ink-200 dark:border-ink-700 last:border-r-0 px-3 py-1.5 text-right font-bold ${key === 'received' ? 'text-positive-800 dark:text-positive-300' : 'text-positive-600 dark:text-positive-400'}`}>
+                      {v ? fmt(v) : ''}
+                    </div>
+                  );
+                })}
+                <div className="w-[360px] shrink-0 bg-ink-100/60 dark:bg-ink-900/70 tabular-nums px-3 py-1.5 text-right font-bold text-ink-800 dark:text-ink-200">{fmt(sumVisible(m => monthlyStats[m]?.[key] || 0))}</div>
+              </div>
+            ))}
+
             {/* Conservative */}
             <div className="flex items-center text-ink-600 dark:text-ink-400">
               <div style={{ width: LABEL_W }} className={`shrink-0 sticky left-0 z-10 bg-ink-50 dark:bg-ink-950 ${FROZEN_EDGE} px-3.5 py-1.5 font-medium border-r-2 border-ink-200 dark:border-ink-700`}>
@@ -2112,7 +2313,47 @@ export function FinancialForecastView() {
         onSave={handleSavePill}
         onDelete={handleDeletePill}
         onClose={() => setPillModalOpen(false)}
+        {...(() => {
+          const row = rows.find(r => r.id === activeCellLocation?.rowId);
+          if (!row || !editingPill || !activeCellLocation) return { linkInfo: null, lockStage: null };
+          if (activeCellLocation.stage === 'invoicing') {
+            const l = linkedEntry(row, editingPill.id);
+            return {
+              lockStage: 'invoice' as const,
+              linkInfo: l ? `${l.stage === 'collections' ? 'Collection' : 'Possible'} in ${formatMonthLabel(l.month)}${l.stage === 'collections' ? (l.pill.paid ? ' · paid' : ' · waiting for payment') : ''}` : 'Drag this invoice onto Possible or Collections to expect its payment',
+            };
+          }
+          const inv = invoiceOf(row, editingPill.invoiceId);
+          return {
+            lockStage: inv ? ('entry' as const) : null,
+            linkInfo: inv ? `Copy of invoice “${inv.pill.label}” · ${formatMonthLabel(inv.month)}${Math.abs(inv.pill.amount - editingPill.amount) >= 1 ? ` · invoice amount ${fmt(inv.pill.amount)}` : ''}` : 'No invoice linked',
+          };
+        })()}
       />
+
+      {/* Deleting an invoice that has a Possible / Collections copy */}
+      {deleteInvoicePlan && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-ink-900/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
+          <div className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-4">
+            <div>
+              <h2 className="text-base font-bold text-ink-900 dark:text-ink-100">Delete invoice</h2>
+              <p className="text-sm text-ink-600 dark:text-ink-300 mt-1">
+                This invoice has a copy in {deleteInvoicePlan.linked.stage === 'collections' ? 'Collections' : 'Possible'} ({formatMonthLabel(deleteInvoicePlan.linked.month)}). Delete that too?
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <SecondaryButton type="button" onClick={() => setDeleteInvoicePlan(null)}>Cancel</SecondaryButton>
+              <SecondaryButton type="button" onClick={() => applyDeleteInvoice(false)}>Keep the copy</SecondaryButton>
+              <PrimaryButton type="button" onClick={() => applyDeleteInvoice(true)}>Delete both</PrimaryButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Link existing entries to their invoices */}
+      {linkReviewOpen && (
+        <LinkReviewModal suggestions={linkSuggestions} fmt={fmt} monthLabel={formatMonthLabel} onApply={applyLinks} onClose={() => setLinkReviewOpen(false)} />
+      )}
 
       {/* Add Row Modal */}
       <AddRowModal
@@ -2165,7 +2406,7 @@ export function FinancialForecastView() {
         title="Reset row?"
         message={resetPlan
           ? resetPlan.row.projectId
-            ? `"${resetPlan.row.name}" differs from its fee proposal in ${resetPlan.changed + (resetPlan.costLine?.changed || 0)} amount${resetPlan.changed + (resetPlan.costLine?.changed || 0) === 1 ? '' : 's'} (manual edits, moves, copies or a changed proposal). Resetting replaces this row's amounts with the proposal's milestones${resetPlan.costLine ? ', and its project expenses line with the current direct costs and external team' : ''}. This can't be undone.`
+            ? `"${resetPlan.row.name}" differs from its fee proposal in ${resetPlan.changed + (resetPlan.costLine?.changed || 0)} invoice or expense amount${resetPlan.changed + (resetPlan.costLine?.changed || 0) === 1 ? '' : 's'} (manual edits, moves, copies or a changed proposal). Resetting replaces this row's invoices with the proposal's milestones${resetPlan.costLine ? ', and its project expenses line with the current direct costs and external team' : ''}. Possible and Collections entries, and what's marked paid, stay. This can't be undone.`
             : `Clear all ${resetPlan.changed} amount${resetPlan.changed === 1 ? '' : 's'} in "${resetPlan.row.name}"? This can't be undone.`
           : ''}
         confirmText="Reset row"

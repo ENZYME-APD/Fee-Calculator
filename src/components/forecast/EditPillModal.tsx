@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Link2, CheckCircle2 } from 'lucide-react';
 import { ForecastPill, ForecastStage } from '@/lib/firebase/schema';
 import { PrimaryButton, SecondaryButton, fieldClass } from '@/components/ui/Button';
 
@@ -11,9 +11,13 @@ interface EditPillModalProps {
   onSave: (pill: ForecastPill, targetStage: ForecastStage) => void;
   onDelete: (pillId: string) => void;
   onClose: () => void;
+  /** e.g. "Copied from invoice “Mobilisation” · Sep 2026" or "Collected Nov 2026 · paid" */
+  linkInfo?: string | null;
+  /** An invoice stays an invoice; a copy of one stays in Possible / Collections */
+  lockStage?: 'invoice' | 'entry' | null;
 }
 
-export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }: EditPillModalProps) {
+export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose, linkInfo, lockStage }: EditPillModalProps) {
   const [amount, setAmount] = useState<number>(pill ? Math.round(pill.amount) : 0);
   const [label, setLabel] = useState<string>(pill ? pill.label : '');
   const [invoiceNumber, setInvoiceNumber] = useState<string>(pill?.invoiceNumber || '');
@@ -21,6 +25,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
   const [referralName, setReferralName] = useState<string>(pill?.referralName || '');
   const [referralPercent, setReferralPercent] = useState<number>(pill?.referralPercent || 0);
   const [targetStage, setTargetStage] = useState<ForecastStage>(stage);
+  const [paid, setPaid] = useState<boolean>(!!pill?.paid);
 
   React.useEffect(() => {
     if (pill) {
@@ -31,6 +36,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
       setReferralName(pill.referralName || '');
       setReferralPercent(pill.referralPercent || 0);
       setTargetStage(stage);
+      setPaid(!!pill.paid);
     } else {
       setAmount(0);
       setLabel('');
@@ -39,6 +45,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
       setReferralName('');
       setReferralPercent(0);
       setTargetStage(stage);
+      setPaid(false);
     }
   }, [pill, stage, isOpen]);
 
@@ -47,6 +54,8 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
+      ...(pill?.invoiceId ? { invoiceId: pill.invoiceId } : {}),
+      ...(targetStage === 'collections' && paid ? { paid: true } : {}),
       id: pill?.id || `pill_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       amount: Math.round(amount),
       label: label.trim() || 'Milestone',
@@ -88,7 +97,9 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
                   key={st}
                   type="button"
                   onClick={() => setTargetStage(st)}
-                  className={`py-2 px-2 rounded-lg text-xs font-semibold capitalize border transition-all text-center ${
+                  disabled={(lockStage === 'invoice' && st !== 'invoicing') || (lockStage === 'entry' && st === 'invoicing')}
+                  title={lockStage === 'invoice' && st !== 'invoicing' ? 'Drag the invoice onto Possible or Collections to copy it there' : lockStage === 'entry' && st === 'invoicing' ? 'This is a copy of an invoice' : undefined}
+                  className={`py-2 px-2 rounded-lg text-xs font-semibold capitalize border transition-all text-center disabled:opacity-40 disabled:cursor-not-allowed ${
                     targetStage === st
                       ? st === 'possible'
                         ? 'bg-warning-50 text-warning-700 border-warning-400 dark:bg-warning-950/40 dark:text-warning-300 dark:border-warning-700'
@@ -103,6 +114,28 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose }
               ))}
             </div>
           </div>
+
+          {linkInfo && (
+            <div className="flex items-center gap-2 text-xs text-ink-600 dark:text-ink-300 bg-ink-50 dark:bg-ink-800/60 border border-ink-200 dark:border-ink-700 rounded-lg px-3 py-2">
+              <Link2 size={13} className="shrink-0 text-ink-500 dark:text-ink-400" />
+              <span>{linkInfo}</span>
+            </div>
+          )}
+
+          {/* Paid / waiting: Collections only */}
+          <label className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg border transition-colors ${targetStage === 'collections'
+            ? paid ? 'border-positive-400 dark:border-positive-700 bg-positive-50 dark:bg-positive-950/30 cursor-pointer' : 'border-ink-200 dark:border-ink-700 cursor-pointer'
+            : 'border-ink-200 dark:border-ink-800 opacity-50 cursor-not-allowed'}`}
+            title={targetStage === 'collections' ? undefined : 'Only collections can be marked as paid'}>
+            <span className="flex items-center gap-2 text-xs font-semibold text-ink-700 dark:text-ink-300">
+              <CheckCircle2 size={15} className={paid && targetStage === 'collections' ? 'text-positive-600 dark:text-positive-400' : 'text-ink-400 dark:text-ink-500'} />
+              {paid && targetStage === 'collections' ? 'Paid' : 'Waiting for payment'}
+            </span>
+            <input type="checkbox" className="sr-only peer" checked={paid && targetStage === 'collections'} disabled={targetStage !== 'collections'} onChange={e => setPaid(e.target.checked)} />
+            <span className={`relative w-9 h-5 rounded-full transition-colors ${paid && targetStage === 'collections' ? 'bg-positive-600' : 'bg-ink-300 dark:bg-ink-600'}`}>
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${paid && targetStage === 'collections' ? 'left-[18px]' : 'left-0.5'}`} />
+            </span>
+          </label>
 
           <div>
             <label className="block text-xs font-semibold text-ink-700 dark:text-ink-300 mb-1">

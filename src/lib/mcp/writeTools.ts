@@ -552,7 +552,7 @@ export const WRITE_TOOLS: ToolDef[] = [
   {
     name: 'edit_forecast_entry',
     title: 'Edit or move forecast entry',
-    description: `Admins only. Changes a forecast entry's amount, label or notes, and/or moves it to another month, stage or line. With copy: true the original stays and a copy is placed instead (for example copying an invoice into collections in the month it is expected to be paid). ${FORECAST_NOTE}`,
+    description: `Admins only. Changes a forecast entry's amount, label, notes or paid status, and/or moves it to another month, stage or line. Rules: an invoice moved to possible or collections is always copied there and linked to it (one linked entry per invoice; if it already has one, that one moves), in the same line; possible and collections entries can't become invoices. paid applies to collections only (true = payment received). With copy: true the original stays and an unlinked copy is placed instead. ${FORECAST_NOTE}`,
     writes: true,
     adminOnly: true,
     inputSchema: {
@@ -564,6 +564,7 @@ export const WRITE_TOOLS: ToolDef[] = [
         to_stage: { type: 'string', enum: ['invoiced', 'possible', 'collections'] },
         to_line: { type: 'string', description: 'Line name or line_id.' },
         copy: { type: 'boolean', description: 'Keep the original and place a copy. Default false.' },
+        paid: { type: 'boolean', description: 'Collections only: true when the payment has been received, false when still waiting.' },
       },
       required: ['entry_id'],
       additionalProperties: false,
@@ -577,20 +578,47 @@ export const WRITE_TOOLS: ToolDef[] = [
       const toStage = toStageArg ? STAGES[toStageArg.toLowerCase()] : found.stage;
       if (!toStage) throw new ToolError('to_stage must be invoiced, possible or collections.');
       const toRow = str(args, 'to_line') ? findLine(profile, str(args, 'to_line')!) : found.row;
-      const copy = bool(args, 'copy', false);
+      let copy = bool(args, 'copy', false);
       const amount = num(args, 'amount');
+      const paidArg = typeof args.paid === 'boolean' ? args.paid : undefined;
+      if (paidArg !== undefined && toStage !== 'collections') throw new ToolError('Only collections can be marked paid.');
+      if (found.stage !== 'invoicing' && toStage === 'invoicing') throw new ToolError('Possible and collections entries can\'t be moved to invoiced. Add the invoice with add_forecast_entry.');
+      if (found.stage === 'invoicing' && toStage !== 'invoicing' && toRow !== found.row) throw new ToolError('An invoice can only be copied to possible or collections in its own line.');
+      // Invoice → possible / collections: a linked copy; an existing linked entry moves instead
+      let linkedFrom: { month: string; stage: ForecastStage } | null = null;
+      let base: ForecastPill = found.pill;
+      if (found.stage === 'invoicing' && toStage !== 'invoicing') {
+        copy = false;
+        for (const [m, cell] of Object.entries(found.row.cells)) {
+          for (const st of ['possible', 'collections'] as ForecastStage[]) {
+            const hit = (cell[st] || []).find(p => p.invoiceId === found.pill.id);
+            if (hit) { base = hit; linkedFrom = { month: m, stage: st }; }
+          }
+        }
+        if (!linkedFrom) {
+          const { paid: _p, invoiceId: _i, ...rest } = found.pill;
+          base = { ...rest, id: pillId(), invoiceId: found.pill.id };
+        }
+      }
       const pill: ForecastPill = {
-        ...found.pill,
-        ...(copy ? { id: pillId() } : {}),
+        ...base,
+        ...(copy ? { id: pillId(), invoiceId: undefined, paid: undefined } : {}),
         ...(amount !== undefined ? { amount: Math.round(amount) } : {}),
         ...(typeof args.label === 'string' ? { label: args.label } : {}),
         ...(typeof args.notes === 'string' ? { notes: args.notes } : {}),
       };
-      if (!copy) found.row.cells[found.month][found.stage] = (found.row.cells[found.month][found.stage] || []).filter(p => p.id !== found.pill.id);
+      if (toStage !== 'collections') delete pill.paid;
+      else if (paidArg !== undefined) { if (paidArg) pill.paid = true; else delete pill.paid; }
+      if (pill.invoiceId && toRow !== found.row) delete pill.invoiceId;
+      if (found.stage === 'invoicing' && toStage !== 'invoicing') {
+        if (linkedFrom) found.row.cells[linkedFrom.month][linkedFrom.stage] = (found.row.cells[linkedFrom.month][linkedFrom.stage] || []).filter(p => p.id !== base.id);
+      } else if (!copy) {
+        found.row.cells[found.month][found.stage] = (found.row.cells[found.month][found.stage] || []).filter(p => p.id !== found.pill.id);
+      }
       toRow.cells[toMonth] = toRow.cells[toMonth] || {};
-      toRow.cells[toMonth][toStage] = [...(toRow.cells[toMonth][toStage] || []), pill];
+      toRow.cells[toMonth][toStage] = [...(toRow.cells[toMonth][toStage] || []), JSON.parse(JSON.stringify(pill))];
       const where = `${toRow.name}, ${toMonth} ${toStage === 'invoicing' ? 'invoiced' : toStage}`;
-      const summary = `Forecast: ${copy ? 'copied' : 'updated'} ${found.pill.label || found.pill.amount} → ${where}${amount !== undefined ? `, amount ${pill.amount}` : ''}`;
+      const summary = `Forecast: ${copy ? 'copied' : 'updated'} ${found.pill.label || found.pill.amount} → ${where}${amount !== undefined ? `, amount ${pill.amount}` : ''}${paidArg !== undefined ? (paidArg ? ', paid' : ', waiting') : ''}`;
       const changeId = await applyChange(ctx, 'edit_forecast_entry', summary, [forecastOp(profile)]);
       return done(summary + '.', changeId, { entry_id: pill.id, note: FORECAST_NOTE });
     },
@@ -611,6 +639,10 @@ export const WRITE_TOOLS: ToolDef[] = [
       const profile = await loadForecast(data);
       const found = findEntry(profile, str(args, 'entry_id') || '');
       found.row.cells[found.month][found.stage] = (found.row.cells[found.month][found.stage] || []).filter(p => p.id !== found.pill.id);
+      // Its Possible / Collections copy stays, without the link
+      if (found.stage === 'invoicing') Object.values(found.row.cells).forEach(cell => (['possible', 'collections'] as ForecastStage[]).forEach(st => {
+        (cell[st] || []).forEach(p => { if (p.invoiceId === found.pill.id) delete p.invoiceId; });
+      }));
       const summary = `Forecast: removed ${found.pill.amount}${found.pill.label ? ` (${found.pill.label})` : ''} from ${found.row.name}, ${found.month}`;
       const changeId = await applyChange(ctx, 'remove_forecast_entry', summary, [forecastOp(profile)]);
       return done(summary + '.', changeId, { note: FORECAST_NOTE });

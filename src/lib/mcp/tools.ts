@@ -1,6 +1,6 @@
 import { adminDb } from '@/lib/firebase/admin';
 import {
-  Allocation, ForecastOutflowItem, ForecastProfile, OverheadsProfile, Payment, Phase, Project,
+  Allocation, ForecastOutflowItem, ForecastPill, ForecastProfile, OverheadsProfile, Payment, Phase, Project,
   ProjectCost, TeamCategory, TeamMember,
 } from '@/lib/firebase/schema';
 import { computePhaseCost, computeProjectFinancials, feeMultiplierFor } from '@/lib/utils/projectFinancials';
@@ -360,7 +360,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'get_cash_flow_forecast',
     title: 'Cash-flow forecast',
-    description: 'Admins only. Month-by-month cash flow from the Financial forecast page. Inflows: invoiced (the invoicing schedule, not cash), possible (likely work, weighted by the conversion %), collections (cash expected in). Outflows: the fixed operational burn, other expense lines and referral commissions. Returns expected and optimistic inflow, net cash movement and closing bank cash per month. Optionally includes the amount of every line, with the entry ids the forecast-editing tools use.',
+    description: 'Admins only. Month-by-month cash flow from the Financial forecast page. Inflows: invoiced (the invoicing schedule, not cash), possible (likely work, weighted by the conversion %), collections (cash in; payments_received are collections marked paid, payments_expected the rest). In the opening month only expected collections add to the opening bank cash, which already holds what was received. Possible / collections entries copied from an invoice carry its invoice_entry_id. Outflows: the fixed operational burn, other expense lines and referral commissions. Returns expected and optimistic inflow, net cash movement and closing bank cash per month. Optionally includes the amount of every line, with the entry ids the forecast-editing tools use.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -399,7 +399,10 @@ export const TOOLS: ToolDef[] = [
         const possible = sumStage(m, 'possible');
         const lines = outflows.reduce((s, o) => s + outflowAmount(o, m, rc.total), 0);
         const ref = Object.values(referrals(m)).reduce((s, v) => s + v, 0);
-        return { invoiced: sumStage(m, 'invoicing'), possible, collections, outflows: lines + ref, net: collections - lines - ref };
+        const received = rows.reduce((s, r) => s + (r.cells?.[m]?.collections || []).filter(p => p.paid).reduce((t, p) => t + (p.amount || 0), 0), 0);
+        // The opening balance already holds this month's paid collections
+        const cashIn = m === opening ? collections - received : collections;
+        return { invoiced: sumStage(m, 'invoicing'), possible, collections, received, waiting: collections - received, outflows: lines + ref, net: cashIn - lines - ref };
       };
 
       // Closing cash runs from the opening balance at the opening month, like the page
@@ -422,6 +425,8 @@ export const TOOLS: ToolDef[] = [
           invoiced: round(t.invoiced),
           possible: round(t.possible),
           collections: round(t.collections),
+          payments_received: round(t.received),
+          payments_expected: round(t.waiting),
           expected_inflow: Math.round(t.collections + t.possible * weight),
           optimistic_inflow: round(t.collections + t.possible),
           outflows: round(t.outflows),
@@ -431,10 +436,14 @@ export const TOOLS: ToolDef[] = [
         if (includeLines) {
           row.inflow_lines = rows
             .map(r => {
-              const c: Partial<Record<'possible' | 'invoicing' | 'collections', { amount: number }[]>> = r.cells?.[m] || {};
+              const c: Partial<Record<'possible' | 'invoicing' | 'collections', ForecastPill[]>> = r.cells?.[m] || {};
               const s = (k: 'possible' | 'invoicing' | 'collections') => round((c[k] || []).reduce((t2, p) => t2 + (p.amount || 0), 0));
               const entries = (['invoicing', 'possible', 'collections'] as const).flatMap(k =>
-                (c[k] || []).map(p => ({ entry_id: (p as { id?: string }).id, stage: k === 'invoicing' ? 'invoiced' : k, amount: p.amount, label: (p as { label?: string }).label || null })));
+                (c[k] || []).map(p => ({
+                  entry_id: p.id, stage: k === 'invoicing' ? 'invoiced' : k, amount: p.amount, label: p.label || null,
+                  ...(k === 'collections' ? { paid: !!p.paid } : {}),
+                  ...(p.invoiceId ? { invoice_entry_id: p.invoiceId } : {}),
+                })));
               return { line: r.name, line_id: r.id, group: r.groupId ? groupName.get(r.groupId) || null : null, invoiced: s('invoicing'), possible: s('possible'), collections: s('collections'), entries };
             })
             .filter(l => l.invoiced || l.possible || l.collections);
