@@ -12,6 +12,7 @@ import { Project, Phase, TeamMember, Allocation, ProjectCost, Payment, TeamCateg
 import { Folder, Download, Upload, FileSpreadsheet, Table, Calculator } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { exportProposalToExcel } from '@/lib/excelExport';
+import { subscribeRemoteChanges } from '@/lib/firebase/db';
 
 export default function Home() {
   return (
@@ -77,6 +78,14 @@ function FeeProposalPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Live: someone else's changes to projects, phases, team hours, costs or payments show without a reload
+  const remoteRefresh = useRef<() => void>(() => {});
+  remoteRefresh.current = () => handleAllocationAdded();
+  useEffect(() => {
+    if (!dbUser) return;
+    return subscribeRemoteChanges(['projects', 'phases', 'allocations', 'projectCosts', 'payments', 'teamMembers'], () => remoteRefresh.current());
+  }, [dbUser]);
 
   // A link to another project while already on this page (e.g. from the dashboard)
   useEffect(() => {

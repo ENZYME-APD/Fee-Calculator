@@ -49,7 +49,13 @@ function scheduleFlush() {
   flushTimer = setTimeout(() => { flushTimer = null; send(queue.splice(0, 50)); if (queue.length) scheduleFlush(); }, 1500);
 }
 
+// When this browser last wrote to the database, so live listeners can tell its own changes from others'
+let lastLocalWrite = 0;
+export const markLocalWrite = () => { lastLocalWrite = Date.now(); };
+export const recentLocalWrite = (ms = 4000) => Date.now() - lastLocalWrite < ms;
+
 export function logActivity(entry: ActivityEntry) {
+  markLocalWrite();
   if (typeof window === 'undefined') return;
   if (!entry.coalesce) { queue.push(entry); scheduleFlush(); return; }
   const key = `${entry.area}|${entry.docId || ''}|${entry.action}`;

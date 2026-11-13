@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Allocation, Phase, Payment, ProjectCost, TeamMember } from '@/lib/firebase/schema';
-import { getPayments, addPayment, updatePayment, deletePayment, batchAddPayments, clearPayments, batchUpdatePayments } from '@/lib/firebase/db';
+import { getPayments, addPayment, updatePayment, deletePayment, batchAddPayments, clearPayments, batchUpdatePayments, subscribeRemoteChanges } from '@/lib/firebase/db';
 import { FileSpreadsheet, Plus, Trash2, Pencil, Check, X, CalendarDays, Layers, ChevronUp, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { RowMenu } from '@/components/ui/RowMenu';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
@@ -156,6 +156,10 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
   useEffect(() => {
     loadPayments();
   }, [projectId]);
+  // Live: payments someone else changes show without a reload
+  const remoteRefresh = useRef<() => void>(() => {});
+  remoteRefresh.current = () => { loadPayments(); };
+  useEffect(() => subscribeRemoteChanges(['payments'], () => remoteRefresh.current()), []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getProjects, addProject, updateProject, deleteProject, getPhases, addPhase, updatePhase, deletePhase, duplicateProject, clearPhase, getUsersByCompany, getProjectCosts, getAllocations, getTeamMembers, updateAllocation } from '@/lib/firebase/db';
 import { Project, Phase, User, Allocation, ProjectCost, TeamMember } from '@/lib/firebase/schema';
@@ -18,6 +18,7 @@ import { StatusBadge, getStatusConfig } from '@/components/ui/StatusBadge';
 import { StatusSelect } from '@/components/ui/StatusSelect';
 import { ProjectFinancialHeader } from '@/components/layout/ProjectFinancialHeader';
 import { computeProjectFinancials } from '@/lib/utils/projectFinancials';
+import { subscribeRemoteChanges } from '@/lib/firebase/db';
 
 export function ProjectManager({ isTemplateMode = false, headerActions }: { isTemplateMode?: boolean; headerActions?: React.ReactNode }) {
   const router = useRouter();
@@ -146,6 +147,14 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
   useEffect(() => {
     loadProjects();
   }, []);
+
+  // Live: someone else's changes show without a reload
+  const remoteRefresh = useRef<() => void>(() => {});
+  remoteRefresh.current = () => { loadProjects(); if (activeProjectId) loadPhases(activeProjectId); };
+  useEffect(() => {
+    if (!dbUser) return;
+    return subscribeRemoteChanges(['projects', 'phases', 'allocations', 'projectCosts', 'teamMembers'], () => remoteRefresh.current());
+  }, [dbUser]);
 
   useEffect(() => {
     if (activeProjectId) {

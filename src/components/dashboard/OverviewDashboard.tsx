@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { paymentAmount } from '@/lib/utils/payments';
 import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
 import { pillShares } from '@/lib/forecast/collections';
-import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories, getForecastProfile, getOverheadsProfile } from '@/lib/firebase/db';
+import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories, getForecastProfile, getOverheadsProfile, subscribeRemoteChanges } from '@/lib/firebase/db';
 import { STATUS_CONFIG } from '@/components/ui/StatusBadge';
 import { Project, Phase, TeamMember, TeamCategory, Allocation, ProjectCost, User, ForecastOutflowItem, ForecastProfile } from '@/lib/firebase/schema';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -199,6 +199,13 @@ export function OverviewDashboard() {
     if (!dbUser || !cashStatusesReady) return;
     loadData();
   }, [dbUser, cashStatuses, cashStatusesReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Live: someone else's changes show without a reload
+  const remoteRefresh = useRef<() => void>(() => {});
+  useEffect(() => {
+    if (!dbUser) return;
+    return subscribeRemoteChanges(['projects', 'phases', 'allocations', 'projectCosts', 'payments', 'teamMembers', ...(dbUser.role === 'admin' ? ['forecastProfile', 'overheadsProfile'] : [])], () => remoteRefresh.current(), 1500);
+  }, [dbUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = async () => {
     if (!hasLoaded.current) setLoading(true); // later reloads (filter changes) keep the page on screen
@@ -514,6 +521,8 @@ export function OverviewDashboard() {
     hasLoaded.current = true;
     setLoading(false);
   };
+  remoteRefresh.current = () => { loadData(); };
+
 
   // Project-state filter for the income charts
   const cashStatusChips = (

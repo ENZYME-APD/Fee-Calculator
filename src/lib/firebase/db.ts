@@ -1,8 +1,8 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, DocumentData, writeBatch, DocumentSnapshot, getDoc, onSnapshot } from 'firebase/firestore';
 import { db, auth } from './config';
 import { TeamMember, Project, Phase, Allocation, ProjectCost, Payment, Invite, TeamCategory, User, ProjectTask, DocumentBlock , SavedBlock, OverheadsProfile, ForecastProfile } from './schema';
 
-import { logActivity } from '@/lib/activity';
+import { logActivity, recentLocalWrite } from '@/lib/activity';
 
 // What a document was called before it's deleted, for the change log
 const beforeDelete = async (col: string, id: string): Promise<{ label?: string; refs?: { projectId?: string; phaseId?: string; memberId?: string } }> => {
@@ -872,6 +872,36 @@ export const getForecastProfile = async (): Promise<ForecastProfile | null> => {
   const snap = await getDocs(q);
   if (snap.empty) return null;
   return extractData(snap.docs[0]) as ForecastProfile;
+};
+
+/** Live copy of the company's forecast: calls back whenever it is saved (by anyone). */
+export const subscribeForecastProfile = (cb: (profile: ForecastProfile | null) => void) => {
+  const companyId = requireCompanyId();
+  return onSnapshot(query(collection(db, 'forecastProfile'), where('companyId', '==', companyId)), snap => {
+    if (snap.metadata.hasPendingWrites) return;
+    cb(snap.empty ? null : (extractData(snap.docs[0]) as ForecastProfile));
+  }, err => console.error('Forecast live updates stopped', err));
+};
+
+/**
+ * Calls back (debounced) when someone else changes any of these collections for this company.
+ * Changes this browser just made are ignored. Returns a function that stops listening.
+ */
+export const subscribeRemoteChanges = (collections: string[], cb: () => void, debounceMs = 800) => {
+  const companyId = currentCompanyId;
+  if (!companyId) return () => {};
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const unsubs = collections.map(name => {
+    let first = true;
+    return onSnapshot(query(collection(db, name), where('companyId', '==', companyId)), snap => {
+      if (first) { first = false; return; } // the initial load
+      if (snap.metadata.hasPendingWrites || recentLocalWrite()) return;
+      if (!snap.docChanges().length) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(cb, debounceMs);
+    }, err => console.error(`Live updates for ${name} stopped`, err));
+  });
+  return () => { unsubs.forEach(u => u()); if (timer) clearTimeout(timer); };
 };
 
 /** Thrown when the saved forecast was changed elsewhere (another admin, or an AI assistant) since this page loaded it. */

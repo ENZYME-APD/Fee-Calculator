@@ -49,7 +49,7 @@ import {
 } from '@/lib/firebase/schema';
 import { 
   getForecastProfile, 
-  updateForecastProfile, ForecastConflictError, 
+  updateForecastProfile, ForecastConflictError, subscribeForecastProfile, 
   getProjects, 
   getPhases, 
   getPayments, 
@@ -65,6 +65,7 @@ import { useAppSettings } from '@/lib/auth/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
 import { LinkReviewModal } from './LinkReviewModal';
+import { mergeForecast, pickMergeable, MergeableProfile } from '@/lib/forecast/merge';
 import { EditPillModal } from './EditPillModal';
 import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
@@ -312,6 +313,9 @@ export function FinancialForecastView() {
   // Version of the saved forecast this page is working from; saving refuses if it has changed since
   const savedVersion = useRef<number | null>(null);
   const [conflict, setConflict] = useState(false);
+  // Several editors: the last version agreed with the database (to merge someone else's save line by line)
+  const baseRef = useRef<MergeableProfile | null>(null);
+  const [saveTick, setSaveTick] = useState(0);
   // True from the first unsaved change until the write lands; used to warn before leaving
   const savePending = useRef(false);
   const [profile, setProfile] = useState<ForecastProfile | null>(null);
@@ -449,6 +453,7 @@ export function FinancialForecastView() {
         setRunningCosts({ salaries, overheads: overheadItems, total: salaries + overheadItems });
         if (existingProfile) {
           savedVersion.current = existingProfile.updatedAt ?? null;
+          baseRef.current = pickMergeable(existingProfile);
           setProfile(existingProfile);
           setStartMonthKey(existingProfile.startMonthKey || getCurrentMonthKey());
           setOpeningMonthKey(existingProfile.openingMonthKey || existingProfile.startMonthKey || getCurrentMonthKey());
@@ -498,22 +503,32 @@ export function FinancialForecastView() {
 
     autoSaveTimeout.current = setTimeout(async () => {
       setIsSaving(true);
+      const payload = {
+        startMonthKey,
+        openingMonthKey,
+        visibleMonthsCount,
+        startingBankBalance: Math.round(startingBankBalance),
+        possibleConversionPercent: Math.round(possibleConversion),
+        invoicingConversionPercent: Math.round(invoicingConversion),
+        rows,
+        outflows,
+        groups
+      };
       try {
-        savedVersion.current = await updateForecastProfile({
-          startMonthKey,
-          openingMonthKey,
-          visibleMonthsCount,
-          startingBankBalance: Math.round(startingBankBalance),
-          possibleConversionPercent: Math.round(possibleConversion),
-          invoicingConversionPercent: Math.round(invoicingConversion),
-          rows,
-          outflows,
-          groups
-        }, savedVersion.current);
+        savedVersion.current = await updateForecastProfile(payload, savedVersion.current);
+        baseRef.current = pickMergeable(payload);
         savePending.current = false;
         setSaveError(false);
       } catch (e) {
-        if (e instanceof ForecastConflictError) { savePending.current = false; setConflict(true); return; }
+        if (e instanceof ForecastConflictError) {
+          // Someone else saved meanwhile: merge their version with this one and save again
+          savePending.current = false;
+          try {
+            const remote = await getForecastProfile();
+            if (remote) absorbRemoteRef.current(remote); else setConflict(true);
+          } catch { setConflict(true); }
+          return;
+        }
         console.error("Failed to auto-save forecast", e);
         setSaveError(true);
       } finally {
@@ -524,7 +539,48 @@ export function FinancialForecastView() {
     return () => {
       if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
     };
-  }, [loading, conflict, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows, groups]);
+  }, [loading, conflict, saveTick, startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance, possibleConversion, invoicingConversion, rows, outflows, groups]);
+
+  // Someone else's save (another admin, or the AI connection): merged in line by line, live
+  const localRef = useRef<MergeableProfile | null>(null);
+  localRef.current = loading ? null : pickMergeable({
+    startMonthKey, openingMonthKey, visibleMonthsCount, startingBankBalance: Math.round(startingBankBalance),
+    possibleConversionPercent: Math.round(possibleConversion), invoicingConversionPercent: Math.round(invoicingConversion),
+    rows, outflows, groups,
+  });
+  const absorbRemoteRef = useRef<(remote: ForecastProfile) => void>(() => {});
+  absorbRemoteRef.current = (remote: ForecastProfile) => {
+    if (!localRef.current || !baseRef.current) return;
+    if ((remote.updatedAt ?? null) === savedVersion.current) return; // our own save
+    const remoteM = pickMergeable({ ...remote, outflows: (remote.outflows || []).map(migrateOutflow) });
+    const { merged, clashes } = mergeForecast(baseRef.current, localRef.current, remoteM);
+    savedVersion.current = remote.updatedAt ?? null;
+    baseRef.current = pickMergeable(remote);
+    const eq = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+    const changesLocal = !eq(merged, localRef.current);
+    const needsSave = !eq(merged, remoteM);
+    if (changesLocal) {
+      if (!needsSave) skipNextSave.current = true;
+      if (merged.startMonthKey) setStartMonthKey(merged.startMonthKey);
+      if (merged.openingMonthKey) setOpeningMonthKey(merged.openingMonthKey);
+      if (merged.visibleMonthsCount) setVisibleMonthsCount(merged.visibleMonthsCount);
+      if (merged.startingBankBalance !== undefined) setStartingBankBalance(merged.startingBankBalance);
+      if (merged.possibleConversionPercent !== undefined) setPossibleConversion(merged.possibleConversionPercent);
+      if (merged.invoicingConversionPercent !== undefined) setInvoicingConversion(merged.invoicingConversionPercent);
+      setRows(merged.rows);
+      setOutflows(merged.outflows);
+      setGroups(merged.groups || []);
+      setSyncMessage(clashes.length
+        ? `Someone else changed ${clashes.slice(0, 3).join(', ')}${clashes.length > 3 ? '…' : ''} at the same time as you. Your version of ${clashes.length === 1 ? 'that line' : 'those lines'} was kept; their other changes are in.`
+        : 'Updated with changes someone else just saved.');
+    } else if (needsSave) {
+      setSaveTick(t => t + 1);
+    }
+  };
+  useEffect(() => {
+    if (loading || !isAdmin) return;
+    return subscribeForecastProfile(p => { if (p) absorbRemoteRef.current(p); });
+  }, [loading, isAdmin]);
 
   // Warn before reloading or closing the tab while a change hasn't been saved yet
   useEffect(() => {
