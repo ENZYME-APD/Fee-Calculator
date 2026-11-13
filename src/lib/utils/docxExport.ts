@@ -79,7 +79,8 @@ export const exportToDocx = async (
   members: TeamMember[],
   categories: TeamCategory[],
   payments: Payment[],
-  fieldValues: FieldValues = {}
+  fieldValues: FieldValues = {},
+  money: (n: number) => string = n => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
 ) => {
   
   const docElements: any[] = [];
@@ -159,7 +160,7 @@ export const exportToDocx = async (
             children: [
               new TableCell({ children: [new Paragraph(phase.name)] }),
               new TableCell({ children: [new Paragraph(`${phase.durationWeeks} Weeks`)] }),
-              new TableCell({ children: [new Paragraph(`$${phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}`)] })
+              new TableCell({ children: [new Paragraph(money(phaseFee))] })
             ]
           })
         );
@@ -169,7 +170,7 @@ export const exportToDocx = async (
         new TableRow({
           children: [
             new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Fee", bold: true })] })], columnSpan: 2, shading: { fill: "e2e8f0" } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, bold: true })] })], shading: { fill: "e2e8f0" } })
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: money(totalProjectFee), bold: true })] })], shading: { fill: "e2e8f0" } })
           ]
         })
       );
@@ -268,7 +269,7 @@ export const exportToDocx = async (
             children: [
               new TableCell({ children: [new Paragraph(payment.name)] }),
               new TableCell({ children: [new Paragraph(`${formatPercent(paymentPercent(payment, totalProjectFee))}%`)] }),
-              new TableCell({ children: [new Paragraph(`$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`)] })
+              new TableCell({ children: [new Paragraph(money(amount))] })
             ]
           })
         );
@@ -278,7 +279,7 @@ export const exportToDocx = async (
         new TableRow({
           children: [
             new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Fee", bold: true })] })], columnSpan: 2, shading: { fill: "e2e8f0" } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `$${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, bold: true })] })], shading: { fill: "e2e8f0" } })
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: money(totalProjectFee), bold: true })] })], shading: { fill: "e2e8f0" } })
           ]
         })
       );

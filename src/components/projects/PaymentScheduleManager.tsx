@@ -9,6 +9,8 @@ import { Card, CardHeader, CardBody, Row } from '@/components/ui/Card';
 import { PrimaryButton, SecondaryButton, IconButton, fieldClass } from '@/components/ui/Button';
 import { computePhaseCost } from '@/lib/utils/projectFinancials';
 import { hasFixedAmount, paymentAmount, paymentPercent, formatPercent } from '@/lib/utils/payments';
+import { useAppSettings } from '@/lib/auth/AuthContext';
+import { viewMath } from '@/lib/currency/view';
 
 interface PaymentScheduleManagerProps {
   projectId: string;
@@ -62,7 +64,19 @@ export const InlinePercentInput = ({ value, onChange, maxAllowed, unit = '%', wi
   );
 };
 
-export function PaymentScheduleManager({ projectId, projectName, phases, allocations = [], projectCosts = [], teamMembers = [], totalFee = 0, formatCurrency }: PaymentScheduleManagerProps) {
+export function PaymentScheduleManager({ projectId, projectName, phases, allocations = [], projectCosts = [], teamMembers = [], totalFee = 0, formatCurrency: formatCurrencyProp }: PaymentScheduleManagerProps) {
+  // Fixed amounts are typed in the currency shown (a project's contract currency, when switched to it)
+  const { currencyView, formatCurrency: formatShown } = useAppSettings();
+  const formatCurrency = currencyView ? formatShown : formatCurrencyProp;
+  const { toView, fromView, contractOf } = viewMath(currencyView);
+  const amountFields = (shown: number) => {
+    const base = Math.round(fromView(shown));
+    return {
+      amount: base,
+      ...(currencyView ? { amountContract: Math.round(contractOf(shown)! * 100) / 100 } : {}),
+      percentage: totalFee > 0 ? Math.round((base / totalFee) * 100 * 100) / 100 : 0,
+    };
+  };
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -109,8 +123,8 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     const updates = data.map(p => ({
       id: p.id!,
       data: toAmount
-        ? { amount: Math.round(paymentAmount(p, totalFee)), percentage: round2(paymentPercent(p, totalFee)) }
-        : { percentage: round2(paymentPercent(p, totalFee)), amount: null },
+        ? { amount: Math.round(paymentAmount(p, totalFee)), ...(currencyView ? { amountContract: Math.round(contractOf(toView(paymentAmount(p, totalFee)))! * 100) / 100 } : {}), percentage: round2(paymentPercent(p, totalFee)) }
+        : { percentage: round2(paymentPercent(p, totalFee)), amount: null, amountContract: null },
     }));
     if (updates.length) await batchUpdatePayments(updates);
   };
@@ -158,7 +172,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
       phaseId: newPhaseId || undefined,
       name: newName.trim(),
       ...(amountMode
-        ? { amount: Math.round(parsed), percentage: totalFee > 0 ? round2((parsed / totalFee) * 100) : 0 }
+        ? amountFields(parsed)
         : { percentage: parsed }),
       order: payments.length > 0 ? Math.max(...payments.map(p => p.order)) + 1 : 1
     });
@@ -176,7 +190,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     if (amountMode) {
       const rest = round2(totalFee - payments.reduce((sum, p) => sum + paymentAmount(p, totalFee), 0));
       if (rest <= 0) return;
-      await addPayment({ projectId, phaseId: lastPhase?.id || undefined, name: 'Final payment', amount: rest, percentage: totalFee > 0 ? round2((rest / totalFee) * 100) : 0, order });
+      await addPayment({ projectId, phaseId: lastPhase?.id || undefined, name: 'Final payment', amount: rest, ...(currencyView ? { amountContract: Math.round(contractOf(toView(rest))! * 100) / 100 } : {}), percentage: totalFee > 0 ? round2((rest / totalFee) * 100) : 0, order });
     } else {
       const rest = round2(100 - totalPercentage);
       if (rest <= 0) return;
@@ -188,7 +202,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
   const handleEditStart = (p: Payment) => {
     setEditingId(p.id!);
     setEditName(p.name);
-    setEditPercentage((amountMode ? Math.round(paymentAmount(p, totalFee)) : p.percentage).toString());
+    setEditPercentage((amountMode ? Math.round(toView(paymentAmount(p, totalFee))) : p.percentage).toString());
     setEditPhaseId(p.phaseId || '');
   };
 
@@ -207,7 +221,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
       await updatePayment(editingId, {
         name: editName.trim(),
         ...(amountMode
-          ? { amount: Math.round(parsed), percentage: totalFee > 0 ? round2((parsed / totalFee) * 100) : 0 }
+          ? amountFields(parsed)
           : { percentage: parsed }),
         phaseId: editPhaseId || undefined
       });
@@ -626,12 +640,12 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
                 <div className="flex items-center gap-2 shrink-0 relative">
                   {amountMode ? (
                     <InlinePercentInput
-                      value={Math.round(paymentAmount(payment, totalFee))}
+                      value={Math.round(toView(paymentAmount(payment, totalFee)))}
                       unit=""
                       wide
                       onChange={async (newVal) => {
                         if (payment.id) {
-                          await updatePayment(payment.id, { amount: Math.round(newVal), percentage: totalFee > 0 ? round2((newVal / totalFee) * 100) : 0 });
+                          await updatePayment(payment.id, amountFields(newVal));
                           loadPayments();
                         }
                       }}

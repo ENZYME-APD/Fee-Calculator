@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { getCategories } from '@/lib/firebase/db';
 import { useAppSettings, useAuth } from '@/lib/auth/AuthContext';
+import { viewMath } from '@/lib/currency/view';
 import { TeamCategory } from '@/lib/firebase/schema';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { tc } from '@/lib/theme';
@@ -36,7 +37,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ project, members, phases, allocations, projectCosts = [], onAllocationAdded }: AppLayoutProps) {
   const { pushAction } = useUndo();
-  const { formatCurrency, areaUnit } = useAppSettings();
+  const { formatCurrency, areaUnit, currencyView } = useAppSettings();
   const { user, dbUser } = useAuth();
   const isAdmin = dbUser?.role === 'admin' || user?.email?.toLowerCase().endsWith('@weareenzyme.com');
 
@@ -552,7 +553,11 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                       }}
                       isFixedFee={isFixedFee}
                       onFixedFeeChange={async (fee) => {
-                        await updateProject(project.id!, { fixedFee: fee });
+                        // Typed in the currency shown; stored in the company currency, plus its contract value
+                        const { fromView, contractOf } = viewMath(currencyView);
+                        await updateProject(project.id!, fee === null
+                          ? ({ fixedFee: null, fixedFeeContract: null } as unknown as Partial<Project>)
+                          : { fixedFee: Math.round(fromView(fee)), ...(currencyView ? { fixedFeeContract: Math.round(contractOf(fee)! * 100) / 100 } : {}) });
                         onAllocationAdded();
                       }}
                       showRefreshRates={isAdmin}

@@ -17,6 +17,7 @@ import { ProUpgradePrompt } from '@/components/ui/ProUpgradePrompt';
 import { PromptModal } from '@/components/modals/PromptModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { CurrencySwitch, CurrencyViewProvider, useProjectCurrencyView } from '@/lib/currency/view';
 
 
 function SidebarTemplateItem({ template, onInsert, onEdit, onDelete }: { template: SavedBlock, onInsert: () => void, onEdit: () => void, onDelete: (e: React.MouseEvent) => void }) {
@@ -359,12 +360,15 @@ export function DocumentBuilder() {
   };
 
   const activeProject = projects.find(p => p.id === activeProjectId) || null;
+  // A project contracted in another currency can be written up in it
+  const { view: currencyView, setShowingContract } = useProjectCurrencyView(activeProject, dbCompany?.currency || 'USD');
   const fieldValues = useMemo(() => {
     if (!activeProject) return null;
     const totalFee = computeProjectFinancials(activeProject, phases, allocations, costs, members).totalFee;
     const totalWeeks = phases.reduce((sum, ph) => sum + (ph.durationWeeks || 0), 0);
-    return buildFieldValues({ company: dbCompany, project: activeProject, totalFee, totalWeeks });
-  }, [activeProject, phases, allocations, costs, members, dbCompany]);
+    const shownRate = currencyView?.showingContract ? currencyView.rate : 1;
+    return buildFieldValues({ company: dbCompany, project: activeProject, totalFee: totalFee / shownRate, totalWeeks, currency: currencyView?.showingContract ? currencyView.contractCode : undefined });
+  }, [activeProject, phases, allocations, costs, members, dbCompany, currencyView]);
   const gaps = useMemo(
     () => (fieldValues ? missingFields(blocks.flatMap(b => [b.title, b.type === 'rich_text' ? b.content : '']), fieldValues) : []),
     [blocks, fieldValues]
@@ -381,7 +385,10 @@ export function DocumentBuilder() {
     if (!project) return;
     setIsExporting(true);
     try {
-      await exportToDocx(project, blocks, phases, allocations, costs, members, categories, payments, fieldValues || {});
+      await exportToDocx(project, blocks, phases, allocations, costs, members, categories, payments, fieldValues || {}, n => {
+        const shown = currencyView?.showingContract;
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: shown ? currencyView!.contractCode : (dbCompany?.currency || 'USD'), maximumFractionDigits: 2 }).format(n / (shown ? currencyView!.rate : 1));
+      });
     } catch (e) {
       console.error(e);
       alert('Error exporting document.');
@@ -409,6 +416,7 @@ export function DocumentBuilder() {
   }
 
   return (
+    <CurrencyViewProvider value={currencyView}>
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     <div className="flex h-full w-full bg-ink-50 dark:bg-ink-950">
       
@@ -489,6 +497,7 @@ export function DocumentBuilder() {
 
           {activeProjectId && blocks.length > 0 && (
             <div className="flex items-center gap-3">
+              <CurrencySwitch view={currencyView} onChange={setShowingContract} />
               <button
                 onClick={() => setDetailsOpen(true)}
                 className="flex items-center gap-2 px-3 py-2 whitespace-nowrap text-ink-600 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 rounded-lg font-medium text-sm transition-colors"
@@ -622,5 +631,6 @@ export function DocumentBuilder() {
       ) : null}
     </DragOverlay>
     </DndContext>
+    </CurrencyViewProvider>
   );
 }

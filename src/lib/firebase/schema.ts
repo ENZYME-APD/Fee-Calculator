@@ -101,6 +101,11 @@ export interface Project {
   ownerId?: string;
   proposal?: ProposalDetails;
   commissionDefaults?: CommissionShare[]; // applied to this project's forecast payments
+  // Contract currency (e.g. EUR) and its rate in the company currency (company units per 1 contract unit).
+  // fixedFee stays in the company currency; fixedFeeContract keeps the contract value when the rate changes.
+  contractCurrency?: string;
+  contractRate?: number;
+  fixedFeeContract?: number;
 }
 
 export interface Phase {
@@ -155,6 +160,7 @@ export interface Payment {
   name: string;
   percentage: number;
   amount?: number | null; // fixed amount; when set, the percentage is calculated from the fee
+  amountContract?: number | null; // the same fixed amount in the project's contract currency
   order: number;
 }
 

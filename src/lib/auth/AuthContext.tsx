@@ -5,6 +5,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { User, Company } from '../firebase/schema';
 import { setDbCompanyId } from '../firebase/db';
+import { useCurrencyView } from '@/lib/currency/view';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -103,8 +104,13 @@ export const useAuth = () => useContext(AuthContext);
 
 export const useAppSettings = () => {
   const { dbCompany } = useAuth();
-  const currencyCode = dbCompany?.currency || 'USD';
+  const baseCurrencyCode = dbCompany?.currency || 'USD';
   const areaUnit = dbCompany?.areaUnit || 'sqm';
+  // Inside a project shown in its contract currency, amounts (stored in the company currency) are converted
+  const view = useCurrencyView();
+  const showContract = !!view?.showingContract;
+  const currencyCode = showContract ? view!.contractCode : baseCurrencyCode;
+  const rate = showContract ? view!.rate : 1;
 
   const formatCurrency = (amount: number, maxFractions = 2, minFractions = 0) => {
     return new Intl.NumberFormat('en-US', {
@@ -112,8 +118,8 @@ export const useAppSettings = () => {
       currency: currencyCode,
       minimumFractionDigits: minFractions,
       maximumFractionDigits: maxFractions,
-    }).format(amount);
+    }).format(amount / rate);
   };
 
-  return { currencyCode, areaUnit, formatCurrency };
+  return { currencyCode, baseCurrencyCode, areaUnit, formatCurrency, currencyView: view };
 };

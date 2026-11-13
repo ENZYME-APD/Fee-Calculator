@@ -1,0 +1,26 @@
+// Currencies offered for the company and for project contracts
+export const CURRENCIES = [
+  { code: 'USD', name: 'US Dollar ($)' },
+  { code: 'EUR', name: 'Euro (€)' },
+  { code: 'GBP', name: 'British Pound (£)' },
+  { code: 'CHF', name: 'Swiss Franc (CHF)' },
+  { code: 'SEK', name: 'Swedish Krona (kr)' },
+  { code: 'NOK', name: 'Norwegian Krone (kr)' },
+  { code: 'DKK', name: 'Danish Krone (kr)' },
+  { code: 'PLN', name: 'Polish Złoty (zł)' },
+  { code: 'CZK', name: 'Czech Koruna (Kč)' },
+  { code: 'HUF', name: 'Hungarian Forint (Ft)' },
+  { code: 'INR', name: 'Indian Rupee (₹)' },
+  { code: 'IDR', name: 'Indonesian Rupiah (Rp)' },
+  { code: 'AUD', name: 'Australian Dollar (A$)' },
+  { code: 'CAD', name: 'Canadian Dollar (C$)' },
+  { code: 'JPY', name: 'Japanese Yen (¥)' },
+  { code: 'CNY', name: 'Chinese Yuan (¥)' },
+  { code: 'VND', name: 'Vietnamese Dong (₫)' },
+  { code: 'PHP', name: 'Philippine Peso (₱)' },
+  { code: 'AED', name: 'UAE Dirham (د.إ)' },
+  { code: 'SAR', name: 'Saudi Riyal (﷼)' },
+  { code: 'SGD', name: 'Singapore Dollar (S$)' },
+  { code: 'MYR', name: 'Malaysian Ringgit (RM)' },
+  { code: 'THB', name: 'Thai Baht (฿)' }
+];

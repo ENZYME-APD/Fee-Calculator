@@ -3,6 +3,7 @@ import { Phase, ProjectCost, TeamMember } from '@/lib/firebase/schema';
 import { getTeamMembers, getCategories } from '@/lib/firebase/db';
 import { X, Palette, Plane, Briefcase, Receipt } from 'lucide-react';
 import { useAppSettings } from '@/lib/auth/AuthContext';
+import { viewMath } from '@/lib/currency/view';
 
 interface CostModalProps {
   isOpen: boolean;
@@ -14,7 +15,9 @@ interface CostModalProps {
 }
 
 export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }: CostModalProps) {
-  const { formatCurrency, currencyCode } = useAppSettings();
+  const { formatCurrency, currencyCode, currencyView } = useAppSettings();
+  // Costs are stored in the company currency; typed in the currency shown
+  const { toView, fromView } = viewMath(currencyView);
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState<number>(1);
   const [unitCost, setUnitCost] = useState<number>(0);
@@ -164,8 +167,8 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
                 type="number" 
                 min="0"
                 step="0.01"
-                value={unitCost === 0 ? '' : unitCost} 
-                onChange={e => setUnitCost(parseFloat(e.target.value) || 0)} 
+                value={unitCost === 0 ? '' : Math.round(toView(unitCost) * 100) / 100} 
+                onChange={e => setUnitCost(fromView(parseFloat(e.target.value) || 0))} 
                 className="w-full px-4 py-2.5 border border-negative-200 dark:border-negative-900/30 bg-negative-50 dark:bg-negative-500/10 rounded-xl focus:ring-2 focus:ring-negative-500/20 focus:border-negative-500 font-bold text-negative-700 dark:text-negative-400" 
               />
             </div>

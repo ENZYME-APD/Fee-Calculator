@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Settings, Check, Wand2 } from 'lucide-react';
-import { CommissionShare, Project, ProposalDetails } from '@/lib/firebase/schema';
+import { CommissionShare, Payment, Project, ProposalDetails } from '@/lib/firebase/schema';
 import { CommissionSharesEditor } from '@/components/forecast/CommissionSharesEditor';
-import { getProjects } from '@/lib/firebase/db';
+import { getProjects, getPayments, batchUpdatePayments } from '@/lib/firebase/db';
+import { CURRENCIES } from '@/lib/currency/list';
 import { useAuth } from '@/lib/auth/AuthContext';
 
 interface ProjectSettingsModalProps {
@@ -42,6 +43,9 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
   const [area, setArea] = useState(project.area?.toString() || '');
   const [prop, setProp] = useState<ProposalDetails>(project.proposal || {});
   const [shares, setShares] = useState<CommissionShare[]>(project.commissionDefaults || []);
+  const baseCode = dbCompany?.currency || 'USD';
+  const [contractCurrency, setContractCurrency] = useState(project.contractCurrency || '');
+  const [contractRate, setContractRate] = useState(project.contractRate ? String(project.contractRate) : '');
   const [isSaving, setIsSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
 
@@ -52,6 +56,8 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
       setArea(project.area?.toString() || '');
       setProp(project.proposal || {});
       setShares(project.commissionDefaults || []);
+      setContractCurrency(project.contractCurrency || '');
+      setContractRate(project.contractRate ? String(project.contractRate) : '');
       if (focusProposal) setTimeout(() => document.getElementById('proposal-details')?.scrollIntoView({ block: 'start' }), 50);
     }
   }, [isOpen, project, focusProposal]);
@@ -77,13 +83,39 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
     setIsSaving(true);
     try {
       const cleaned = Object.fromEntries(Object.entries(prop).filter(([, v]) => v !== undefined && v !== null && !(typeof v === 'string' && !v.trim()) && !(typeof v === 'number' && Number.isNaN(v)))) as ProposalDetails;
+      // Contract currency: amounts the contract fixes keep their contract value; the company-currency value follows the rate
+      const rate = parseFloat(contractRate.replace(',', '.'));
+      const useContract = !!contractCurrency && contractCurrency !== baseCode && rate > 0;
+      const currencyUpdates: Partial<Project> = useContract
+        ? {
+            contractCurrency, contractRate: rate,
+            ...(project.fixedFee && project.fixedFee > 0
+              ? (() => {
+                  const contractValue = project.contractCurrency === contractCurrency && project.fixedFeeContract ? project.fixedFeeContract : project.fixedFee! / (project.contractRate && project.contractCurrency === contractCurrency ? project.contractRate : rate);
+                  return { fixedFeeContract: Math.round(contractValue * 100) / 100, fixedFee: Math.round(contractValue * rate) };
+                })()
+              : {}),
+          }
+        : ({ contractCurrency: null, contractRate: null, fixedFeeContract: null } as unknown as Partial<Project>);
       await onSave({
         name: name.trim(),
         status,
         area: area ? parseFloat(area) : undefined,
         proposal: cleaned,
         commissionDefaults: shares.filter(r => r.name.trim() && r.percent > 0).map(r => ({ name: r.name.trim(), percent: r.percent })),
+        ...currencyUpdates,
       });
+      // Fixed payments: same rule
+      if (project.id && (useContract || project.contractCurrency)) {
+        const sameCurrency = project.contractCurrency === contractCurrency;
+        const pays = (await getPayments(project.id)).filter(p => p.amount !== null && p.amount !== undefined);
+        const updates = pays.map(p => {
+          if (!useContract) return { id: p.id!, data: { amountContract: null } as Partial<Payment> };
+          const contractValue = sameCurrency && p.amountContract ? p.amountContract : p.amount! / (sameCurrency && project.contractRate ? project.contractRate : rate);
+          return { id: p.id!, data: { amountContract: Math.round(contractValue * 100) / 100, amount: Math.round(contractValue * rate) } as Partial<Payment> };
+        });
+        if (updates.length) await batchUpdatePayments(updates);
+      }
       onClose();
     } catch (err) {
       console.error(err);
@@ -192,6 +224,29 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
                 </div>
               </div>
               <p className="text-xs text-ink-500 dark:text-ink-400">Signatory, validity, bank details and rates default to Settings → Proposals.</p>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t border-ink-200 dark:border-ink-800">
+              <div className="pt-4">
+                <h3 className="text-sm font-bold text-ink-800 dark:text-ink-200">Contract currency</h3>
+                <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">For projects contracted in another currency. The fee proposal, payment schedule and documents can then be shown in either; accounting and the forecast stay in {baseCode}. The fixed fee and fixed payments keep their contract value when you change the rate.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={label}>Currency</label>
+                  <select value={contractCurrency} onChange={e => setContractCurrency(e.target.value)} className={`${input} appearance-none`}>
+                    <option value="">Same as the company ({baseCode})</option>
+                    {CURRENCIES.filter(c => c.code !== baseCode).map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={label}>Rate {contractCurrency ? `(${baseCode} per 1 ${contractCurrency})` : ''}</label>
+                  <input inputMode="decimal" value={contractRate} onChange={e => setContractRate(e.target.value)} disabled={!contractCurrency} placeholder={contractCurrency ? 'e.g. 1.08' : ''} className={`${input} disabled:opacity-50`} />
+                </div>
+              </div>
+              {contractCurrency && parseFloat(contractRate.replace(',', '.')) > 0 && (
+                <p className="text-xs text-ink-500 dark:text-ink-400">1 {contractCurrency} = {parseFloat(contractRate.replace(',', '.'))} {baseCode} · 1 {baseCode} = {(1 / parseFloat(contractRate.replace(',', '.'))).toFixed(4)} {contractCurrency}</p>
+              )}
             </div>
 
             <div className="space-y-3 pt-2 border-t border-ink-200 dark:border-ink-800">

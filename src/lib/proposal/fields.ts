@@ -101,14 +101,15 @@ export function fullRef(ref?: string, revision?: string): string | null {
 export function buildFieldValues(args: {
   company: Company | null;
   project: Project | null;
-  totalFee: number;
+  totalFee: number; // in the currency shown
   totalWeeks: number;
+  currency?: string; // the currency shown, when not the company's
 }): FieldValues {
   const { company, project, totalFee, totalWeeks } = args;
   const d = company?.proposal || {};
   const p = project?.proposal || {};
   const bank = d.bank || {};
-  const currency = company?.currency || 'USD';
+  const currency = args.currency || company?.currency || 'USD';
   const validity = p.validityDays ?? d.validityDays;
   const issue = p.issueDate;
   const bankLines = [

@@ -7,6 +7,7 @@ import { ProjectSummary } from '@/components/calculator/ProjectSummary';
 import { PaymentScheduleModal } from '@/components/calculator/PaymentScheduleModal';
 import { getProjects, getPhases, getTeamMembers, getAllocations, importProjectData, getProjectCosts, getPayments, getCategories } from '@/lib/firebase/db';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { CurrencySwitch, CurrencyViewProvider, useProjectCurrencyView } from '@/lib/currency/view';
 import { Project, Phase, TeamMember, Allocation, ProjectCost, Payment, TeamCategory } from '@/lib/firebase/schema';
 import { Folder, Download, Upload, FileSpreadsheet, Table, Calculator } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -38,6 +39,9 @@ function FeeProposalPage() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [categories, setCategories] = useState<TeamCategory[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Projects contracted in another currency can be shown in it
+  const { dbCompany } = useAuth();
+  const { view: currencyView, setShowingContract } = useProjectCurrencyView(activeProject, dbCompany?.currency || 'USD');
 
   const { dbUser } = useAuth();
 
@@ -175,6 +179,7 @@ function FeeProposalPage() {
   }
 
   return (
+    <CurrencyViewProvider value={currencyView}>
     <div className="h-full flex flex-col relative bg-ink-50 dark:bg-ink-950 transition-colors duration-300">
       {/* Top Toolbar — same shape as Project Planning and Document Builder */}
       <div className="bg-white dark:bg-ink-900 border-b border-ink-200 dark:border-ink-800 px-6 py-3 flex items-center justify-between z-30 shrink-0 shadow-sm transition-colors duration-300">
@@ -224,6 +229,7 @@ function FeeProposalPage() {
                 </button>
               </Tooltip>
               
+              <CurrencySwitch view={currencyView} onChange={setShowingContract} />
               <Tooltip content="Import Project Data" position="bottom">
                 <button 
                   onClick={() => fileInputRef.current?.click()}
@@ -312,5 +318,6 @@ function FeeProposalPage() {
           )}
       </div>
     </div>
+    </CurrencyViewProvider>
   );
 }

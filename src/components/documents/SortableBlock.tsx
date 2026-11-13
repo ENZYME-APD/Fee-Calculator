@@ -13,6 +13,7 @@ import { Bold, Italic, List, ListOrdered } from 'lucide-react';
 import StarterKit from '@tiptap/starter-kit';
 import { FieldHighlight, InsertFieldMenu } from './fieldEditor';
 import { FieldValues, fillHtml, fillText } from '@/lib/proposal/fields';
+import { useAppSettings } from '@/lib/auth/AuthContext';
 
 interface SortableBlockProps {
   block: DocumentBlock;
@@ -32,6 +33,9 @@ interface SortableBlockProps {
 }
 
 export function SortableBlock({ block, phases, allocations, costs, members, categories, payments, project, onUpdate, onDelete, onInsert, onSaveTemplate, fieldValues = null, preview = false }: SortableBlockProps) {
+  // Amounts in the currency shown (company, or the project's contract currency)
+  const { formatCurrency } = useAppSettings();
+  const money = (n: number) => formatCurrency(n, 2, 0);
   const [title, setTitle] = useState(block.title);
   const valuesRef = useRef<FieldValues | null>(fieldValues);
   valuesRef.current = fieldValues;
@@ -159,7 +163,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
                   <tr key={phase.id}>
                     <td className="px-4 py-3 font-medium text-ink-800 dark:text-ink-200">{phase.name}</td>
                     <td className="px-4 py-3 text-ink-600 dark:text-ink-400">{phase.durationWeeks} Weeks</td>
-                    <td className="px-4 py-3 text-right font-medium text-ink-800 dark:text-ink-200">${phaseFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-medium text-ink-800 dark:text-ink-200">{money(phaseFee)}</td>
                   </tr>
                 );
               })}
@@ -167,7 +171,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
             <tfoot className="bg-ink-50 dark:bg-ink-900 border-t-2 border-ink-200 dark:border-ink-700">
               <tr>
                 <td colSpan={2} className="px-4 py-3 font-bold text-accent-600 dark:text-accent-400 text-right">Total fee</td>
-                <td className="px-4 py-3 font-bold text-accent-600 dark:text-accent-400 text-right">${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className="px-4 py-3 font-bold text-accent-600 dark:text-accent-400 text-right">{money(totalProjectFee)}</td>
               </tr>
             </tfoot>
           </table>
@@ -249,7 +253,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
                   <tr key={payment.id}>
                     <td className="px-4 py-3 font-medium text-ink-800 dark:text-ink-200">{payment.name}</td>
                     <td className="px-4 py-3 text-center text-ink-600 dark:text-ink-400">{formatPercent(paymentPercent(payment, totalProjectFee))}%</td>
-                    <td className="px-4 py-3 text-right font-medium text-ink-800 dark:text-ink-200">${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-medium text-ink-800 dark:text-ink-200">{money(amount)}</td>
                   </tr>
                 );
               })}
@@ -257,7 +261,7 @@ export function SortableBlock({ block, phases, allocations, costs, members, cate
             <tfoot className="bg-ink-50 dark:bg-ink-900 border-t-2 border-ink-200 dark:border-ink-700">
               <tr>
                 <td colSpan={2} className="px-4 py-3 font-bold text-accent-600 dark:text-accent-400 text-right">Total fee</td>
-                <td className="px-4 py-3 font-bold text-accent-600 dark:text-accent-400 text-right">${totalProjectFee.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td className="px-4 py-3 font-bold text-accent-600 dark:text-accent-400 text-right">{money(totalProjectFee)}</td>
               </tr>
             </tfoot>
           </table>

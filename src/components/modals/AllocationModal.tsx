@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TeamMember, Phase, Allocation } from '@/lib/firebase/schema';
 import { X, Clock, CalendarDays, Percent } from 'lucide-react';
+import { useAppSettings } from '@/lib/auth/AuthContext';
 
 interface AllocationModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface AllocationModalProps {
 }
 
 export function AllocationModal({ isOpen, member, phase, initialData, onClose, onSave }: AllocationModalProps) {
+  const { formatCurrency } = useAppSettings();
   const [allocationType, setAllocationType] = useState<'hours' | 'weeks' | 'percentage'>('hours');
   const [allocationValue, setAllocationValue] = useState<string>('');
 
@@ -100,7 +102,7 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
             <div className="w-full h-px bg-ink-100 dark:bg-ink-800 my-1"></div>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-ink-500 dark:text-ink-400">Cost rate</span>
-              <span className="font-semibold text-ink-700 dark:text-ink-300">${(Math.round(member.costPerHour * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr</span>
+              <span className="font-semibold text-ink-700 dark:text-ink-300">{formatCurrency(member.costPerHour, 2, 2)}/hr</span>
             </div>
           </div>
 
@@ -144,7 +146,7 @@ export function AllocationModal({ isOpen, member, phase, initialData, onClose, o
               )}
               <div className="flex justify-between items-center text-sm">
                 <span className="text-accent-700 dark:text-accent-400 font-medium">Estimated cost</span>
-                <span className="font-bold text-negative-600 dark:text-negative-400">${finalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="font-bold text-negative-600 dark:text-negative-400">{formatCurrency(finalCost, 2, 2)}</span>
               </div>
 
             </div>

@@ -7,6 +7,7 @@ import { Folder, Plus, Trash2, Clock, Pencil, X, Check, Copy, Eraser, Calculator
 import { Tooltip } from '@/components/ui/Tooltip';
 import { PaymentScheduleManager } from './PaymentScheduleManager';
 import { useAuth, useAppSettings } from '@/lib/auth/AuthContext';
+import { CurrencySwitch, CurrencyViewProvider, useProjectCurrencyView } from '@/lib/currency/view';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { PromptModal } from '@/components/modals/PromptModal';
 import { PhaseSettingsModal } from '@/components/modals/PhaseSettingsModal';
@@ -104,7 +105,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
     onConfirm: () => {}
   });
 
-  const { dbUser } = useAuth();
+  const { dbUser, dbCompany } = useAuth();
   const { formatCurrency, areaUnit } = useAppSettings();
   const requestedProjectId = useSearchParams().get('project');
 
@@ -410,6 +411,9 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
     // DB update for all to fix any gaps
     await Promise.all(newPhases.map(p => updatePhase(p.id!, { order: p.order })));
   };
+
+  // Payment schedule of a project contracted in another currency can be shown in it
+  const { view: currencyView, setShowingContract } = useProjectCurrencyView(projects.find(p => p.id === activeProjectId) || null, dbCompany?.currency || 'USD');
 
   if (loading) return <div className="p-8 text-ink-500">Loading projects...</div>;
 
@@ -826,6 +830,13 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
 
         {/* Payment Schedule Manager */}
         {activeProjectId ? (
+          <CurrencyViewProvider value={currencyView}>
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
+          {currencyView && (
+            <div className="flex items-center justify-end gap-2 text-xs text-ink-500 dark:text-ink-400">
+              Show amounts in <CurrencySwitch view={currencyView} onChange={setShowingContract} />
+            </div>
+          )}
           <PaymentScheduleManager
             projectId={activeProjectId}
             projectName={projects.find(p => p.id === activeProjectId)?.name}
@@ -836,6 +847,8 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
             totalFee={totalFee}
             formatCurrency={formatCurrency}
           />
+          </div>
+          </CurrencyViewProvider>
         ) : (
           <Card className="flex-1 items-center justify-center text-ink-500">
             <Folder size={40} className="text-ink-200 dark:text-ink-800 mb-3" />

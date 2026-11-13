@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { useAppSettings } from '@/lib/auth/AuthContext';
+import { viewMath } from '@/lib/currency/view';
 
 interface ProjectFinancialHeaderProps {
   // Left side is owned by the calling page (project name, status, icons) so
@@ -38,14 +40,18 @@ export function ProjectFinancialHeader({
   isFixedFee,
   onFixedFeeChange,
 }: ProjectFinancialHeaderProps) {
+  // The fee is typed in the currency shown (a project's contract currency, when switched to it)
+  const { currencyView } = useAppSettings();
+  const { toView } = viewMath(currencyView);
+  const shownFee = Math.round(toView(totalFee));
   const [isEditingFee, setIsEditingFee] = useState(false);
   const [feeInput, setFeeInput] = useState('');
-  const startFeeEdit = () => { setFeeInput(String(Math.round(totalFee))); setIsEditingFee(true); };
+  const startFeeEdit = () => { setFeeInput(String(shownFee)); setIsEditingFee(true); };
   const commitFee = () => {
     if (!isEditingFee) return;
     const val = parseInt(feeInput.replace(/[^0-9]/g, ''), 10);
     // Switching on with no cost yet: the typed fee turns fixed fee on
-    if (!isNaN(val) && val > 0 && (val !== Math.round(totalFee) || !isFixedFee)) onFixedFeeChange?.(val);
+    if (!isNaN(val) && val > 0 && (val !== shownFee || !isFixedFee)) onFixedFeeChange?.(val);
     setIsEditingFee(false);
   };
   const marginIsEditable = marginEditable && !isFixedFee;
@@ -134,7 +140,7 @@ export function ProjectFinancialHeader({
                 type="button"
                 role="switch"
                 aria-checked={!!isFixedFee}
-                onClick={() => (isFixedFee ? onFixedFeeChange(null) : Math.round(totalFee) > 0 ? onFixedFeeChange(Math.round(totalFee)) : (setFeeInput(''), setIsEditingFee(true)))}
+                onClick={() => (isFixedFee ? onFixedFeeChange(null) : shownFee > 0 ? onFixedFeeChange(shownFee) : (setFeeInput(''), setIsEditingFee(true)))}
                 className={`flex items-center gap-1 text-[10px] font-semibold rounded-full pl-0.5 pr-1.5 py-0.5 transition-colors ${
                   isFixedFee ? 'bg-positive-100 text-positive-800 dark:bg-positive-900/50 dark:text-positive-200' : 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'
                 }`}
