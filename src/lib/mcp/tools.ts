@@ -8,6 +8,7 @@ import { getAllocationRate } from '@/lib/utils/allocationCost';
 import { paymentAmount, paymentPercent } from '@/lib/utils/payments';
 import { McpContext } from './auth';
 import { readEntries } from '@/lib/activityServer';
+import { pillShares } from '@/lib/forecast/collections';
 import { listChanges } from './changes';
 
 // Read-only tools for the AI connection. Every query is scoped to the caller's company, and the
@@ -390,7 +391,7 @@ export const TOOLS: ToolDef[] = [
       const referrals = (m: string) => {
         const out: Record<string, number> = {};
         rows.forEach(r => (r.cells?.[m]?.collections || []).forEach(p => {
-          if (p.referralName?.trim()) out[p.referralName.trim()] = (out[p.referralName.trim()] || 0) + Math.round(p.amount * ((p.referralPercent || 0) / 100));
+          pillShares(p).forEach(r => { out[r.name] = (out[r.name] || 0) + Math.round(p.amount * (r.percent / 100)); });
         }));
         return out;
       };
@@ -443,6 +444,7 @@ export const TOOLS: ToolDef[] = [
                   entry_id: p.id, stage: k === 'invoicing' ? 'invoiced' : k, amount: p.amount, label: p.label || null,
                   ...(k === 'collections' ? { paid: !!p.paid } : {}),
                   ...(p.invoiceId ? { invoice_entry_id: p.invoiceId } : {}),
+                  ...(pillShares(p).length ? { commission: pillShares(p).map(r => ({ person: r.name, percent: r.percent })) } : {}),
                 })));
               return { line: r.name, line_id: r.id, group: r.groupId ? groupName.get(r.groupId) || null : null, invoiced: s('invoicing'), possible: s('possible'), collections: s('collections'), entries };
             })

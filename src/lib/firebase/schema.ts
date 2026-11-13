@@ -100,6 +100,7 @@ export interface Project {
   status?: string; // 'Draft' | 'Active' | 'Completed' | 'Lost'
   ownerId?: string;
   proposal?: ProposalDetails;
+  commissionDefaults?: CommissionShare[]; // applied to this project's forecast payments
 }
 
 export interface Phase {
@@ -214,14 +215,18 @@ export interface OverheadsProfile {
 
 export type ForecastStage = 'possible' | 'invoicing' | 'collections';
 
+/** A person's commission on a payment, in % of the amount collected. */
+export interface CommissionShare { name: string; percent: number }
+
 export interface ForecastPill {
   id: string;
   amount: number;
   label: string;
   invoiceNumber?: string;
   notes?: string;
-  referralName?: string;
+  referralName?: string; // legacy single commission; see referrals
   referralPercent?: number;
+  referrals?: CommissionShare[]; // commission shares of this payment (outflow cut per person)
   // Possible / Collections entries copied from an invoice keep its id (one per invoice)
   invoiceId?: string;
   // Collections only: payment received

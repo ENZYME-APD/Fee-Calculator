@@ -1,6 +1,9 @@
 "use client";
 import React, { useState } from 'react';
 import { X, Trash2, Link2, CheckCircle2 } from 'lucide-react';
+import { CommissionSharesEditor } from './CommissionSharesEditor';
+import { pillShares, withShares } from '@/lib/forecast/collections';
+import { CommissionShare } from '@/lib/firebase/schema';
 import { ForecastPill, ForecastStage } from '@/lib/firebase/schema';
 import { PrimaryButton, SecondaryButton, fieldClass } from '@/components/ui/Button';
 
@@ -15,15 +18,17 @@ interface EditPillModalProps {
   linkInfo?: string | null;
   /** An invoice stays an invoice; a copy of one stays in Possible / Collections */
   lockStage?: 'invoice' | 'entry' | null;
+  /** New entries start with the project's commission split */
+  defaultShares?: CommissionShare[];
+  peopleSuggestions?: string[];
 }
 
-export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose, linkInfo, lockStage }: EditPillModalProps) {
+export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose, linkInfo, lockStage, defaultShares, peopleSuggestions = [] }: EditPillModalProps) {
   const [amount, setAmount] = useState<number>(pill ? Math.round(pill.amount) : 0);
   const [label, setLabel] = useState<string>(pill ? pill.label : '');
   const [invoiceNumber, setInvoiceNumber] = useState<string>(pill?.invoiceNumber || '');
   const [notes, setNotes] = useState<string>(pill?.notes || '');
-  const [referralName, setReferralName] = useState<string>(pill?.referralName || '');
-  const [referralPercent, setReferralPercent] = useState<number>(pill?.referralPercent || 0);
+  const [shares, setShares] = useState<CommissionShare[]>(pill ? pillShares(pill) : defaultShares || []);
   const [targetStage, setTargetStage] = useState<ForecastStage>(stage);
   const [paid, setPaid] = useState<boolean>(!!pill?.paid);
 
@@ -33,8 +38,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose, 
       setLabel(pill.label || '');
       setInvoiceNumber(pill.invoiceNumber || '');
       setNotes(pill.notes || '');
-      setReferralName(pill.referralName || '');
-      setReferralPercent(pill.referralPercent || 0);
+      setShares(pillShares(pill));
       setTargetStage(stage);
       setPaid(!!pill.paid);
     } else {
@@ -42,8 +46,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose, 
       setLabel('');
       setInvoiceNumber('');
       setNotes('');
-      setReferralName('');
-      setReferralPercent(0);
+      setShares(defaultShares || []);
       setTargetStage(stage);
       setPaid(false);
     }
@@ -53,7 +56,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
+    onSave(withShares({
       ...(pill?.invoiceId ? { invoiceId: pill.invoiceId } : {}),
       ...(targetStage === 'collections' && paid ? { paid: true } : {}),
       id: pill?.id || `pill_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -61,9 +64,7 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose, 
       label: label.trim() || 'Milestone',
       invoiceNumber: invoiceNumber.trim() || undefined,
       notes: notes.trim() || undefined,
-      referralName: referralName.trim() || undefined,
-      referralPercent: referralPercent > 0 ? Math.round(referralPercent) : undefined,
-    }, targetStage);
+    }, shares), targetStage);
     onClose();
   };
 
@@ -197,43 +198,10 @@ export function EditPillModal({ isOpen, pill, stage, onSave, onDelete, onClose, 
             </div>
           </div>
 
-          {/* Referral Commission Section */}
+          {/* Commission shares: each person's cut becomes an outflow line when the payment is collected */}
           <div className="p-3 bg-ink-50 dark:bg-ink-800/60 rounded-xl border border-ink-200 dark:border-ink-700 flex flex-col gap-2">
-            <span className="text-xs font-bold text-ink-700 dark:text-ink-300">
-              Referral commission (outflow cut)
-            </span>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium text-ink-500 mb-1">
-                  Commissionist / person
-                </label>
-                <input
-                  type="text"
-                  value={referralName}
-                  onChange={e => setReferralName(e.target.value)}
-                  placeholder="e.g. Alex Martin"
-                  className={`${fieldClass} w-full text-xs font-medium`}
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-ink-500 mb-1">
-                  Commission % (no decimals)
-                </label>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={referralPercent === 0 ? '' : referralPercent}
-                    onChange={e => setReferralPercent(Math.min(100, parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0))}
-                    placeholder="e.g. 15 or 30"
-                    className={`${fieldClass} w-full text-xs text-right font-bold`}
-                  />
-                  <span className="text-xs font-bold text-ink-500 dark:text-ink-400">%</span>
-                </div>
-              </div>
-            </div>
+            <span className="text-xs font-bold text-ink-700 dark:text-ink-300">Commission (outflow cut)</span>
+            <CommissionSharesEditor value={shares} onChange={setShares} suggestions={peopleSuggestions} amount={amount ? Number(amount) || 0 : undefined} fmt={n => n.toLocaleString('en-US')} />
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-ink-100 dark:border-ink-800 mt-2">

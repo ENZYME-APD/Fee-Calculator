@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Settings, Check, Wand2 } from 'lucide-react';
-import { Project, ProposalDetails } from '@/lib/firebase/schema';
+import { CommissionShare, Project, ProposalDetails } from '@/lib/firebase/schema';
+import { CommissionSharesEditor } from '@/components/forecast/CommissionSharesEditor';
 import { getProjects } from '@/lib/firebase/db';
 import { useAuth } from '@/lib/auth/AuthContext';
 
@@ -40,6 +41,7 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
   const [status, setStatus] = useState(project.status || 'Draft');
   const [area, setArea] = useState(project.area?.toString() || '');
   const [prop, setProp] = useState<ProposalDetails>(project.proposal || {});
+  const [shares, setShares] = useState<CommissionShare[]>(project.commissionDefaults || []);
   const [isSaving, setIsSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
 
@@ -49,6 +51,7 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
       setStatus(project.status || 'Draft');
       setArea(project.area?.toString() || '');
       setProp(project.proposal || {});
+      setShares(project.commissionDefaults || []);
       if (focusProposal) setTimeout(() => document.getElementById('proposal-details')?.scrollIntoView({ block: 'start' }), 50);
     }
   }, [isOpen, project, focusProposal]);
@@ -79,6 +82,7 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
         status,
         area: area ? parseFloat(area) : undefined,
         proposal: cleaned,
+        commissionDefaults: shares.filter(r => r.name.trim() && r.percent > 0).map(r => ({ name: r.name.trim(), percent: r.percent })),
       });
       onClose();
     } catch (err) {
@@ -188,6 +192,14 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
                 </div>
               </div>
               <p className="text-xs text-ink-500 dark:text-ink-400">Signatory, validity, bank details and rates default to Settings → Proposals.</p>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t border-ink-200 dark:border-ink-800">
+              <div className="pt-4">
+                <h3 className="text-sm font-bold text-ink-800 dark:text-ink-200">Commission on payments</h3>
+                <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">Who takes a share of each payment of this project, in % of what is collected. New forecast entries for this project start with this split; each one can still be changed.</p>
+              </div>
+              <CommissionSharesEditor value={shares} onChange={setShares} />
             </div>
           </div>
 

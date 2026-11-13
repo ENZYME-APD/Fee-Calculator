@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { paymentAmount } from '@/lib/utils/payments';
 import { hasFixedFee, effectiveMarginPercent, feeMultiplierFor } from '@/lib/utils/projectFinancials';
+import { pillShares } from '@/lib/forecast/collections';
 import { getProjects, getPhases, getTeamMembers, getAllocations, getProjectCosts, getUsersByCompany, getAllPayments, getCategories, getForecastProfile, getOverheadsProfile } from '@/lib/firebase/db';
 import { STATUS_CONFIG } from '@/components/ui/StatusBadge';
 import { Project, Phase, TeamMember, TeamCategory, Allocation, ProjectCost, User, ForecastOutflowItem, ForecastProfile } from '@/lib/firebase/schema';
@@ -41,7 +42,7 @@ function otherForecastExpenses(profile: ForecastProfile | null): Record<string, 
     if (o.defaultMonthlyAmount) out[`__default__${o.id}`] = o.defaultMonthlyAmount; // every month without its own entries
   });
   (profile.rows || []).forEach(r => Object.entries(r.cells || {}).forEach(([m, c]) =>
-    (c.collections || []).forEach(p => { if (p.referralName && p.referralPercent) add(m, Math.round(p.amount * p.referralPercent / 100)); })));
+    (c.collections || []).forEach(p => pillShares(p).forEach(s => add(m, Math.round(p.amount * s.percent / 100))))));
   return out;
 }
 

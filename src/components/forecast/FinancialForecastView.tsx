@@ -41,6 +41,7 @@ import {
   Payment,
   TeamMember,
   TeamCategory,
+  CommissionShare,
   ProjectCost,
   Allocation,
   ForecastGroup,
@@ -69,7 +70,7 @@ import { AddRowModal } from './AddRowModal';
 import { EditRowModal } from './EditRowModal';
 import { GROUP_COLORS, ManageGroupsModal, newGroupId, nextGroupColor } from './groups';
 import { OutflowPillModal } from './OutflowPillModal';
-import { collectionsSplit, entryFromInvoice, invoiceOf, linkedEntry, suggestLinks, LINKABLE } from '@/lib/forecast/collections';
+import { collectionsSplit, entryFromInvoice, invoiceOf, linkedEntry, suggestLinks, LINKABLE, pillShares, withShares, sharesLabel } from '@/lib/forecast/collections';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -351,6 +352,8 @@ export function FinancialForecastView() {
   const [resetCheckingId, setResetCheckingId] = useState<string | null>(null);
   // Current proposed fee for each project, to compare with what the linked row adds up to
   const [proposalFees, setProposalFees] = useState<Record<string, number>>({});
+  // Each project's default commission split (Project settings), for new entries of its row
+  const [projectShares, setProjectShares] = useState<Record<string, CommissionShare[]>>({});
   const loadProposalFees = async () => {
     try {
       const [projs, allPhases, allCosts, allocs, mems] = await Promise.all([
@@ -365,6 +368,7 @@ export function FinancialForecastView() {
         fees[p.id] = Math.round(totalFee);
       });
       setProposalFees(fees);
+      setProjectShares(Object.fromEntries(projs.filter(p => p.id && p.commissionDefaults?.length).map(p => [p.id!, p.commissionDefaults!])));
     } catch (err) {
       console.error('Failed to load proposal fees', err);
     }
@@ -507,17 +511,12 @@ export function FinancialForecastView() {
       Object.entries(row.cells).forEach(([mKey, monthCell]) => {
         // Referral commissions apply to collections
         (monthCell.collections || []).forEach(pill => {
-          if (pill.referralName && pill.referralName.trim()) {
-            const name = pill.referralName.trim();
-            const pct = pill.referralPercent || 0;
-            const cut = Math.round(pill.amount * (pct / 100));
-
-            if (!map[name]) {
-              map[name] = { total: 0, monthly: {} };
-            }
+          pillShares(pill).forEach(({ name, percent }) => {
+            const cut = Math.round(pill.amount * (percent / 100));
+            if (!map[name]) map[name] = { total: 0, monthly: {} };
             map[name].monthly[mKey] = (map[name].monthly[mKey] || 0) + cut;
             map[name].total += cut;
-          }
+          });
         });
       });
     });
@@ -588,11 +587,11 @@ export function FinancialForecastView() {
       if (amount <= 0) return;
       if (!cells[monthKey]) cells[monthKey] = {};
       if (!cells[monthKey][stage]) cells[monthKey][stage] = [];
-      cells[monthKey][stage]!.push({
+      cells[monthKey][stage]!.push(withShares({
         id: `pill_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
         amount,
         label: pmt.name || 'Milestone',
-      });
+      }, proj.commissionDefaults || []));
     });
     return cells;
   };
@@ -664,7 +663,7 @@ export function FinancialForecastView() {
     Object.entries(cells || {}).forEach(([m, cell]) => {
       stages.forEach(st => {
         (cell?.[st] || []).forEach(p => {
-          const key = `${m}|${st}|${Math.round(p.amount)}|${p.label || ''}|${p.referralName || ''}|${p.referralPercent || 0}|${p.invoiceNumber || ''}|${p.notes || ''}`;
+          const key = `${m}|${st}|${Math.round(p.amount)}|${p.label || ''}|${sharesLabel(pillShares(p))}|${p.invoiceNumber || ''}|${p.notes || ''}`;
           counts[key] = (counts[key] || 0) + 1;
         });
       });
@@ -873,7 +872,8 @@ export function FinancialForecastView() {
           remove(cells, existing.month, existing.stage, existing.pill.id);
           add(cells, toMonth, toStage, { ...existing.pill, paid: toStage === 'collections' ? existing.pill.paid : undefined });
         } else {
-          add(cells, toMonth, toStage, entryFromInvoice(pill));
+          const copyPill = entryFromInvoice(pill);
+          add(cells, toMonth, toStage, pillShares(copyPill).length || !row.projectId ? copyPill : withShares(copyPill, projectShares[row.projectId] || []));
         }
         return { ...row, cells };
       }));
@@ -904,6 +904,20 @@ export function FinancialForecastView() {
           if (row.id === toRowId) add(cells, linked.month, linked.stage, linked.pill);
         }
       }
+      return { ...row, cells };
+    }));
+  };
+
+  // Project commission split onto every entry of a row
+  const applyRowShares = (rowId: string, shares: CommissionShare[]) => {
+    setRows(prev => prev.map(row => {
+      if (row.id !== rowId) return row;
+      const cells: ForecastRow['cells'] = {};
+      Object.entries(row.cells).forEach(([m, cell]) => {
+        const next = { ...cell };
+        (['invoicing', 'possible', 'collections'] as ForecastStage[]).forEach(st => { if (next[st]) next[st] = next[st]!.map(p => withShares(p, shares)); });
+        cells[m] = next;
+      });
       return { ...row, cells };
     }));
   };
@@ -1903,6 +1917,21 @@ export function FinancialForecastView() {
                           </div>
                         );
                       })()}
+                      {/* The project's default commission split, and a way to apply it to every entry of the row */}
+                      {row.projectId && projectShares[row.projectId]?.length > 0 && (
+                        <div className="mt-0.5 text-[10px] text-ink-500 dark:text-ink-400 flex flex-wrap items-center gap-x-1.5">
+                          <span>Commission {sharesLabel(projectShares[row.projectId])}</span>
+                          <span>·</span>
+                          <button
+                            type="button"
+                            onClick={() => applyRowShares(row.id, projectShares[row.projectId!])}
+                            className="font-semibold text-accent-700 dark:text-accent-400 hover:underline"
+                            title="Give every invoice, Possible and Collections entry in this row the project's commission split"
+                          >
+                            Apply to all entries
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                   {showNotes && (
@@ -1995,7 +2024,7 @@ export function FinancialForecastView() {
                                     isPaid ? 'bg-positive-700 text-white border-positive-800 dark:bg-positive-800 dark:text-positive-50 dark:border-positive-600'
                                       : 'bg-positive-50 text-positive-800 border-positive-200 dark:bg-positive-950/40 dark:text-positive-300 dark:border-positive-800/60'
                                   }`}
-                                  title={`${pill.label}${pill.referralName ? ` • Referral: ${pill.referralName} (${pill.referralPercent || 0}%)` : ''}${pill.invoiceNumber ? ` • Inv #${pill.invoiceNumber}` : ''}${pill.notes ? ` • ${pill.notes}` : ''}${stage === 'collections' ? (isPaid ? '\nPaid' : '\nWaiting for payment') : ''}\n${linkLine}\n${stage === 'invoicing' ? 'Drag to another month · Drag onto Possible or Collections to copy' : 'Drag to move · Alt+drag to copy'}`}
+                                  title={`${pill.label}${pillShares(pill).length ? ` • Commission: ${sharesLabel(pillShares(pill))}` : ''}${pill.invoiceNumber ? ` • Inv #${pill.invoiceNumber}` : ''}${pill.notes ? ` • ${pill.notes}` : ''}${stage === 'collections' ? (isPaid ? '\nPaid' : '\nWaiting for payment') : ''}\n${linkLine}\n${stage === 'invoicing' ? 'Drag to another month · Drag onto Possible or Collections to copy' : 'Drag to move · Alt+drag to copy'}`}
                                 >
                                   <div className="flex items-center gap-1 min-w-0">
                                     {stage === 'collections' && (
@@ -2014,9 +2043,9 @@ export function FinancialForecastView() {
                                     {stage === 'invoicing' && invoicePaid && <CheckCircle2 size={12} className="shrink-0 text-positive-600 dark:text-positive-400" aria-label="Paid" />}
                                     <span className="truncate">{pill.label}</span>
                                     {stage !== 'invoicing' && inv && <Link2 size={10} className={`shrink-0 ${mismatch ? 'text-warning-600 dark:text-warning-400' : 'opacity-50'}`} aria-label={mismatch ? 'Linked to an invoice with a different amount' : 'Linked to an invoice'} />}
-                                    {pill.referralName && (
-                                      <span className="shrink-0 text-[9px] px-1 py-px rounded bg-ink-200/80 dark:bg-ink-700 text-ink-700 dark:text-ink-200 font-semibold" title={`Referral: ${pill.referralName} (${pill.referralPercent || 0}%)`}>
-                                        {pill.referralName.substring(0, 1).toUpperCase()}
+                                    {pillShares(pill).length > 0 && (
+                                      <span className="shrink-0 text-[9px] px-1 py-px rounded bg-ink-200/80 dark:bg-ink-700 text-ink-700 dark:text-ink-200 font-semibold" title={`Commission: ${sharesLabel(pillShares(pill))}`}>
+                                        {pillShares(pill).map(r => r.name.substring(0, 1).toUpperCase()).join('')}
                                       </span>
                                     )}
                                   </div>
@@ -2313,6 +2342,8 @@ export function FinancialForecastView() {
         onSave={handleSavePill}
         onDelete={handleDeletePill}
         onClose={() => setPillModalOpen(false)}
+        defaultShares={(() => { const r = rows.find(x => x.id === activeCellLocation?.rowId); return r?.projectId ? projectShares[r.projectId] : undefined; })()}
+        peopleSuggestions={[...new Set([...referralNames, ...Object.values(projectShares).flat().map(s => s.name)])]}
         {...(() => {
           const row = rows.find(r => r.id === activeCellLocation?.rowId);
           if (!row || !editingPill || !activeCellLocation) return { linkInfo: null, lockStage: null };

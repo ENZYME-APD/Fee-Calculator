@@ -1,4 +1,4 @@
-import { ForecastPill, ForecastRow, ForecastStage } from '@/lib/firebase/schema';
+import { CommissionShare, ForecastPill, ForecastRow, ForecastStage } from '@/lib/firebase/schema';
 
 // Invoices and the Possible / Collections entry copied from each one (linked by invoiceId,
 // at most one per invoice, in the same row). Collections can be marked paid.
@@ -74,3 +74,19 @@ export function suggestLinks(rows: ForecastRow[]) {
   });
   return out;
 }
+
+/** Commission shares of a payment (new list, or the older single name + %). */
+export function pillShares(p: ForecastPill): CommissionShare[] {
+  if (p.referrals?.length) return p.referrals.filter(r => r.name?.trim() && r.percent > 0);
+  if (p.referralName?.trim() && (p.referralPercent || 0) > 0) return [{ name: p.referralName.trim(), percent: p.referralPercent || 0 }];
+  return [];
+}
+
+/** Sets a payment's commission shares (clears the older single fields). */
+export function withShares(p: ForecastPill, shares: CommissionShare[]): ForecastPill {
+  const clean = shares.filter(r => r.name?.trim() && r.percent > 0).map(r => ({ name: r.name.trim(), percent: Math.round(r.percent * 100) / 100 }));
+  const { referralName: _n, referralPercent: _p, referrals: _r, ...rest } = p;
+  return clean.length ? { ...rest, referrals: clean } : rest;
+}
+
+export const sharesLabel = (shares: CommissionShare[]) => shares.map(s => `${s.name} ${s.percent}%`).join(', ');

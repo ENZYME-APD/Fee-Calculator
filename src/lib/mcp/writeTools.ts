@@ -565,6 +565,11 @@ export const WRITE_TOOLS: ToolDef[] = [
         to_line: { type: 'string', description: 'Line name or line_id.' },
         copy: { type: 'boolean', description: 'Keep the original and place a copy. Default false.' },
         paid: { type: 'boolean', description: 'Collections only: true when the payment has been received, false when still waiting.' },
+        commission: {
+          type: 'array',
+          description: 'Replaces the commission shares of this payment (each person gets an outflow line of their % of what is collected). Empty array removes them.',
+          items: { type: 'object', properties: { person: { type: 'string' }, percent: { type: 'number' } }, required: ['person', 'percent'], additionalProperties: false },
+        },
       },
       required: ['entry_id'],
       additionalProperties: false,
@@ -607,6 +612,11 @@ export const WRITE_TOOLS: ToolDef[] = [
         ...(typeof args.label === 'string' ? { label: args.label } : {}),
         ...(typeof args.notes === 'string' ? { notes: args.notes } : {}),
       };
+      if (Array.isArray(args.commission)) {
+        const shares = (args.commission as Json[]).map(c => ({ name: String(c.person || '').trim(), percent: Number(c.percent) || 0 })).filter(c => c.name && c.percent > 0);
+        delete pill.referralName; delete pill.referralPercent;
+        if (shares.length) pill.referrals = shares; else delete pill.referrals;
+      }
       if (toStage !== 'collections') delete pill.paid;
       else if (paidArg !== undefined) { if (paidArg) pill.paid = true; else delete pill.paid; }
       if (pill.invoiceId && toRow !== found.row) delete pill.invoiceId;
