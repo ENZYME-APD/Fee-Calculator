@@ -144,6 +144,7 @@ export interface ProjectCost {
   name: string;
   quantity: number;
   unitCost: number;
+  memberId?: string; // consultant: the external team member it pays, if listed in Team resources
 }
 
 export interface Payment {
@@ -260,6 +261,10 @@ export interface ForecastOutflowPill {
   id: string;
   amount: number;
   description?: string;
+  // Project expenses lines: which cost or allocation it comes from, and the month it was placed in,
+  // so the line follows the fee proposal while keeping expenses you moved
+  sourceKey?: string;
+  autoMonth?: string;
 }
 
 export interface ForecastOutflowItem {

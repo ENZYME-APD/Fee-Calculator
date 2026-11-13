@@ -211,10 +211,10 @@ function buildProjectCostPills(
   externalCategoryIds: Set<string>,
 ): Record<string, ForecastOutflowPill[]> {
   const pills: Record<string, ForecastOutflowPill[]> = {};
-  const add = (month: string, amount: number, description: string) => {
+  const add = (month: string, amount: number, description: string, sourceKey: string) => {
     const a = Math.round(amount);
     if (a <= 0) return;
-    (pills[month] = pills[month] || []).push({ id: `opill_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`, amount: a, description });
+    (pills[month] = pills[month] || []).push({ id: `opill_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`, amount: a, description, sourceKey, autoMonth: month });
   };
   const sorted = [...phases].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   let start = proj.startDate || Date.now();
@@ -234,24 +234,50 @@ function buildProjectCostPills(
     for (const c of costs.filter(x => x.phaseId === ph.id)) {
       const total = (c.quantity || 0) * (c.unitCost || 0);
       const label = `${c.name} · ${ph.name}`;
-      if (c.type === 'consultant' || spans.length <= 1 || totalDays <= 0) { add(endMonth, total, label); continue; }
+      if (c.type === 'consultant' || spans.length <= 1 || totalDays <= 0) { add(endMonth, total, label, `cost:${c.id}`); continue; }
       // Spread, keeping the rounded parts adding up to the total
       let placed = 0;
       spans.forEach((x, i) => {
         const part = i === spans.length - 1 ? Math.round(total) - placed : Math.round(total * x.days / totalDays);
         placed += part;
-        add(x.month, part, `${label} (${i + 1}/${spans.length})`);
+        add(x.month, part, `${label} (${i + 1}/${spans.length})`, `cost:${c.id}:${i + 1}/${spans.length}`);
       });
     }
 
     for (const a of allocations.filter(x => x.phaseId === ph.id)) {
       const m = members.find(x => x.id === a.memberId);
       if (!m?.category || !externalCategoryIds.has(m.category)) continue;
-      add(endMonth, (a.hours || 0) * getAllocationRate(a, m), `${m.name} · ${ph.name}`);
+      add(endMonth, (a.hours || 0) * getAllocationRate(a, m), `${m.name} · ${ph.name}`, `alloc:${a.id}`);
     }
     start = end;
   }
   return pills;
+}
+
+/**
+ * Brings a project expenses line up to date with the fee proposal: amounts and names follow the
+ * proposal, new costs are added and removed ones dropped, but an expense moved to another month stays
+ * there. Expenses added by hand (no source) are kept. Older lines are matched by description.
+ */
+function mergeProjectPills(existing: Record<string, ForecastOutflowPill[]>, generated: Record<string, ForecastOutflowPill[]>) {
+  const flat = (rec: Record<string, ForecastOutflowPill[]>) => Object.entries(rec || {}).flatMap(([month, list]) => (list || []).map(p => ({ month, p })));
+  const old = flat(existing);
+  const used = new Set<string>();
+  const out: Record<string, ForecastOutflowPill[]> = {};
+  const put = (m: string, p: ForecastOutflowPill) => { (out[m] = out[m] || []).push(p); };
+  const legacy = old.every(o => !o.p.sourceKey);
+  flat(generated).forEach(({ month, p }) => {
+    const match = old.find(o => !used.has(o.p.id) && o.p.sourceKey === p.sourceKey)
+      || (legacy ? old.find(o => !used.has(o.p.id) && !o.p.sourceKey && o.p.description === p.description) : undefined);
+    if (!match) { put(month, p); return; }
+    used.add(match.p.id);
+    // Moved by hand: it was placed somewhere other than where it was generated
+    const moved = match.p.autoMonth ? match.month !== match.p.autoMonth : match.month !== month;
+    put(moved ? match.month : month, { ...match.p, amount: p.amount, description: p.description, sourceKey: p.sourceKey, autoMonth: month });
+  });
+  // Hand-added (or older, unmatched) expenses stay; generated ones whose cost is gone are dropped
+  old.forEach(o => { if (!used.has(o.p.id) && !o.p.sourceKey) put(o.month, o.p); });
+  return out;
 }
 
 const pillSignature = (pills: Record<string, ForecastOutflowPill[]> | undefined) => {
@@ -356,8 +382,8 @@ export function FinancialForecastView() {
   const [projectShares, setProjectShares] = useState<Record<string, CommissionShare[]>>({});
   const loadProposalFees = async () => {
     try {
-      const [projs, allPhases, allCosts, allocs, mems] = await Promise.all([
-        getProjects(), getPhases(), getProjectCosts(), getAllocations(), getTeamMembers(),
+      const [projs, allPhases, allCosts, allocs, mems, cats] = await Promise.all([
+        getProjects(), getPhases(), getProjectCosts(), getAllocations(), getTeamMembers(), getCategories(),
       ]);
       const fees: Record<string, number> = {};
       projs.forEach(p => {
@@ -368,6 +394,23 @@ export function FinancialForecastView() {
         fees[p.id] = Math.round(totalFee);
       });
       setProposalFees(fees);
+      // Project expenses lines follow their fee proposal (costs added or changed since), keeping moved expenses
+      const externalIds = new Set(cats.filter(c => c.type === 'external').map(c => c.id!));
+      setOutflows(prev => {
+        let changed = false;
+        const next = prev.map(line => {
+          if (line.type !== 'project' || !line.projectId) return line;
+          const proj = projs.find(p => p.id === line.projectId);
+          if (!proj) return line;
+          const generated = buildProjectCostPills(proj, allPhases.filter(ph => ph.projectId === proj.id), allCosts.filter(c => c.projectId === proj.id), allocs, mems, externalIds);
+          const merged = mergeProjectPills(line.monthlyPills || {}, generated);
+          const strip = (r: Record<string, ForecastOutflowPill[]>) => JSON.stringify(Object.keys(r).sort().map(m => [m, r[m].map(p => [p.amount, p.description, p.sourceKey]).sort()]));
+          if (strip(merged) === strip(line.monthlyPills || {}) && JSON.stringify(merged) === JSON.stringify(line.monthlyPills || {})) return line;
+          changed = true;
+          return { ...line, monthlyPills: merged };
+        });
+        return changed ? next : prev;
+      });
       setProjectShares(Object.fromEntries(projs.filter(p => p.id && p.commissionDefaults?.length).map(p => [p.id!, p.commissionDefaults!])));
     } catch (err) {
       console.error('Failed to load proposal fees', err);
@@ -1022,7 +1065,7 @@ export function FinancialForecastView() {
   };
   const moveOutflowPill = (fromItemId: string, fromMonth: string, toItemId: string, toMonth: string, pill: ForecastOutflowPill, copy: boolean) => {
     if (!copy && fromItemId === toItemId && fromMonth === toMonth) return;
-    const placed = copy ? { ...pill, id: `opill_${Date.now()}_${Math.random().toString(36).substring(2, 7)}` } : pill;
+    const placed = copy ? { ...pill, id: `opill_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, sourceKey: undefined, autoMonth: undefined } : pill;
     setOutflows(prev => prev.map(o => {
       if (o.id !== fromItemId && o.id !== toItemId) return o;
       const monthlyPills = { ...(o.monthlyPills || {}) };

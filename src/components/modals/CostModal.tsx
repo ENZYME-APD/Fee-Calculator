@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Phase, ProjectCost } from '@/lib/firebase/schema';
+import { Phase, ProjectCost, TeamMember } from '@/lib/firebase/schema';
+import { getTeamMembers, getCategories } from '@/lib/firebase/db';
 import { X, Palette, Plane, Briefcase, Receipt } from 'lucide-react';
 import { useAppSettings } from '@/lib/auth/AuthContext';
 
@@ -18,13 +19,25 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
   const [quantity, setQuantity] = useState<number>(1);
   const [unitCost, setUnitCost] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  // Consultants: pick one of the external team members (or type any name)
+  const [externals, setExternals] = useState<TeamMember[]>([]);
+  const [memberId, setMemberId] = useState<string>('');
+  useEffect(() => {
+    if (!isOpen || type !== 'consultant') return;
+    Promise.all([getTeamMembers(), getCategories()]).then(([ms, cats]) => {
+      const ext = new Set(cats.filter(c => c.type === 'external').map(c => c.id));
+      setExternals(ms.filter(m => ext.has(m.category)).sort((a, b) => a.name.localeCompare(b.name)));
+    }).catch(() => setExternals([]));
+  }, [isOpen, type]);
 
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
       setQuantity(initialData.quantity);
       setUnitCost(initialData.unitCost);
+      setMemberId(initialData.memberId || '');
     } else {
+      setMemberId('');
       if (type === 'rendering') {
         setName('Rendering');
         setUnitCost(250);
@@ -52,7 +65,8 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
       type,
       name,
       quantity,
-      unitCost
+      unitCost,
+      ...(type === 'consultant' && memberId ? { memberId } : {}),
     });
     setLoading(false);
     onClose();
@@ -68,10 +82,10 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
   };
 
   const titles = {
-    rendering: 'Add Rendering Cost',
-    trip: 'Add Trip Cost',
-    consultant: 'Add Consultant',
-    other: 'Add Other Cost'
+    rendering: 'Add rendering cost',
+    trip: 'Add trip cost',
+    consultant: 'Add consultant',
+    other: 'Add other cost'
   };
 
   return (
@@ -83,7 +97,7 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
               {icons[type]}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-ink-800 dark:text-ink-200">{initialData ? 'Edit Cost' : titles[type]}</h2>
+              <h2 className="text-xl font-bold text-ink-800 dark:text-ink-200">{initialData ? 'Edit cost' : titles[type]}</h2>
               <p className="text-sm font-medium text-ink-500 dark:text-ink-400">For phase: <span className="text-ink-700 dark:text-ink-300">{phase.name}</span></p>
             </div>
           </div>
@@ -93,9 +107,27 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-ink-50/50 dark:bg-ink-950/50">
+          {type === 'consultant' && externals.length > 0 && (
+            <div>
+              <label className="block text-sm font-bold text-ink-700 dark:text-ink-300 mb-1.5">Consultant</label>
+              <select
+                value={memberId}
+                onChange={e => {
+                  const id = e.target.value;
+                  setMemberId(id);
+                  const m = externals.find(x => x.id === id);
+                  if (m) setName(m.position ? `${m.name} · ${m.position}` : m.name);
+                }}
+                className="w-full px-4 py-2.5 border border-ink-200 dark:border-ink-700 rounded-xl focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 bg-white dark:bg-ink-900 text-ink-800 dark:text-ink-200 font-medium"
+              >
+                <option value="">Other (not in Team resources)</option>
+                {externals.map(m => <option key={m.id} value={m.id}>{m.name}{m.position ? ` · ${m.position}` : ''}</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-bold text-ink-700 dark:text-ink-300 mb-1.5">
-              {type === 'consultant' ? 'Consultant Name / Service' : type === 'other' ? 'Expense Description' : 'Description'}
+              {type === 'consultant' ? (memberId ? 'Description' : 'Consultant name / service') : type === 'other' ? 'Expense Description' : 'Description'}
             </label>
             <input 
               required 
@@ -125,7 +157,7 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
             
             <div className="flex-1">
               <label className="block text-sm font-bold text-ink-700 dark:text-ink-300 mb-1.5">
-                {isLumpSum ? `Lump Sum Cost (${currencyCode})` : `Unit Cost (${currencyCode})`}
+                {isLumpSum ? `Lump sum cost (${currencyCode})` : `Unit cost (${currencyCode})`}
               </label>
               <input 
                 required 
@@ -145,6 +177,16 @@ export function CostModal({ isOpen, type, phase, initialData, onClose, onSave }:
               {formatCurrency(quantity * unitCost)}
             </div>
           </div>
+          {type === 'consultant' && (() => {
+            const m = externals.find(x => x.id === memberId);
+            if (!m || !(m.costPerHour > 0)) return null;
+            const hours = (quantity * unitCost) / m.costPerHour;
+            return (
+              <p className="text-xs text-ink-500 dark:text-ink-400 -mt-2">
+                ≈ <span className="font-semibold text-ink-700 dark:text-ink-300">{hours.toLocaleString('en-US', { maximumFractionDigits: 1 })} h</span> of {m.name} at {formatCurrency(m.costPerHour)}/h · {(hours / 40).toLocaleString('en-US', { maximumFractionDigits: 1 })} weeks
+              </p>
+            );
+          })()}
           
           <div className="pt-2 flex justify-end gap-3">
             <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-bold text-ink-600 dark:text-ink-300 hover:bg-ink-200 dark:hover:bg-ink-800 rounded-xl transition-colors bg-ink-100 dark:bg-ink-900">Cancel</button>
