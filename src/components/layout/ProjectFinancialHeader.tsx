@@ -44,7 +44,8 @@ export function ProjectFinancialHeader({
   const commitFee = () => {
     if (!isEditingFee) return;
     const val = parseInt(feeInput.replace(/[^0-9]/g, ''), 10);
-    if (!isNaN(val) && val > 0 && val !== Math.round(totalFee)) onFixedFeeChange?.(val);
+    // Switching on with no cost yet: the typed fee turns fixed fee on
+    if (!isNaN(val) && val > 0 && (val !== Math.round(totalFee) || !isFixedFee)) onFixedFeeChange?.(val);
     setIsEditingFee(false);
   };
   const marginIsEditable = marginEditable && !isFixedFee;
@@ -133,7 +134,7 @@ export function ProjectFinancialHeader({
                 type="button"
                 role="switch"
                 aria-checked={!!isFixedFee}
-                onClick={() => (isFixedFee ? onFixedFeeChange(null) : onFixedFeeChange(Math.round(totalFee)))}
+                onClick={() => (isFixedFee ? onFixedFeeChange(null) : Math.round(totalFee) > 0 ? onFixedFeeChange(Math.round(totalFee)) : (setFeeInput(''), setIsEditingFee(true)))}
                 className={`flex items-center gap-1 text-[10px] font-semibold rounded-full pl-0.5 pr-1.5 py-0.5 transition-colors ${
                   isFixedFee ? 'bg-positive-100 text-positive-800 dark:bg-positive-900/50 dark:text-positive-200' : 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-400 hover:text-ink-700 dark:hover:text-ink-200'
                 }`}
@@ -144,7 +145,7 @@ export function ProjectFinancialHeader({
               </button>
             )}
           </div>
-          {isFixedFee && onFixedFeeChange && isEditingFee ? (
+          {onFixedFeeChange && isEditingFee ? (
             <form onSubmit={(e) => { e.preventDefault(); commitFee(); }}>
               <input
                 type="text"
@@ -156,6 +157,7 @@ export function ProjectFinancialHeader({
                 onKeyDown={(e) => { if (e.key === 'Escape') setIsEditingFee(false); }}
                 className="w-32 px-1.5 py-0.5 text-lg border border-positive-300 dark:border-positive-700 rounded text-right font-black text-positive-700 dark:text-positive-300 bg-positive-50 dark:bg-positive-950/40 focus:outline-none focus:border-positive-500 tabular-nums"
                 aria-label="Fixed total fee"
+                placeholder="Agreed fee"
               />
             </form>
           ) : (
