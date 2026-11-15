@@ -93,7 +93,7 @@ export function ProjectFinancialHeader({
         </div>
 
         <div className="flex flex-col items-end border-r border-ink-200 dark:border-ink-700 pr-6">
-          <span className="text-xs font-medium text-ink-500 mb-0.5">Profit margin</span>
+          <span className="text-xs font-medium text-ink-500 mb-0.5">{isFixedFee ? 'Profit' : 'Profit margin'}</span>
           {marginIsEditable && isEditingMargin ? (
             <form
               onSubmit={(e) => {
@@ -117,7 +117,7 @@ export function ProjectFinancialHeader({
           ) : (
             <div
               className={marginIsEditable ? 'flex items-center gap-1 cursor-pointer hover:opacity-70' : ''}
-              title={isFixedFee ? 'Calculated from the fixed fee: (fee − cost) ÷ cost' : undefined}
+              title={isFixedFee ? 'Agreed fee minus cost; the margin is that profit ÷ cost' : undefined}
               onClick={
                 marginIsEditable
                   ? () => {
@@ -127,14 +127,16 @@ export function ProjectFinancialHeader({
                   : undefined
               }
             >
-              <span className={`text-lg font-bold ${isFixedFee && profitMarginPercent < 0 ? 'text-negative-600 dark:text-negative-400' : 'text-ink-700 dark:text-ink-300'}`}>{profitMarginPercent}%</span>
+              <span className={`text-lg font-bold ${isFixedFee && profitMarginPercent < 0 ? 'text-negative-600 dark:text-negative-400' : 'text-ink-700 dark:text-ink-300'}`}>
+                {isFixedFee && <span className="tabular-nums">{formatCurrency(totalFee - totalCost)} · </span>}{profitMarginPercent}%
+              </span>
             </div>
           )}
         </div>
 
         <div className="flex flex-col items-end">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-xs font-medium text-positive-600/70 dark:text-positive-400/70">Total fee</span>
+            <span className="text-xs font-medium text-positive-600/70 dark:text-positive-400/70">{isFixedFee ? 'Agreed fee' : 'Total fee'}</span>
             {onFixedFeeChange && (
               <button
                 type="button"

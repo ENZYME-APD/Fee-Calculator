@@ -578,7 +578,7 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                             <button
                               onClick={() => setIsProjectSettingsOpen(true)}
                               className="text-ink-500 hover:text-accent-500 p-1 hover:bg-accent-50 dark:hover:bg-accent-900/30 rounded-full transition-colors"
-                              title="Edit Project"
+                              title="Project settings: fee type, contract currency, proposal details"
                             >
                               <Edit3 size={14} />
                             </button>

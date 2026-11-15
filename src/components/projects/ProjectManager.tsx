@@ -11,6 +11,7 @@ import { CurrencySwitch, CurrencyViewProvider, useProjectCurrencyView } from '@/
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { PromptModal } from '@/components/modals/PromptModal';
 import { PhaseSettingsModal } from '@/components/modals/PhaseSettingsModal';
+import { ProjectSettingsModal } from '@/components/modals/ProjectSettingsModal';
 import { Card, CardHeader, CardBody, Row } from '@/components/ui/Card';
 import { RowMenu } from '@/components/ui/RowMenu';
 import { PrimaryButton, IconButton, fieldClass } from '@/components/ui/Button';
@@ -49,11 +50,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
   const [newProjectName, setNewProjectName] = useState('');
   
   // Edit Project
-  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-  const [editingProjectName, setEditingProjectName] = useState('');
-  const [editingProjectStatus, setEditingProjectStatus] = useState('Draft');
-  const [editingProjectStartDate, setEditingProjectStartDate] = useState(Date.now());
-  const [editingProjectOwnerId, setEditingProjectOwnerId] = useState('');
+  const [settingsProjectId, setSettingsProjectId] = useState<string | null>(null);
   const [companyUsers, setCompanyUsers] = useState<User[]>([]);
   
   // New Phase Form
@@ -226,7 +223,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
     
     setConfirmConfig({
       isOpen: true,
-      title: 'Duplicate Project',
+      title: 'Duplicate project',
       message: 'Do you want to duplicate this project exactly as is? You can keep all team members and project costs, or create a clean template with empty phases.',
       confirmText: 'Keep All',
       onConfirm: () => performDuplicate(true),
@@ -244,7 +241,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
     
     setPromptConfig({
       isOpen: true,
-      title: 'Save as Template',
+      title: 'Save as template',
       message: 'Enter a name for this template:',
       defaultValue: `${p.name} Template`,
       confirmText: 'Save Template',
@@ -299,29 +296,6 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
         setPromptConfig(prev => ({ ...prev, isOpen: false }));
       }
     });
-  };
-
-  const handleEditProjectStart = (p: Project, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingProjectId(p.id!);
-    setEditingProjectName(p.name);
-    setEditingProjectStatus(p.status || 'Draft');
-    setEditingProjectStartDate(p.startDate || Date.now());
-    setEditingProjectOwnerId(p.ownerId || dbUser?.uid || '');
-  };
-
-  const handleEditProjectSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingProjectId && editingProjectName.trim()) {
-      await updateProject(editingProjectId, { 
-        name: editingProjectName.trim(),
-        status: editingProjectStatus,
-        startDate: editingProjectStartDate,
-        ownerId: editingProjectOwnerId
-      });
-      await loadProjects();
-    }
-    setEditingProjectId(null);
   };
 
   const handleCreatePhase = async (e: React.FormEvent) => {
@@ -585,57 +559,6 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
 
           <CardBody className="overflow-y-auto">
             {sortedProjects.map(p => {
-              if (editingProjectId === p.id) {
-                return (
-                  <div key={p.id} className="p-3 border-b border-accent-200 dark:border-accent-900 bg-accent-50/50 dark:bg-accent-900/10">
-                    <form onSubmit={handleEditProjectSave} className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          autoFocus
-                          value={editingProjectName}
-                          onChange={e => setEditingProjectName(e.target.value)}
-                          className="flex-1 px-2 py-1 text-sm border-b border-accent-400 dark:border-accent-600 focus:outline-none font-semibold text-accent-900 dark:text-accent-300 bg-transparent"
-                        />
-                        <IconButton type="button" onClick={() => setEditingProjectId(null)}><X size={14} /></IconButton>
-                        <IconButton type="submit" className="text-positive-600 dark:text-positive-400 hover:text-positive-700"><Check size={14} /></IconButton>
-                      </div>
-                      {!isTemplateMode && (
-                        <div className="flex gap-2 items-center text-xs">
-                          <select
-                            value={editingProjectStatus}
-                            onChange={e => setEditingProjectStatus(e.target.value)}
-                            className="px-2 py-1 border border-ink-200 dark:border-ink-700 rounded-md bg-white dark:bg-ink-800 text-ink-700 dark:text-ink-300"
-                          >
-                            <option value="Draft">Draft</option>
-                            <option value="Proposed">Proposed</option>
-                            <option value="Active">Active</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Lost">Lost/archived</option>
-                          </select>
-                          <input
-                            type="date"
-                            value={new Date(editingProjectStartDate).toISOString().split('T')[0]}
-                            onChange={e => setEditingProjectStartDate(new Date(e.target.value).getTime())}
-                            className="px-2 py-1 border border-ink-200 dark:border-ink-700 rounded-md bg-white dark:bg-ink-800 text-ink-700 dark:text-ink-300"
-                          />
-                          <select
-                            value={editingProjectOwnerId}
-                            onChange={e => setEditingProjectOwnerId(e.target.value)}
-                            className="px-2 py-1 border border-ink-200 dark:border-ink-700 rounded-md bg-white dark:bg-ink-800 text-ink-700 dark:text-ink-300 w-28 truncate"
-                          >
-                            <option value="">No originator</option>
-                            {companyUsers.map(u => (
-                              <option key={u.uid} value={u.uid}>{u.displayName || u.email}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </form>
-                  </div>
-                );
-              }
-
               return (
                 <Row key={p.id} onClick={() => setActiveProjectId(p.id!)} active={activeProjectId === p.id}>
                   <Folder size={16} className={`shrink-0 ${activeProjectId === p.id ? "text-accent-600 dark:text-accent-400" : "text-ink-500 dark:text-ink-400"}`} />
@@ -660,12 +583,12 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                     <RowMenu
                       items={[
                         {
-                          label: isTemplateMode ? 'Duplicate Template' : 'Duplicate Project',
+                          label: isTemplateMode ? 'Duplicate template' : 'Duplicate project',
                           icon: <Copy size={14} />,
                           onClick: () => p.id && handleDuplicateProject(p.id, { stopPropagation() {} } as React.MouseEvent),
                         },
                         ...(!isTemplateMode ? [{
-                          label: 'Save as Template',
+                          label: 'Save as template',
                           icon: <Save size={14} />,
                           onClick: () => p.id && handleSaveAsTemplate(p.id, { stopPropagation() {} } as React.MouseEvent),
                         }] : []),
@@ -675,9 +598,9 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                           onClick: () => router.push('/planning?project=' + p.id),
                         },
                         {
-                          label: 'Edit Details',
+                          label: 'Edit details',
                           icon: <Pencil size={14} />,
-                          onClick: () => handleEditProjectStart(p, { stopPropagation() {} } as React.MouseEvent),
+                          onClick: () => setSettingsProjectId(p.id!),
                         },
                         {
                           label: 'Delete',
@@ -875,6 +798,19 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
         onConfirm={promptConfig.onConfirm}
         onCancel={() => setPromptConfig(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {settingsProjectId && projects.find(p => p.id === settingsProjectId) && (
+        <ProjectSettingsModal
+          isOpen
+          project={projects.find(p => p.id === settingsProjectId)!}
+          companyUsers={isTemplateMode ? undefined : companyUsers}
+          onClose={() => setSettingsProjectId(null)}
+          onSave={async (updates) => {
+            await updateProject(settingsProjectId, updates);
+            await loadProjects();
+          }}
+        />
+      )}
 
       <PhaseSettingsModal
         isOpen={!!settingsPhaseId}
