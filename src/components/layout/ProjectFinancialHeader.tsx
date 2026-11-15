@@ -93,7 +93,7 @@ export function ProjectFinancialHeader({
         </div>
 
         <div className="flex flex-col items-end border-r border-ink-200 dark:border-ink-700 pr-6">
-          <span className="text-xs font-medium text-ink-500 mb-0.5">{isFixedFee ? 'Profit' : 'Profit margin'}</span>
+          <span className="text-xs font-medium text-ink-500 mb-0.5">Profit margin</span>
           {marginIsEditable && isEditingMargin ? (
             <form
               onSubmit={(e) => {
@@ -128,10 +128,10 @@ export function ProjectFinancialHeader({
               }
             >
               <span className={`text-lg font-bold ${isFixedFee && profitMarginPercent < 0 ? 'text-negative-600 dark:text-negative-400' : 'text-ink-700 dark:text-ink-300'}`}>
-                {isFixedFee && <span className="tabular-nums">{formatCurrency(totalFee - totalCost)} · </span>}{profitMarginPercent}%
-              </span>
+{profitMarginPercent}%</span>
             </div>
           )}
+          <span className={`text-xs tabular-nums ${totalFee - totalCost < 0 ? 'text-negative-600 dark:text-negative-400' : 'text-ink-500 dark:text-ink-400'}`}>{formatCurrency(totalFee - totalCost)}</span>
         </div>
 
         <div className="flex flex-col items-end">
