@@ -429,11 +429,19 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
             {isTemplateMode ? 'Manage reusable project structures.' : 'Manage projects, phases, and payment milestones.'}
           </p>
         </div>
-        {headerActions}
+        <div className="flex items-center gap-3">
+          {currencyView && !isTemplateMode && (
+            <div className="flex items-center gap-2 text-xs text-ink-500 dark:text-ink-400">
+              Show amounts in <CurrencySwitch view={currencyView} onChange={setShowingContract} />
+            </div>
+          )}
+          {headerActions}
+        </div>
       </div>
 
       {activeProject && !isTemplateMode && (
-        <ProjectFinancialHeader
+        <CurrencyViewProvider value={currencyView}>
+        <ViewAwareHeader
           left={
             <div className="flex items-center gap-3">
               <button
@@ -464,6 +472,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
           formatCurrency={formatCurrency}
           isFixedFee={isFixedFee}
         />
+        </CurrencyViewProvider>
       )}
 
       <div className="flex gap-5 flex-1 min-h-0 overflow-hidden">
@@ -772,11 +781,6 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
         {activeProjectId ? (
           <CurrencyViewProvider value={currencyView}>
           <div className="flex-1 min-w-0 flex flex-col gap-2">
-          {currencyView && (
-            <div className="flex items-center justify-end gap-2 text-xs text-ink-500 dark:text-ink-400">
-              Show amounts in <CurrencySwitch view={currencyView} onChange={setShowingContract} />
-            </div>
-          )}
           <PaymentScheduleManager
             projectId={activeProjectId}
             projectName={projects.find(p => p.id === activeProjectId)?.name}
@@ -841,3 +845,9 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
 }
 
 const STATUS_FILTERS = { Draft: true, Proposed: true, Active: true, Completed: true, Lost: true };
+
+/** The financial header in the currency the page shows (company or contract currency). */
+function ViewAwareHeader(props: React.ComponentProps<typeof ProjectFinancialHeader>) {
+  const { formatCurrency } = useAppSettings();
+  return <ProjectFinancialHeader {...props} formatCurrency={formatCurrency} />;
+}
