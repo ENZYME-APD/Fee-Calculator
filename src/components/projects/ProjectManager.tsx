@@ -401,7 +401,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
   if (loading) return <div className="p-8 text-ink-500">Loading projects...</div>;
 
   const activeProject = projects.find(p => p.id === activeProjectId);
-  const { totalCost, profitMarginPercent, totalFee } = computeProjectFinancials(activeProject, phases, allocations, projectCosts, teamMembers);
+  const { totalCost, profitMarginPercent, totalFee, isFixedFee } = computeProjectFinancials(activeProject, phases, allocations, projectCosts, teamMembers);
 
   const sortedProjects = [...projects]
     .filter(p => isTemplateMode || selectedStatuses.includes(p.status || 'Draft'))
@@ -448,6 +448,13 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
                 status={activeProject.status || 'Draft'}
                 onChange={(status) => activeProject.id && updateProject(activeProject.id, { status }).then(loadProjects)}
               />
+              <button
+                type="button"
+                onClick={() => setSettingsProjectId(activeProject.id!)}
+                className="flex items-center gap-1 text-xs font-medium text-accent-600 dark:text-accent-400 hover:underline underline-offset-4"
+              >
+                <Pencil size={12} /> Edit details
+              </button>
               {activeProject.area && <span className="text-xs text-ink-500">· {activeProject.area} {areaUnit}</span>}
             </div>
           }
@@ -455,6 +462,7 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
           profitMarginPercent={profitMarginPercent}
           totalFee={totalFee}
           formatCurrency={formatCurrency}
+          isFixedFee={isFixedFee}
         />
       )}
 
