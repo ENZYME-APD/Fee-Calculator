@@ -66,8 +66,8 @@ export function ProjectFinancialHeader({
   };
 
   return (
-    <div className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 flex-wrap transition-colors">
-      <div className="min-w-0">{left}</div>
+    <div className="bg-white dark:bg-ink-900 border border-ink-200 dark:border-ink-800 rounded-2xl px-5 py-4 flex items-center justify-between gap-6 transition-colors">
+      <div className="min-w-0 flex-1">{left}</div>
 
       <div className="flex items-stretch gap-6 shrink-0">
         <div className="flex flex-col items-end border-r border-ink-200 dark:border-ink-700 pr-6">

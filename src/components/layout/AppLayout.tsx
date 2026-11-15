@@ -565,8 +565,8 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                       onRefreshRates={handleRefreshRates}
                       left={
                         <div className="flex items-center gap-4 flex-wrap">
-                          <div className="flex items-baseline gap-2">
-                            <h2 className="font-bold text-lg text-ink-800 dark:text-ink-100">
+                          <div className="flex items-baseline gap-2 min-w-0">
+                            <h2 className="font-bold text-lg text-ink-800 dark:text-ink-100 line-clamp-2 min-w-0" title={project.name}>
                               <Link
                                 href={`/projects?project=${project.id}`}
                                 title="Open in Projects & phases"

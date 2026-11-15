@@ -443,13 +443,13 @@ export function ProjectManager({ isTemplateMode = false, headerActions }: { isTe
         <CurrencyViewProvider value={currencyView}>
         <ViewAwareHeader
           left={
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
               <button
                 onClick={() => router.push(`/dashboard?project=${activeProject.id}`)}
-                className="font-bold text-base text-ink-800 dark:text-ink-100 hover:text-accent-600 dark:hover:text-accent-400 transition-colors text-left flex items-center gap-1.5 group"
+                className="min-w-0 font-bold text-base text-ink-800 dark:text-ink-100 hover:text-accent-600 dark:hover:text-accent-400 transition-colors text-left flex items-center gap-1.5 group"
                 title="Open Fee Proposal"
               >
-                {activeProject.name}
+                <span className="line-clamp-2">{activeProject.name}</span>
                 <Calculator size={15} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent-500" />
               </button>
               <StatusSelect
