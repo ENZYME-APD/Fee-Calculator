@@ -9,7 +9,7 @@ import { DOCUMENT_TOOLS } from './documentTools';
 // a plain JSON reply. No sessions or server-sent events are needed.
 
 const SUPPORTED_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
-const SERVER_INFO = { name: 'fee-calculator', title: 'Fee Calculator', version: '1.3.0' };
+const SERVER_INFO = { name: 'fee-calculator', title: 'Fee Calculator', version: '1.4.0' };
 const ABOUT =
   'Fee Calculator holds an architecture practice\'s fee proposals (projects split into phases with team hours and costs), ' +
   'payment schedules, team, overheads and a cash-flow forecast. Call get_company_overview first. ' +

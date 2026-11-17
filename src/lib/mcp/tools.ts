@@ -265,6 +265,7 @@ export const TOOLS: ToolDef[] = [
         percent: round(paymentPercent(p, b.fin.totalFee)),
         amount: round(paymentAmount(p, b.fin.totalFee)),
         fixed_amount: typeof p.amount === 'number',
+        ...(p.amountContract && project.contractCurrency ? { amount_contract: p.amountContract } : {}),
       }));
       const scheduled = schedule.reduce((s, p) => s + p.amount, 0);
 
@@ -291,6 +292,13 @@ export const TOOLS: ToolDef[] = [
           total_hours: round(phases.reduce((s, p) => s + p.hours, 0)),
           duration_weeks: phases.reduce((s, p) => s + (p.duration_weeks || 0), 0),
         },
+        contract_currency: project.contractCurrency && (project.contractRate || 0) > 0 ? {
+          code: project.contractCurrency,
+          rate: project.contractRate,
+          note: `Amounts above are in ${ctx.company.currency || 'USD'}; divide by the rate for ${project.contractCurrency}.`,
+          fixed_fee: b.fin.isFixedFee ? (project.fixedFeeContract ?? round(project.fixedFee! / project.contractRate!)) : null,
+          total_fee: round(b.fin.totalFee / project.contractRate!),
+        } : null,
         phases,
         payment_schedule: schedule,
         payment_schedule_check: {

@@ -70,7 +70,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
   const formatCurrency = currencyView ? formatShown : formatCurrencyProp;
   const { toView, fromView, contractOf } = viewMath(currencyView);
   const amountFields = (shown: number) => {
-    const base = Math.round(fromView(shown));
+    const base = Math.round(fromView(shown) * 100) / 100; // cents, so the contract value converts back exactly
     return {
       amount: base,
       ...(currencyView ? { amountContract: Math.round(contractOf(shown)! * 100) / 100 } : {}),
@@ -123,7 +123,7 @@ export function PaymentScheduleManager({ projectId, projectName, phases, allocat
     const updates = data.map(p => ({
       id: p.id!,
       data: toAmount
-        ? { amount: Math.round(paymentAmount(p, totalFee)), ...(currencyView ? { amountContract: Math.round(contractOf(toView(paymentAmount(p, totalFee)))! * 100) / 100 } : {}), percentage: round2(paymentPercent(p, totalFee)) }
+        ? { amount: Math.round(paymentAmount(p, totalFee) * 100) / 100, ...(currencyView ? { amountContract: Math.round(contractOf(toView(paymentAmount(p, totalFee)))! * 100) / 100 } : {}), percentage: round2(paymentPercent(p, totalFee)) }
         : { percentage: round2(paymentPercent(p, totalFee)), amount: null, amountContract: null },
     }));
     if (updates.length) await batchUpdatePayments(updates);

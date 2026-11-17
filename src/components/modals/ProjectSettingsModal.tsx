@@ -120,8 +120,8 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
       const fee = num(fixedFee);
       const feeUpdates = (isFixed && fee > 0
         ? useContract
-          ? { fixedFee: Math.round(fee * rate), fixedFeeContract: Math.round(fee * 100) / 100 }
-          : { fixedFee: Math.round(fee), fixedFeeContract: null }
+          ? { fixedFee: Math.round(fee * rate * 100) / 100, fixedFeeContract: Math.round(fee * 100) / 100 }
+          : { fixedFee: Math.round(fee * 100) / 100, fixedFeeContract: null }
         : { fixedFee: null, fixedFeeContract: null }) as unknown as Partial<Project>;
       const currencyUpdates = (useContract
         ? { contractCurrency, contractRate: rate }
@@ -144,7 +144,7 @@ export function ProjectSettingsModal({ isOpen, project, onClose, onSave, focusPr
         const updates = pays.map(p => {
           if (!useContract) return { id: p.id!, data: { amountContract: null } as Partial<Payment> };
           const contractValue = sameCurrency && p.amountContract ? p.amountContract : p.amount! / (sameCurrency && project.contractRate ? project.contractRate : rate);
-          return { id: p.id!, data: { amountContract: Math.round(contractValue * 100) / 100, amount: Math.round(contractValue * rate) } as Partial<Payment> };
+          return { id: p.id!, data: { amountContract: Math.round(contractValue * 100) / 100, amount: Math.round(contractValue * rate * 100) / 100 } as Partial<Payment> };
         });
         if (updates.length) await batchUpdatePayments(updates);
       }

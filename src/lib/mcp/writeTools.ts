@@ -182,7 +182,7 @@ export const WRITE_TOOLS: ToolDef[] = [
   {
     name: 'update_project',
     title: 'Update project',
-    description: 'Changes a project\'s name, description, status, start date, area, profit margin, fixed fee or proposal details (client, reference, dates, signatory). Setting fixed_fee fixes the total fee and the margin is then calculated from it; set fixed_fee to 0 to go back to cost + margin.',
+    description: 'Changes a project\'s name, description, status, start date, area, profit margin, fixed fee, contract currency or proposal details (client, reference, dates, signatory). Setting fixed_fee fixes the total fee and the margin is then calculated from it; set fixed_fee to 0 to go back to cost + margin. A project contracted in another currency has contract_currency and contract_rate (company currency per 1 unit); its fixed fee and fixed payments keep their contract-currency value when the rate changes, and the company-currency amounts are recalculated.',
     writes: true,
     inputSchema: {
       type: 'object',
@@ -194,7 +194,9 @@ export const WRITE_TOOLS: ToolDef[] = [
         start_date: { type: 'string', description: 'YYYY-MM-DD' },
         area: { type: 'number' },
         profit_margin: { type: 'number', description: 'Margin % on top of cost. Ignored while a fixed fee is set.' },
-        fixed_fee: { type: 'number', description: 'Agreed total fee. 0 switches the fixed fee off.' },
+        fixed_fee: { type: 'number', description: 'Agreed total fee, in the project\'s contract currency when it has one (after this update), otherwise in the company currency. 0 switches the fixed fee off.' },
+        contract_currency: { type: 'string', description: 'ISO code, e.g. EUR. Empty string (or the company currency) removes it. Needs contract_rate unless the project already has one.' },
+        contract_rate: { type: 'number', description: 'Company currency per 1 unit of the contract currency, e.g. 1.1028 for EUR when the company works in USD.' },
         proposal_details: {
           type: 'object',
           description: 'Proposal details used by the Document builder fields. Only the keys given change; an empty string clears one.',
@@ -225,11 +227,44 @@ export const WRITE_TOOLS: ToolDef[] = [
       const start = parseDate(str(args, 'start_date')); if (start) { next.startDate = start; changed.push(`start → ${str(args, 'start_date')}`); }
       const area = num(args, 'area'); if (area !== undefined) { next.area = area; changed.push(`area → ${area}`); }
       const margin = num(args, 'profit_margin'); if (margin !== undefined) { next.profitMargin = margin; changed.push(`margin → ${margin}%`); }
+      // Contract currency and fixed fee. Amounts are kept to the cent so the contract value converts back exactly.
+      const c2 = (n: number) => Math.round(n * 100) / 100;
+      const base = (ctx.company.currency || 'USD').toUpperCase();
+      const ccArg = typeof args.contract_currency === 'string' ? args.contract_currency.trim().toUpperCase() : undefined;
+      const rateArg = num(args, 'contract_rate');
+      if (rateArg !== undefined && rateArg <= 0) throw new ToolError('contract_rate must be above 0.');
+      if (ccArg && !/^[A-Z]{3}$/.test(ccArg)) throw new ToolError('contract_currency must be a 3-letter code such as EUR.');
+      const oldCode = project.contractCurrency && (project.contractRate || 0) > 0 ? project.contractCurrency : null;
+      const newCode = ccArg === undefined ? oldCode : ccArg && ccArg !== base ? ccArg : null;
+      const newRate = newCode ? (rateArg ?? (newCode === oldCode ? project.contractRate! : undefined)) : null;
+      if (newCode && !newRate) throw new ToolError(`Give contract_rate (${base} per 1 ${newCode}).`);
+      const currencyChanged = newCode !== oldCode || (newCode && newRate !== project.contractRate);
+      if (currencyChanged) {
+        next.contractCurrency = newCode; next.contractRate = newRate;
+        changed.push(newCode ? `contract currency → ${newCode} at ${newRate} ${base}` : 'contract currency removed');
+      }
+      // Contract value of an existing amount (kept when the currency stays the same)
+      const contractOf = (amount: number, kept?: number | null) => (newCode === oldCode && kept ? kept : amount / newRate!);
       const fixed = num(args, 'fixed_fee');
       if (fixed !== undefined) {
         if (fixed < 0) throw new ToolError('fixed_fee can\'t be negative.');
-        next.fixedFee = fixed > 0 ? Math.round(fixed) : null;
-        changed.push(fixed > 0 ? `fixed fee → ${Math.round(fixed)}` : 'fixed fee off');
+        if (fixed === 0) { next.fixedFee = null; next.fixedFeeContract = null; changed.push('fixed fee off'); }
+        else if (newCode) { next.fixedFeeContract = c2(fixed); next.fixedFee = c2(fixed * newRate!); changed.push(`fixed fee → ${newCode} ${c2(fixed)}`); }
+        else { next.fixedFee = c2(fixed); next.fixedFeeContract = null; changed.push(`fixed fee → ${base} ${c2(fixed)}`); }
+      } else if (currencyChanged && project.fixedFee && project.fixedFee > 0) {
+        if (newCode) { const v = c2(contractOf(project.fixedFee, project.fixedFeeContract)); next.fixedFeeContract = v; next.fixedFee = c2(v * newRate!); }
+        else next.fixedFeeContract = null;
+      }
+      const paymentOps: { collection: 'payments'; id: string; data: Json }[] = [];
+      if (currencyChanged) {
+        const b = await projectBundle(data, project);
+        for (const p of b.payments) {
+          if (p.amount === null || p.amount === undefined) continue;
+          const d: Json = { ...strip(p) };
+          if (newCode) { const v = c2(contractOf(p.amount, p.amountContract)); d.amountContract = v; d.amount = c2(v * newRate!); }
+          else d.amountContract = null;
+          paymentOps.push({ collection: 'payments', id: p.id!, data: d });
+        }
       }
       const pd = args.proposal_details && typeof args.proposal_details === 'object' ? args.proposal_details as Json : null;
       if (pd) {
@@ -251,7 +286,7 @@ export const WRITE_TOOLS: ToolDef[] = [
         next.proposal = prop;
       }
       if (!changed.length) throw new ToolError('Say what to change.');
-      const changeId = await applyChange(ctx, 'update_project', `Updated "${project.name}": ${changed.join(', ')}`, [{ collection: 'projects', id: project.id!, data: next }]);
+      const changeId = await applyChange(ctx, 'update_project', `Updated "${project.name}": ${changed.join(', ')}`, [{ collection: 'projects', id: project.id!, data: next }, ...paymentOps]);
       return done(`Updated "${project.name}": ${changed.join(', ')}.`, changeId, { totals: await totalsAfter(ctx, project.id!) });
     },
   },

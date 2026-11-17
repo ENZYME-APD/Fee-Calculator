@@ -557,7 +557,7 @@ export function AppLayout({ project, members, phases, allocations, projectCosts 
                         const { fromView, contractOf } = viewMath(currencyView);
                         await updateProject(project.id!, fee === null
                           ? ({ fixedFee: null, fixedFeeContract: null } as unknown as Partial<Project>)
-                          : { fixedFee: Math.round(fromView(fee)), ...(currencyView ? { fixedFeeContract: Math.round(contractOf(fee)! * 100) / 100 } : {}) });
+                          : { fixedFee: Math.round(fromView(fee) * 100) / 100, ...(currencyView ? { fixedFeeContract: Math.round(contractOf(fee)! * 100) / 100 } : {}) });
                         onAllocationAdded();
                       }}
                       showRefreshRates={isAdmin}
